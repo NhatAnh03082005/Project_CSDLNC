@@ -82,7 +82,7 @@ function App() {
         <Route path="/admin/statistics" element={<StatisticsPage />} />
         
         {/* === 404 NOT FOUND (Có thể thêm một component riêng cho 404) === */}
-        {/* <Route path="*" element={<h1>404 Not Found</h1>} /> */}
+        <Route path="*" element={<h1>404 Not Found</h1>} />
 
       </Routes>
     </Router>
