@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const { authenticate, authorize } = require('../../middlewares/auth');
 const { ROLES } = require('../../config/constants');
+const vaccinationsService = require('./vaccinations.service');
 
 /**
  * @route   POST /api/vaccinations/records
@@ -71,8 +72,18 @@ router.delete('/packages/:id', authenticate, authorize(ROLES.ADMIN), (req, res) 
  * @desc    Đăng ký gói tiêm cho thú cưng
  * @access  Private - KHACH_HANG
  */
-router.post('/packages/subscribe', authenticate, authorize(ROLES.CUSTOMER), (req, res) => {
-  res.json({ message: 'Subscribe to vaccination package' });
+router.post('/packages/subscribe', authenticate, authorize(ROLES.CUSTOMER), async (req, res) => {
+  const customerId = req.user.maKhachHang;
+
+  if (!customerId) {
+    return res.status(400).json({
+      success: false,
+      message: 'Không tìm thấy mã khách hàng trong token',
+    });
+  }
+
+  const response = await vaccinationsService.subscribeToPackage(customerId, req.body);
+  return res.status(response.status || 200).json(response);
 });
 
 /**

@@ -1,4 +1,7 @@
 const express = require('express');
+const { body } = require('express-validator');
+const validate = require('../../middlewares/validate');
+const authController = require('./auth.controller');
 const router = express.Router();
 
 // Controllers (sẽ implement sau)
@@ -9,10 +12,10 @@ const router = express.Router();
  * @desc    Đăng ký tài khoản khách hàng mới
  * @access  Public
  */
-router.post('/register', (req, res) => {
-  // TODO: Implement registration logic
-  res.json({ message: 'Register endpoint' });
-});
+router.post(
+  '/register',
+  authController.register
+);
 
 /**
  * @route   POST /api/auth/login
