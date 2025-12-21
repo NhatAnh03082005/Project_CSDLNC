@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 // Import UI components (giữ nguyên đường dẫn tương đối đã sửa)
 import { Button } from "../../../components/ui/button";
+import AdminHeader from "../components/AdminHeader";
 import {
   Card,
   CardContent,
@@ -36,6 +37,9 @@ import {
   Edit,
   Trash2,
   ArrowLeft,
+  ShoppingBag,
+  Syringe,
+  Sparkles,
 } from "lucide-react";
 import { Link } from "react-router-dom"; // Giữ Link của React Router DOM
 
@@ -48,41 +52,7 @@ export default function ManagementPage() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Header */}
-      <header className="sticky top-0 z-50 w-full border-b bg-white shadow-sm">
-        <div className="flex h-16 items-center gap-4 px-6">
-          <Button variant="ghost" size="icon">
-            <Menu className="h-5 w-5" />
-          </Button>
-          <div className="flex items-center gap-2">
-            <div className="h-8 w-8 rounded-lg bg-gradient-to-br from-purple-600 to-blue-600 flex items-center justify-center">
-              <Shield className="h-5 w-5 text-white" />
-            </div>
-            <div>
-              <div className="font-bold text-sm">PetCare Admin</div>
-              <div className="text-xs text-gray-500">Hệ thống quản trị</div>
-            </div>
-          </div>
-          <div className="ml-auto flex items-center gap-3">
-            <Button variant="ghost" size="icon" className="relative">
-              <Bell className="h-5 w-5" />
-              <span className="absolute top-1 right-1 h-2 w-2 rounded-full bg-red-500"></span>
-            </Button>
-            <Button variant="ghost" size="icon">
-              <Settings className="h-5 w-5" />
-            </Button>
-            <div className="flex items-center gap-3 border-l pl-3">
-              <div className="text-right">
-                <div className="text-sm font-medium">Admin User</div>
-                <div className="text-xs text-gray-500">Quản trị viên</div>
-              </div>
-              <div className="h-9 w-9 rounded-full bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center text-white font-semibold">
-                AD
-              </div>
-            </div>
-          </div>
-        </div>
-      </header>
+      <AdminHeader />
 
       <div className="flex">
         {/* Sidebar */}
@@ -155,7 +125,7 @@ export default function ManagementPage() {
                     <CardContent>
                       <Button
                         variant="outline"
-                        className="w-full bg-transparent"
+                        className="w-full bg-blue-100 hover:bg-blue-600 hover:text-white transition-colors"
                       >
                         Quản lý
                       </Button>
@@ -180,7 +150,7 @@ export default function ManagementPage() {
                     <CardContent>
                       <Button
                         variant="outline"
-                        className="w-full bg-transparent"
+                        className="w-full bg-green-100 hover:bg-green-600 hover:text-white transition-colors"
                       >
                         Quản lý
                       </Button>
@@ -203,7 +173,103 @@ export default function ManagementPage() {
                     <CardContent>
                       <Button
                         variant="outline"
-                        className="w-full bg-transparent"
+                        className="w-full bg-purple-100 hover:bg-purple-600 hover:text-white transition-colors"
+                      >
+                        Quản lý
+                      </Button>
+                    </CardContent>
+                  </Card>
+
+                  <Card
+                    className="hover:shadow-lg transition-shadow cursor-pointer"
+                    onClick={() => setSelectedManagement("product")}
+                  >
+                    <CardHeader>
+                      <div className="h-12 w-12 rounded-lg bg-orange-100 flex items-center justify-center mb-2">
+                        <ShoppingBag className="h-6 w-6 text-orange-600" />
+                      </div>
+                      <CardTitle className="text-lg">
+                        Quản lý sản phẩm
+                      </CardTitle>
+                      <CardDescription>
+                        Xem danh sách và thêm sản phẩm mới
+                      </CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                      <Button
+                        variant="outline"
+                        className="w-full bg-orange-100 hover:bg-orange-600 hover:text-white transition-colors"
+                      >
+                        Quản lý
+                      </Button>
+                    </CardContent>
+                  </Card>
+
+                  <Card
+                    className="hover:shadow-lg transition-shadow cursor-pointer"
+                    onClick={() => setSelectedManagement("vaccine")}
+                  >
+                    <CardHeader>
+                      <div className="h-12 w-12 rounded-lg bg-pink-100 flex items-center justify-center mb-2">
+                        <Syringe className="h-6 w-6 text-pink-600" />
+                      </div>
+                      <CardTitle className="text-lg">Quản lý vắc-xin</CardTitle>
+                      <CardDescription>
+                        Xem danh sách và thêm vắc-xin mới
+                      </CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                      <Button
+                        variant="outline"
+                        className="w-full bg-pink-100 hover:bg-pink-600 hover:text-white transition-colors"
+                      >
+                        Quản lý
+                      </Button>
+                    </CardContent>
+                  </Card>
+
+                  <Card
+                    className="hover:shadow-lg transition-shadow cursor-pointer"
+                    onClick={() => setSelectedManagement("service")}
+                  >
+                    <CardHeader>
+                      <div className="h-12 w-12 rounded-lg bg-cyan-100 flex items-center justify-center mb-2">
+                        <Sparkles className="h-6 w-6 text-cyan-600" />
+                      </div>
+                      <CardTitle className="text-lg">Quản lý dịch vụ</CardTitle>
+                      <CardDescription>
+                        Quản lý dịch vụ tại các chi nhánh
+                      </CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                      <Button
+                        variant="outline"
+                        className="w-full bg-cyan-100 hover:bg-cyan-600 hover:text-white transition-colors"
+                      >
+                        Quản lý
+                      </Button>
+                    </CardContent>
+                  </Card>
+
+                  <Card
+                    className="hover:shadow-lg transition-shadow cursor-pointer"
+                    onClick={() => setSelectedManagement("vaccinestock")}
+                  >
+                    <CardHeader>
+                      <div className="h-12 w-12 rounded-lg bg-red-100 flex items-center justify-center mb-2">
+                        <Package className="h-6 w-6 text-red-600" />
+                      </div>
+                      <CardTitle className="text-lg">
+                        Quản lý kho vắc-xin
+                      </CardTitle>
+                      <CardDescription>
+                        Quản lý tồn kho vắc-xin tại các chi nhánh
+                      </CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                      <Button
+                        variant="outline"
+                        className="w-full bg-red-100 hover:bg-red-600 hover:text-white transition-colors"
                       >
                         Quản lý
                       </Button>
@@ -230,8 +296,17 @@ function ManagementDetail({ type, onBack }) {
         return "Quản lý nhân viên";
       case "promotion":
         return "Quản lý khuyến mãi";
+      case "service":
+        return "Quản lý dịch vụ";
+      case "product":
+        return "Quản lý sản phẩm";
       case "inventory":
-        return "Quản lý tồn kho";
+        return "Quản lý tồn kho sản phẩm";
+      case "vaccine":
+        return "Quản lý vắc-xin";
+      case "vac_warehouse":
+        return "Quản lý kho vắc-xin";
+
       default:
         return "Quản lý";
     }
@@ -240,7 +315,12 @@ function ManagementDetail({ type, onBack }) {
   return (
     <>
       <div className="flex items-center gap-4">
-        <Button variant="ghost" size="icon" onClick={onBack}>
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={onBack}
+          className="hover:text-red-600"
+        >
           <ArrowLeft className="h-5 w-5" />
         </Button>
         <div>
@@ -253,7 +333,11 @@ function ManagementDetail({ type, onBack }) {
 
       {type === "employee" && <EmployeeManagement />}
       {type === "promotion" && <PromotionManagement />}
+      {type === "service" && <ServiceManagement />}
+      {type === "product" && <ProductManagement />}
       {type === "inventory" && <InventoryManagement />}
+      {type === "vaccine" && <VaccineManagement />}
+      {type === "vaccinestock" && <VaccinestockManagement />}
     </>
   );
 }
@@ -298,6 +382,49 @@ function EmployeeManagement() {
   ]);
 
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [selectedEmployee, setSelectedEmployee] = useState(null);
+  const [editFormData, setEditFormData] = useState({
+    name: "",
+    role: "",
+    branch: "",
+    phone: "",
+    email: "",
+  });
+
+  const handleEdit = (employee) => {
+    setSelectedEmployee(employee);
+    setEditFormData({
+      name: employee.name,
+      role: employee.role,
+      branch: employee.branch,
+      phone: employee.phone,
+      email: employee.email,
+    });
+    setIsEditDialogOpen(true);
+  };
+
+  const handleDelete = (employee) => {
+    setSelectedEmployee(employee);
+    setIsDeleteDialogOpen(true);
+  };
+
+  const confirmDelete = () => {
+    setEmployees(employees.filter((emp) => emp.id !== selectedEmployee.id));
+    setIsDeleteDialogOpen(false);
+    setSelectedEmployee(null);
+  };
+
+  const saveEdit = () => {
+    setEmployees(
+      employees.map((emp) =>
+        emp.id === selectedEmployee.id ? { ...emp, ...editFormData } : emp
+      )
+    );
+    setIsEditDialogOpen(false);
+    setSelectedEmployee(null);
+  };
 
   return (
     <Card>
@@ -309,69 +436,78 @@ function EmployeeManagement() {
               Quản lý nhân viên trên toàn công ty (10 chi nhánh)
             </CardDescription>
           </div>
-          <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
-            <DialogTrigger asChild>
-              <Button className="gap-2">
-                <Plus className="h-4 w-4" />
-                Thêm nhân viên
-              </Button>
-            </DialogTrigger>
-            <DialogContent>
-              <DialogHeader>
-                <DialogTitle>Thêm nhân viên mới</DialogTitle>
-                <DialogDescription>
-                  Điền thông tin nhân viên mới vào form bên dưới
-                </DialogDescription>
-              </DialogHeader>
-              <div className="space-y-4 py-4">
-                <div className="space-y-2">
-                  <Label htmlFor="name">Họ tên</Label>
-                  <Input id="name" placeholder="Nguyễn Văn A" />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="role">Vai trò</Label>
-                  {/* Sửa lại select để sử dụng class Tailwind đã định nghĩa trong Input/UI */}
-                  <select 
-                      id="role" 
-                      className="w-full border rounded-lg p-2 flex h-10 border-input bg-background text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-                  >
-                    <option value="doctor">Bác sĩ</option>
-                    <option value="receptionist">Lễ tân</option>
-                  </select>
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="branch">Chi nhánh</Label>
-                  <select 
-                      id="branch" 
-                      className="w-full border rounded-lg p-2 flex h-10 border-input bg-background text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-                  >
-                    <option value="q1">Quận 1</option>
-                    <option value="q3">Quận 3</option>
-                    <option value="bt">Bình Thạnh</option>
-                  </select>
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="phone">Số điện thoại</Label>
-                  <Input id="phone" placeholder="0901234567" />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="email">Email</Label>
-                  <Input id="email" type="email" placeholder="nva@petcare.vn" />
-                </div>
-              </div>
-              <DialogFooter>
+          <div className="flex gap-2">
+            <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
+              <DialogTrigger asChild>
                 <Button
                   variant="outline"
-                  onClick={() => setIsAddDialogOpen(false)}
+                  className="gap-2 w-full bg-blue-100 hover:bg-blue-600 hover:text-white transition-colors"
                 >
-                  Hủy
-                </Button>
-                <Button onClick={() => setIsAddDialogOpen(false)}>
+                  <Plus className="h-4 w-4" />
                   Thêm nhân viên
                 </Button>
-              </DialogFooter>
-            </DialogContent>
-          </Dialog>
+              </DialogTrigger>
+              <DialogContent>
+                <DialogHeader>
+                  <DialogTitle>Thêm nhân viên mới</DialogTitle>
+                  <DialogDescription>
+                    <p className="text-gray-600 mt-1">
+                      {" "}
+                      Điền thông tin nhân viên mới vào form bên dưới
+                    </p>
+                  </DialogDescription>
+                </DialogHeader>
+                <div className="space-y-4 py-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="name">Họ tên</Label>
+                    <Input id="name" placeholder="Nguyễn Văn A" />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="role">Vai trò</Label>
+                    {/* Sửa lại select để sử dụng class Tailwind đã định nghĩa trong Input/UI */}
+                    <select
+                      id="role"
+                      className="w-full border rounded-lg p-2 flex h-10 border-input bg-background text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                    >
+                      <option value="doctor">Bác sĩ</option>
+                      <option value="receptionist">Lễ tân</option>
+                    </select>
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="branch">Chi nhánh</Label>
+                    <select
+                      id="branch"
+                      className="w-full border rounded-lg p-2 flex h-10 border-input bg-background text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                    >
+                      <option value="q1">Quận 1</option>
+                      <option value="q3">Quận 3</option>
+                      <option value="bt">Bình Thạnh</option>
+                    </select>
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="phone">Số điện thoại</Label>
+                    <Input id="phone" placeholder="0901234567" />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="email">Email</Label>
+                    <Input
+                      id="email"
+                      type="email"
+                      placeholder="nva@petcare.vn"
+                    />
+                  </div>
+                </div>
+                <DialogFooter>
+                  <Button
+                    onClick={() => setIsAddDialogOpen(false)}
+                    className="bg-blue-100 text-blue-600 border-blue-600 hover:bg-blue-600 hover:text-white transition-colors"
+                  >
+                    Thêm nhân viên
+                  </Button>
+                </DialogFooter>
+              </DialogContent>
+            </Dialog>
+          </div>
         </div>
       </CardHeader>
       <CardContent>
@@ -391,13 +527,19 @@ function EmployeeManagement() {
                 </div>
               </div>
               <div className="flex gap-2">
-                <Button variant="outline" size="icon">
+                <Button
+                  variant="outline"
+                  size="icon"
+                  className="text-green-600 hover:bg-green-600 hover:text-white transition-colors"
+                  onClick={() => handleEdit(employee)}
+                >
                   <Edit className="h-4 w-4" />
                 </Button>
                 <Button
                   variant="outline"
                   size="icon"
-                  className="text-red-600 hover:text-red-700 bg-transparent"
+                  className="text-red-600 hover:bg-red-600 hover:text-white transition-colors"
+                  onClick={() => handleDelete(employee)}
                 >
                   <Trash2 className="h-4 w-4" />
                 </Button>
@@ -405,6 +547,188 @@ function EmployeeManagement() {
             </div>
           ))}
         </div>
+        {/* Edit Dialog */}
+        <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Chỉnh sửa thông tin nhân viên</DialogTitle>
+              <DialogDescription>
+                Cập nhật thông tin nhân viên {selectedEmployee?.name}
+              </DialogDescription>
+            </DialogHeader>
+            <div className="space-y-4 py-4">
+              <div className="space-y-2">
+                <Label htmlFor="edit-name">Họ tên</Label>
+                <Input
+                  id="edit-name"
+                  value={editFormData.name}
+                  onChange={(e) =>
+                    setEditFormData({ ...editFormData, name: e.target.value })
+                  }
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="edit-role">Vai trò</Label>
+                <select
+                  id="edit-role"
+                  value={editFormData.role}
+                  onChange={(e) =>
+                    setEditFormData({ ...editFormData, role: e.target.value })
+                  }
+                  className="w-full border rounded-lg p-2 flex h-10 border-input bg-background text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                >
+                  <option value="Bác sĩ">Bác sĩ</option>
+                  <option value="Lễ tân">Lễ tân</option>
+                </select>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="edit-branch">Chi nhánh</Label>
+                <select
+                  id="edit-branch"
+                  value={editFormData.branch}
+                  onChange={(e) =>
+                    setEditFormData({ ...editFormData, branch: e.target.value })
+                  }
+                  className="w-full border rounded-lg p-2 flex h-10 border-input bg-background text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                >
+                  <option value="Quận 1">Quận 1</option>
+                  <option value="Quận 3">Quận 3</option>
+                  <option value="Bình Thạnh">Bình Thạnh</option>
+                </select>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="edit-phone">Số điện thoại</Label>
+                <Input
+                  id="edit-phone"
+                  value={editFormData.phone}
+                  onChange={(e) =>
+                    setEditFormData({ ...editFormData, phone: e.target.value })
+                  }
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="edit-email">Email</Label>
+                <Input
+                  id="edit-email"
+                  type="email"
+                  value={editFormData.email}
+                  onChange={(e) =>
+                    setEditFormData({ ...editFormData, email: e.target.value })
+                  }
+                />
+              </div>
+            </div>
+            <DialogFooter>
+              <Button
+                onClick={saveEdit}
+                className="bg-green-100 text-green-600 border-green-600 hover:bg-green-600 hover:text-white transition-colors"
+              >
+                Lưu thay đổi
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+        /* Edit Dialog */
+        <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Chỉnh sửa thông tin nhân viên</DialogTitle>
+              <DialogDescription>
+                Cập nhật thông tin nhân viên {selectedEmployee?.name}
+              </DialogDescription>
+            </DialogHeader>
+            <div className="space-y-4 py-4">
+              <div className="space-y-2">
+                <Label htmlFor="edit-name">Họ tên</Label>
+                <Input
+                  id="edit-name"
+                  value={editFormData.name}
+                  onChange={(e) =>
+                    setEditFormData({ ...editFormData, name: e.target.value })
+                  }
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="edit-role">Vai trò</Label>
+                <select
+                  id="edit-role"
+                  value={editFormData.role}
+                  onChange={(e) =>
+                    setEditFormData({ ...editFormData, role: e.target.value })
+                  }
+                  className="w-full border rounded-lg p-2 flex h-10 border-input bg-background text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                >
+                  <option value="Bác sĩ">Bác sĩ</option>
+                  <option value="Lễ tân">Lễ tân</option>
+                </select>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="edit-branch">Chi nhánh</Label>
+                <select
+                  id="edit-branch"
+                  value={editFormData.branch}
+                  onChange={(e) =>
+                    setEditFormData({ ...editFormData, branch: e.target.value })
+                  }
+                  className="w-full border rounded-lg p-2 flex h-10 border-input bg-background text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                >
+                  <option value="Quận 1">Quận 1</option>
+                  <option value="Quận 3">Quận 3</option>
+                  <option value="Bình Thạnh">Bình Thạnh</option>
+                </select>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="edit-phone">Số điện thoại</Label>
+                <Input
+                  id="edit-phone"
+                  value={editFormData.phone}
+                  onChange={(e) =>
+                    setEditFormData({ ...editFormData, phone: e.target.value })
+                  }
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="edit-email">Email</Label>
+                <Input
+                  id="edit-email"
+                  type="email"
+                  value={editFormData.email}
+                  onChange={(e) =>
+                    setEditFormData({ ...editFormData, email: e.target.value })
+                  }
+                />
+              </div>
+            </div>
+            <DialogFooter>
+              <Button
+                onClick={saveEdit}
+                className="bg-green-100 text-green-600 border-green-600 hover:bg-green-600 hover:text-white transition-colors"
+              >
+                Lưu thay đổi
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+        {/* Delete Confirmation Dialog */}
+        <Dialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+          <DialogContent className="gap-0">
+            <DialogHeader className="pb-4">
+              <DialogTitle>Xác nhận xóa nhân viên</DialogTitle>
+              <DialogDescription>
+                Bạn có chắc chắn muốn xóa nhân viên{" "}
+                <strong>{selectedEmployee?.name}</strong> khỏi hệ thống?
+              </DialogDescription>
+            </DialogHeader>
+            <DialogFooter className="pt-4">
+              <Button
+                onClick={confirmDelete}
+                className="bg-red-100 text-red-600 border-red-600 hover:bg-red-600 hover:text-white transition-colors"
+              >
+                Xác nhận
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
       </CardContent>
     </Card>
   );
@@ -439,6 +763,51 @@ function PromotionManagement() {
   ]);
 
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [selectedPromotion, setSelectedPromotion] = useState(null);
+  const [editFormData, setEditFormData] = useState({
+    code: "",
+    startDate: "",
+    endDate: "",
+    discount: 0,
+  });
+
+  const handleEdit = (promotion) => {
+    setSelectedPromotion(promotion);
+    setEditFormData({
+      code: promotion.code,
+      startDate: promotion.startDate,
+      endDate: promotion.endDate,
+      discount: promotion.discount,
+    });
+    setIsEditDialogOpen(true);
+  };
+
+  const handleDelete = (promotion) => {
+    setSelectedPromotion(promotion);
+    setIsDeleteDialogOpen(true);
+  };
+
+  const confirmDelete = () => {
+    setPromotions(
+      promotions.filter((promo) => promo.id !== selectedPromotion.id)
+    );
+    setIsDeleteDialogOpen(false);
+    setSelectedPromotion(null);
+  };
+
+  const saveEdit = () => {
+    setPromotions(
+      promotions.map((promo) =>
+        promo.id === selectedPromotion.id
+          ? { ...promo, ...editFormData }
+          : promo
+      )
+    );
+    setIsEditDialogOpen(false);
+    setSelectedPromotion(null);
+  };
 
   return (
     <Card>
@@ -452,7 +821,7 @@ function PromotionManagement() {
           </div>
           <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
             <DialogTrigger asChild>
-              <Button className="gap-2">
+              <Button className="gap-2 bg-blue-100 text-blue-600 hover:bg-blue-600 hover:text-white transition-colors">
                 <Plus className="h-4 w-4" />
                 Thêm khuyến mãi
               </Button>
@@ -484,12 +853,9 @@ function PromotionManagement() {
               </div>
               <DialogFooter>
                 <Button
-                  variant="outline"
                   onClick={() => setIsAddDialogOpen(false)}
+                  className="bg-blue-100 text-blue-600 border-blue-600 hover:bg-blue-600 hover:text-white transition-colors"
                 >
-                  Hủy
-                </Button>
-                <Button onClick={() => setIsAddDialogOpen(false)}>
                   Thêm khuyến mãi
                 </Button>
               </DialogFooter>
@@ -514,13 +880,19 @@ function PromotionManagement() {
                 </div>
               </div>
               <div className="flex gap-2">
-                <Button variant="outline" size="icon">
+                <Button
+                  variant="outline"
+                  size="icon"
+                  className="text-green-600 hover:bg-green-600 hover:text-white transition-colors"
+                  onClick={() => handleEdit(promotion)}
+                >
                   <Edit className="h-4 w-4" />
                 </Button>
                 <Button
                   variant="outline"
                   size="icon"
-                  className="text-red-600 hover:text-red-700 bg-transparent"
+                  className="text-red-600 hover:bg-red-600 hover:text-white transition-colors"
+                  onClick={() => handleDelete(promotion)}
                 >
                   <Trash2 className="h-4 w-4" />
                 </Button>
@@ -528,6 +900,101 @@ function PromotionManagement() {
             </div>
           ))}
         </div>
+
+        {/* Edit Dialog */}
+        <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Chỉnh sửa khuyến mãi</DialogTitle>
+              <DialogDescription>
+                Cập nhật thông tin khuyến mãi {selectedPromotion?.code}
+              </DialogDescription>
+            </DialogHeader>
+            <div className="space-y-4 py-4">
+              <div className="space-y-2">
+                <Label htmlFor="edit-code">Mã khuyến mãi</Label>
+                <Input
+                  id="edit-code"
+                  value={editFormData.code}
+                  onChange={(e) =>
+                    setEditFormData({ ...editFormData, code: e.target.value })
+                  }
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="edit-startDate">Ngày bắt đầu</Label>
+                <Input
+                  id="edit-startDate"
+                  type="date"
+                  value={editFormData.startDate}
+                  onChange={(e) =>
+                    setEditFormData({
+                      ...editFormData,
+                      startDate: e.target.value,
+                    })
+                  }
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="edit-endDate">Ngày kết thúc</Label>
+                <Input
+                  id="edit-endDate"
+                  type="date"
+                  value={editFormData.endDate}
+                  onChange={(e) =>
+                    setEditFormData({
+                      ...editFormData,
+                      endDate: e.target.value,
+                    })
+                  }
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="edit-discount">Tỉ lệ giảm giá (%)</Label>
+                <Input
+                  id="edit-discount"
+                  type="number"
+                  value={editFormData.discount}
+                  onChange={(e) =>
+                    setEditFormData({
+                      ...editFormData,
+                      discount: parseInt(e.target.value),
+                    })
+                  }
+                />
+              </div>
+            </div>
+            <DialogFooter>
+              <Button
+                onClick={saveEdit}
+                className="bg-green-100 text-green-600 border-green-600 hover:bg-green-600 hover:text-white transition-colors"
+              >
+                Lưu thay đổi
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
+        {/* Delete Confirmation Dialog */}
+        <Dialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+          <DialogContent className="gap-0">
+            <DialogHeader className="pb-4">
+              <DialogTitle>Xác nhận xóa khuyến mãi</DialogTitle>
+              <DialogDescription>
+                Bạn có chắc chắn muốn xóa khuyến mãi{" "}
+                <strong>{selectedPromotion?.code}</strong> khỏi hệ thống?
+              </DialogDescription>
+            </DialogHeader>
+            <DialogFooter className="pt-4">
+              <Button
+                onClick={confirmDelete}
+                className="bg-red-100 text-red-600 border-red-600 hover:bg-red-600 hover:text-white transition-colors"
+              >
+                Xác nhận
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
       </CardContent>
     </Card>
   );
@@ -539,6 +1006,17 @@ function PromotionManagement() {
 function InventoryManagement() {
   // Loại bỏ khai báo kiểu TypeScript: useState<string | null>(null)
   const [selectedBranch, setSelectedBranch] = useState(null);
+  const [isAddProductDialogOpen, setIsAddProductDialogOpen] = useState(false);
+  const [selectedProduct, setSelectedProduct] = useState("");
+
+  const allProducts = [
+    { id: 1, name: "Royal Canin Mini Adult", category: "Thức ăn" },
+    { id: 2, name: "Nexgard Spectra", category: "Thuốc" },
+    { id: 3, name: "Vòng cổ chống bọ chét", category: "Phụ kiện" },
+    { id: 4, name: "Pedigree Adult", category: "Thức ăn" },
+    { id: 5, name: "Whiskas Adult", category: "Thức ăn" },
+    { id: 6, name: "Thuốc tẩy giun", category: "Thuốc" },
+  ];
 
   const branches = [
     "PetCare Quận 1",
@@ -589,7 +1067,7 @@ function InventoryManagement() {
       <>
         <Button
           variant="ghost"
-          className="gap-2 mb-4"
+          className="gap-2 mb-4 hover:text-red-600 hover:bg-red-50"
           onClick={() => setSelectedBranch(null)}
         >
           <ArrowLeft className="h-4 w-4" />
@@ -597,8 +1075,71 @@ function InventoryManagement() {
         </Button>
         <Card>
           <CardHeader>
-            <CardTitle>Sản phẩm tại {selectedBranch}</CardTitle>
-            <CardDescription>Quản lý số lượng sản phẩm tồn kho</CardDescription>
+            <div className="flex items-center justify-between">
+              <div>
+                <CardTitle>Sản phẩm tại {selectedBranch}</CardTitle>
+                <CardDescription>
+                  Quản lý số lượng sản phẩm tồn kho
+                </CardDescription>
+              </div>
+              <Dialog
+                open={isAddProductDialogOpen}
+                onOpenChange={setIsAddProductDialogOpen}
+              >
+                <DialogTrigger asChild>
+                  <Button className="gap-2">
+                    <Plus className="h-4 w-4" />
+                    Thêm sản phẩm vào kho
+                  </Button>
+                </DialogTrigger>
+                <DialogContent>
+                  <DialogHeader>
+                    <DialogTitle>Thêm sản phẩm vào kho</DialogTitle>
+                    <DialogDescription>
+                      Chọn sản phẩm từ danh sách và nhập số lượng
+                    </DialogDescription>
+                  </DialogHeader>
+                  <div className="space-y-4 py-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="productSelect">Chọn sản phẩm</Label>
+                      <select
+                        id="productSelect"
+                        value={selectedProduct}
+                        onChange={(e) => setSelectedProduct(e.target.value)}
+                        className="w-full border rounded-lg p-2 flex h-10 border-input bg-background text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                      >
+                        <option value="">-- Chọn sản phẩm --</option>
+                        {allProducts.map((product) => (
+                          <option key={product.id} value={product.id}>
+                            {product.name} ({product.category})
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="initialQuantity">Số lượng ban đầu</Label>
+                      <Input
+                        id="initialQuantity"
+                        type="number"
+                        placeholder="0"
+                        defaultValue="0"
+                      />
+                    </div>
+                  </div>
+                  <DialogFooter>
+                    <Button
+                      variant="outline"
+                      onClick={() => setIsAddProductDialogOpen(false)}
+                    >
+                      Hủy
+                    </Button>
+                    <Button onClick={() => setIsAddProductDialogOpen(false)}>
+                      Thêm vào kho
+                    </Button>
+                  </DialogFooter>
+                </DialogContent>
+              </Dialog>
+            </div>
           </CardHeader>
           <CardContent>
             <div className="space-y-3">
@@ -625,6 +1166,1053 @@ function InventoryManagement() {
                       id={`quantity-${product.id}`}
                       type="number"
                       defaultValue={product.quantity}
+                      className="w-24"
+                    />
+                    <Button size="sm">Cập nhật</Button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      </>
+    );
+  }
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle>Chọn chi nhánh</CardTitle>
+        <CardDescription>
+          Chọn chi nhánh để xem và quản lý tồn kho
+        </CardDescription>
+      </CardHeader>
+      <CardContent>
+        <div className="grid md:grid-cols-2 gap-3">
+          {branches.map((branch, index) => (
+            <Button
+              key={index}
+              variant="outline"
+              className="justify-start h-auto p-4 bg-transparent"
+              onClick={() => setSelectedBranch(branch)}
+            >
+              <div className="text-left">
+                <div className="font-semibold">{branch}</div>
+                <div className="text-sm text-gray-500">
+                  Xem sản phẩm tồn kho
+                </div>
+              </div>
+            </Button>
+          ))}
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
+
+// ======================================================================
+// 6. COMPONENT CON: ProductManagement
+// ======================================================================
+function ProductManagement() {
+  const [products, setProducts] = useState([
+    {
+      id: 1,
+      name: "Royal Canin Mini Adult",
+      category: "Thức ăn",
+      price: 450000,
+      description: "Thức ăn cho chó trưởng thành giống nhỏ",
+    },
+    {
+      id: 2,
+      name: "Nexgard Spectra",
+      category: "Thuốc",
+      price: 165000,
+      description: "Thuốc trị ve, bọ chét",
+    },
+    {
+      id: 3,
+      name: "Vòng cổ chống bọ chét",
+      category: "Phụ kiện",
+      price: 120000,
+      description: "Vòng cổ phòng ngừa bọ chét",
+    },
+  ]);
+
+  const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [selectedProduct, setSelectedProduct] = useState(null);
+  const [editFormData, setEditFormData] = useState({
+    name: "",
+    category: "",
+    price: 0,
+    description: "",
+  });
+
+  const handleEdit = (product) => {
+    setSelectedProduct(product);
+    setEditFormData({
+      name: product.name,
+      category: product.category,
+      price: product.price,
+      description: product.description,
+    });
+    setIsEditDialogOpen(true);
+  };
+
+  const handleDelete = (product) => {
+    setSelectedProduct(product);
+    setIsDeleteDialogOpen(true);
+  };
+
+  const confirmDelete = () => {
+    setProducts(products.filter((prod) => prod.id !== selectedProduct.id));
+    setIsDeleteDialogOpen(false);
+    setSelectedProduct(null);
+  };
+
+  const saveEdit = () => {
+    setProducts(
+      products.map((prod) =>
+        prod.id === selectedProduct.id ? { ...prod, ...editFormData } : prod
+      )
+    );
+    setIsEditDialogOpen(false);
+    setSelectedProduct(null);
+  };
+
+  return (
+    <Card>
+      <CardHeader>
+        <div className="flex items-center justify-between">
+          <div>
+            <CardTitle>Danh sách sản phẩm</CardTitle>
+            <CardDescription>
+              Quản lý tất cả sản phẩm trong hệ thống
+            </CardDescription>
+          </div>
+          <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
+            <DialogTrigger asChild>
+              <Button className="gap-2 bg-blue-100 text-blue-600 hover:bg-blue-600 hover:text-white transition-colors">
+                <Plus className="h-4 w-4" />
+                Thêm sản phẩm
+              </Button>
+            </DialogTrigger>
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle>Thêm sản phẩm mới</DialogTitle>
+                <DialogDescription>
+                  Thêm sản phẩm mới vào danh mục
+                </DialogDescription>
+              </DialogHeader>
+              <div className="space-y-4 py-4">
+                <div className="space-y-2">
+                  <Label htmlFor="productName">Tên sản phẩm</Label>
+                  <Input
+                    id="productName"
+                    placeholder="Royal Canin Mini Adult"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="category">Danh mục</Label>
+                  <select
+                    id="category"
+                    className="w-full border rounded-lg p-2 flex h-10 border-input bg-background text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                  >
+                    <option value="food">Thức ăn</option>
+                    <option value="medicine">Thuốc</option>
+                    <option value="accessory">Phụ kiện</option>
+                  </select>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="price">Giá (VNĐ)</Label>
+                  <Input id="price" type="number" placeholder="450000" />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="description">Mô tả</Label>
+                  <Input id="description" placeholder="Mô tả sản phẩm" />
+                </div>
+              </div>
+              <DialogFooter>
+                <Button
+                  onClick={() => setIsAddDialogOpen(false)}
+                  className="bg-blue-100 text-blue-600 border-blue-600 hover:bg-blue-600 hover:text-white transition-colors"
+                >
+                  Thêm sản phẩm
+                </Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
+        </div>
+      </CardHeader>
+      <CardContent>
+        <div className="space-y-3">
+          {products.map((product) => (
+            <div
+              key={product.id}
+              className="flex items-center justify-between p-4 border rounded-lg"
+            >
+              <div>
+                <div className="font-semibold">{product.name}</div>
+                <div className="text-sm text-gray-500">{product.category}</div>
+                <div className="text-sm font-medium text-blue-600">
+                  {product.price.toLocaleString("vi-VN")} ₫
+                </div>
+                <div className="text-sm text-gray-500">
+                  {product.description}
+                </div>
+              </div>
+              <div className="flex gap-2">
+                <Button
+                  variant="outline"
+                  size="icon"
+                  className="text-green-600 hover:bg-green-600 hover:text-white transition-colors"
+                  onClick={() => handleEdit(product)}
+                >
+                  <Edit className="h-4 w-4" />
+                </Button>
+                <Button
+                  variant="outline"
+                  size="icon"
+                  className="text-red-600 hover:bg-red-600 hover:text-white transition-colors"
+                  onClick={() => handleDelete(product)}
+                >
+                  <Trash2 className="h-4 w-4" />
+                </Button>
+              </div>
+            </div>
+          ))}
+        </div>
+
+        {/* Edit Dialog */}
+        <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Chỉnh sửa sản phẩm</DialogTitle>
+              <DialogDescription>
+                Cập nhật thông tin sản phẩm {selectedProduct?.name}
+              </DialogDescription>
+            </DialogHeader>
+            <div className="space-y-4 py-4">
+              <div className="space-y-2">
+                <Label htmlFor="edit-productName">Tên sản phẩm</Label>
+                <Input
+                  id="edit-productName"
+                  value={editFormData.name}
+                  onChange={(e) =>
+                    setEditFormData({ ...editFormData, name: e.target.value })
+                  }
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="edit-category">Danh mục</Label>
+                <select
+                  id="edit-category"
+                  value={editFormData.category}
+                  onChange={(e) =>
+                    setEditFormData({
+                      ...editFormData,
+                      category: e.target.value,
+                    })
+                  }
+                  className="w-full border rounded-lg p-2 flex h-10 border-input bg-background text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                >
+                  <option value="Thức ăn">Thức ăn</option>
+                  <option value="Thuốc">Thuốc</option>
+                  <option value="Phụ kiện">Phụ kiện</option>
+                </select>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="edit-price">Giá (VNĐ)</Label>
+                <Input
+                  id="edit-price"
+                  type="number"
+                  value={editFormData.price}
+                  onChange={(e) =>
+                    setEditFormData({
+                      ...editFormData,
+                      price: parseInt(e.target.value),
+                    })
+                  }
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="edit-description">Mô tả</Label>
+                <Input
+                  id="edit-description"
+                  value={editFormData.description}
+                  onChange={(e) =>
+                    setEditFormData({
+                      ...editFormData,
+                      description: e.target.value,
+                    })
+                  }
+                />
+              </div>
+            </div>
+            <DialogFooter>
+              <Button
+                onClick={saveEdit}
+                className="bg-green-100 text-green-600 border-green-600 hover:bg-green-600 hover:text-white transition-colors"
+              >
+                Lưu thay đổi
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
+        {/* Delete Confirmation Dialog */}
+        <Dialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+          <DialogContent className="gap-0">
+            <DialogHeader className="pb-4">
+              <DialogTitle>Xác nhận xóa sản phẩm</DialogTitle>
+              <DialogDescription>
+                Bạn có chắc chắn muốn xóa sản phẩm{" "}
+                <strong>{selectedProduct?.name}</strong> khỏi hệ thống?
+              </DialogDescription>
+            </DialogHeader>
+            <DialogFooter className="pt-4">
+              <Button
+                onClick={confirmDelete}
+                className="bg-red-100 text-red-600 border-red-600 hover:bg-red-600 hover:text-white transition-colors"
+              >
+                Xác nhận
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+      </CardContent>
+    </Card>
+  );
+}
+
+// ======================================================================
+// 7. COMPONENT CON: VaccineManagement
+// ======================================================================
+function VaccineManagement() {
+  const [vaccines, setVaccines] = useState([
+    {
+      id: 1,
+      name: "Vắc-xin 5 bệnh",
+      manufacturer: "Nobivac",
+      price: 200000,
+      description: "Phòng bệnh Care, Parvo, Parainfluenza, Adeno, Lepto",
+    },
+    {
+      id: 2,
+      name: "Vắc-xin dại",
+      manufacturer: "Rabigen",
+      price: 150000,
+      description: "Phòng bệnh dại cho chó mèo",
+    },
+  ]);
+
+  const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [selectedVaccine, setSelectedVaccine] = useState(null);
+  const [editFormData, setEditFormData] = useState({
+    name: "",
+    manufacturer: "",
+    price: 0,
+    description: "",
+  });
+
+  const handleEdit = (vaccine) => {
+    setSelectedVaccine(vaccine);
+    setEditFormData({
+      name: vaccine.name,
+      manufacturer: vaccine.manufacturer,
+      price: vaccine.price,
+      description: vaccine.description,
+    });
+    setIsEditDialogOpen(true);
+  };
+
+  const handleDelete = (vaccine) => {
+    setSelectedVaccine(vaccine);
+    setIsDeleteDialogOpen(true);
+  };
+
+  const confirmDelete = () => {
+    setVaccines(vaccines.filter((vac) => vac.id !== selectedVaccine.id));
+    setIsDeleteDialogOpen(false);
+    setSelectedVaccine(null);
+  };
+
+  const saveEdit = () => {
+    setVaccines(
+      vaccines.map((vac) =>
+        vac.id === selectedVaccine.id ? { ...vac, ...editFormData } : vac
+      )
+    );
+    setIsEditDialogOpen(false);
+    setSelectedVaccine(null);
+  };
+
+  return (
+    <Card>
+      <CardHeader>
+        <div className="flex items-center justify-between">
+          <div>
+            <CardTitle>Danh sách vắc-xin</CardTitle>
+            <CardDescription>
+              Quản lý tất cả vắc-xin trong hệ thống
+            </CardDescription>
+          </div>
+          <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
+            <DialogTrigger asChild>
+              <Button className="gap-2 bg-blue-100 text-blue-600 hover:bg-blue-600 hover:text-white transition-colors">
+                <Plus className="h-4 w-4" />
+                Thêm vắc-xin
+              </Button>
+            </DialogTrigger>
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle>Thêm vắc-xin mới</DialogTitle>
+                <DialogDescription>
+                  Thêm vắc-xin mới vào danh mục
+                </DialogDescription>
+              </DialogHeader>
+              <div className="space-y-4 py-4">
+                <div className="space-y-2">
+                  <Label htmlFor="vaccineName">Tên vắc-xin</Label>
+                  <Input id="vaccineName" placeholder="Vắc-xin 5 bệnh" />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="manufacturer">Nhà sản xuất</Label>
+                  <Input id="manufacturer" placeholder="Nobivac" />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="vaccinePrice">Giá (VNĐ)</Label>
+                  <Input id="vaccinePrice" type="number" placeholder="200000" />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="vaccineDescription">Mô tả</Label>
+                  <Input id="vaccineDescription" placeholder="Mô tả vắc-xin" />
+                </div>
+              </div>
+              <DialogFooter>
+                <Button
+                  onClick={() => setIsAddDialogOpen(false)}
+                  className="bg-blue-100 text-blue-600 border-blue-600 hover:bg-blue-600 hover:text-white transition-colors"
+                >
+                  Thêm vắc-xin
+                </Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
+        </div>
+      </CardHeader>
+      <CardContent>
+        <div className="space-y-3">
+          {vaccines.map((vaccine) => (
+            <div
+              key={vaccine.id}
+              className="flex items-center justify-between p-4 border rounded-lg"
+            >
+              <div>
+                <div className="font-semibold">{vaccine.name}</div>
+                <div className="text-sm text-gray-500">
+                  {vaccine.manufacturer}
+                </div>
+                <div className="text-sm font-medium text-blue-600">
+                  {vaccine.price.toLocaleString("vi-VN")} ₫
+                </div>
+                <div className="text-sm text-gray-500">
+                  {vaccine.description}
+                </div>
+              </div>
+              <div className="flex gap-2">
+                <Button
+                  variant="outline"
+                  size="icon"
+                  className="text-green-600 hover:bg-green-600 hover:text-white transition-colors"
+                  onClick={() => handleEdit(vaccine)}
+                >
+                  <Edit className="h-4 w-4" />
+                </Button>
+                <Button
+                  variant="outline"
+                  size="icon"
+                  className="text-red-600 hover:bg-red-600 hover:text-white transition-colors"
+                  onClick={() => handleDelete(vaccine)}
+                >
+                  <Trash2 className="h-4 w-4" />
+                </Button>
+              </div>
+            </div>
+          ))}
+        </div>
+
+        {/* Edit Dialog */}
+        <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Chỉnh sửa vắc-xin</DialogTitle>
+              <DialogDescription>
+                Cập nhật thông tin vắc-xin {selectedVaccine?.name}
+              </DialogDescription>
+            </DialogHeader>
+            <div className="space-y-4 py-4">
+              <div className="space-y-2">
+                <Label htmlFor="edit-vaccineName">Tên vắc-xin</Label>
+                <Input
+                  id="edit-vaccineName"
+                  value={editFormData.name}
+                  onChange={(e) =>
+                    setEditFormData({ ...editFormData, name: e.target.value })
+                  }
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="edit-manufacturer">Nhà sản xuất</Label>
+                <Input
+                  id="edit-manufacturer"
+                  value={editFormData.manufacturer}
+                  onChange={(e) =>
+                    setEditFormData({
+                      ...editFormData,
+                      manufacturer: e.target.value,
+                    })
+                  }
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="edit-vaccinePrice">Giá (VNĐ)</Label>
+                <Input
+                  id="edit-vaccinePrice"
+                  type="number"
+                  value={editFormData.price}
+                  onChange={(e) =>
+                    setEditFormData({
+                      ...editFormData,
+                      price: parseInt(e.target.value),
+                    })
+                  }
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="edit-vaccineDescription">Mô tả</Label>
+                <Input
+                  id="edit-vaccineDescription"
+                  value={editFormData.description}
+                  onChange={(e) =>
+                    setEditFormData({
+                      ...editFormData,
+                      description: e.target.value,
+                    })
+                  }
+                />
+              </div>
+            </div>
+            <DialogFooter>
+              <Button
+                onClick={saveEdit}
+                className="bg-green-100 text-green-600 border-green-600 hover:bg-green-600 hover:text-white transition-colors"
+              >
+                Lưu thay đổi
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
+        {/* Delete Confirmation Dialog */}
+        <Dialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+          <DialogContent className="gap-0">
+            <DialogHeader className="pb-4">
+              <DialogTitle>Xác nhận xóa vắc-xin</DialogTitle>
+              <DialogDescription>
+                Bạn có chắc chắn muốn xóa vắc-xin{" "}
+                <strong>{selectedVaccine?.name}</strong> khỏi hệ thống?
+              </DialogDescription>
+            </DialogHeader>
+            <DialogFooter className="pt-4">
+              <Button
+                onClick={confirmDelete}
+                className="bg-red-100 text-red-600 border-red-600 hover:bg-red-600 hover:text-white transition-colors"
+              >
+                Xác nhận
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+      </CardContent>
+    </Card>
+  );
+}
+
+// ======================================================================
+// 8. COMPONENT CON: ServiceManagement
+// ======================================================================
+function ServiceManagement() {
+  const [selectedBranch, setSelectedBranch] = useState(null);
+  const [services, setServices] = useState([
+    {
+      id: 1,
+      name: "Khám tổng quát",
+      price: 100000,
+      duration: "30 phút",
+    },
+    {
+      id: 2,
+      name: "Tắm và vệ sinh",
+      price: 150000,
+      duration: "45 phút",
+    },
+    {
+      id: 3,
+      name: "Cắt tỉa lông",
+      price: 200000,
+      duration: "60 phút",
+    },
+  ]);
+
+  const branches = [
+    "PetCare Quận 1",
+    "PetCare Quận 3",
+    "PetCare Bình Thạnh",
+    "PetCare Thủ Đức",
+    "PetCare Gò Vấp",
+    "PetCare Tân Bình",
+    "PetCare Phú Nhuận",
+    "PetCare Quận 7",
+    "PetCare Quận 10",
+    "PetCare Bình Tân",
+  ];
+
+  const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [selectedService, setSelectedService] = useState(null);
+  const [editFormData, setEditFormData] = useState({
+    name: "",
+    price: 0,
+    duration: "",
+  });
+
+  const handleEdit = (service) => {
+    setSelectedService(service);
+    setEditFormData({
+      name: service.name,
+      price: service.price,
+      duration: service.duration,
+    });
+    setIsEditDialogOpen(true);
+  };
+
+  const handleDelete = (service) => {
+    setSelectedService(service);
+    setIsDeleteDialogOpen(true);
+  };
+
+  const confirmDelete = () => {
+    setServices(services.filter((srv) => srv.id !== selectedService.id));
+    setIsDeleteDialogOpen(false);
+    setSelectedService(null);
+  };
+
+  const saveEdit = () => {
+    setServices(
+      services.map((srv) =>
+        srv.id === selectedService.id ? { ...srv, ...editFormData } : srv
+      )
+    );
+    setIsEditDialogOpen(false);
+    setSelectedService(null);
+  };
+
+  if (selectedBranch) {
+    return (
+      <>
+        <Button
+          variant="ghost"
+          className="gap-2 mb-4 hover:text-red-600 hover:bg-red-50"
+          onClick={() => setSelectedBranch(null)}
+        >
+          <ArrowLeft className="h-4 w-4" />
+          Quay lại danh sách chi nhánh
+        </Button>
+        <Card>
+          <CardHeader>
+            <div className="flex items-center justify-between">
+              <div>
+                <CardTitle>Dịch vụ tại {selectedBranch}</CardTitle>
+                <CardDescription>Quản lý dịch vụ tại chi nhánh</CardDescription>
+              </div>
+              <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
+                <DialogTrigger asChild>
+                  <Button className="gap-2 bg-blue-100 text-blue-600 hover:bg-blue-600 hover:text-white transition-colors">
+                    <Plus className="h-4 w-4" />
+                    Thêm dịch vụ
+                  </Button>
+                </DialogTrigger>
+                <DialogContent>
+                  <DialogHeader>
+                    <DialogTitle>Thêm dịch vụ mới</DialogTitle>
+                    <DialogDescription>
+                      Thêm dịch vụ cho {selectedBranch}
+                    </DialogDescription>
+                  </DialogHeader>
+                  <div className="space-y-4 py-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="serviceName">Tên dịch vụ</Label>
+                      <Input id="serviceName" placeholder="Khám tổng quát" />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="servicePrice">Giá (VNĐ)</Label>
+                      <Input
+                        id="servicePrice"
+                        type="number"
+                        placeholder="100000"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="duration">Thời gian</Label>
+                      <Input id="duration" placeholder="30 phút" />
+                    </div>
+                  </div>
+                  <DialogFooter>
+                    <Button
+                      variant="outline"
+                      onClick={() => setIsAddDialogOpen(false)}
+                    >
+                      Hủy
+                    </Button>
+                    <Button onClick={() => setIsAddDialogOpen(false)}>
+                      Thêm dịch vụ
+                    </Button>
+                  </DialogFooter>
+                </DialogContent>
+              </Dialog>
+            </div>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-3">
+              {services.map((service) => (
+                <div
+                  key={service.id}
+                  className="flex items-center justify-between p-4 border rounded-lg"
+                >
+                  <div>
+                    <div className="font-semibold">{service.name}</div>
+                    <div className="text-sm text-gray-500">
+                      Thời gian: {service.duration}
+                    </div>
+                    <div className="text-sm font-medium text-blue-600">
+                      {service.price.toLocaleString("vi-VN")} ₫
+                    </div>
+                  </div>
+                  <div className="flex gap-2">
+                    <Button
+                      variant="outline"
+                      size="icon"
+                      className="text-green-600 hover:bg-green-600 hover:text-white transition-colors"
+                      onClick={() => handleEdit(service)}
+                    >
+                      <Edit className="h-4 w-4" />
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="icon"
+                      className="text-red-600 hover:bg-red-600 hover:text-white transition-colors"
+                      onClick={() => handleDelete(service)}
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            {/* Edit Dialog */}
+            <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
+              <DialogContent>
+                <DialogHeader>
+                  <DialogTitle>Chỉnh sửa dịch vụ</DialogTitle>
+                  <DialogDescription>
+                    Cập nhật thông tin dịch vụ {selectedService?.name}
+                  </DialogDescription>
+                </DialogHeader>
+                <div className="space-y-4 py-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="edit-serviceName">Tên dịch vụ</Label>
+                    <Input
+                      id="edit-serviceName"
+                      value={editFormData.name}
+                      onChange={(e) =>
+                        setEditFormData({
+                          ...editFormData,
+                          name: e.target.value,
+                        })
+                      }
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="edit-servicePrice">Giá (VNĐ)</Label>
+                    <Input
+                      id="edit-servicePrice"
+                      type="number"
+                      value={editFormData.price}
+                      onChange={(e) =>
+                        setEditFormData({
+                          ...editFormData,
+                          price: parseInt(e.target.value),
+                        })
+                      }
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="edit-duration">Thời gian</Label>
+                    <Input
+                      id="edit-duration"
+                      value={editFormData.duration}
+                      onChange={(e) =>
+                        setEditFormData({
+                          ...editFormData,
+                          duration: e.target.value,
+                        })
+                      }
+                    />
+                  </div>
+                </div>
+                <DialogFooter>
+                  <Button
+                    onClick={saveEdit}
+                    className="bg-green-100 text-green-600 border-green-600 hover:bg-green-600 hover:text-white transition-colors"
+                  >
+                    Lưu thay đổi
+                  </Button>
+                </DialogFooter>
+              </DialogContent>
+            </Dialog>
+
+            {/* Delete Confirmation Dialog */}
+            <Dialog
+              open={isDeleteDialogOpen}
+              onOpenChange={setIsDeleteDialogOpen}
+            >
+              <DialogContent className="gap-0">
+                <DialogHeader className="pb-4">
+                  <DialogTitle>Xác nhận xóa dịch vụ</DialogTitle>
+                  <DialogDescription>
+                    Bạn có chắc chắn muốn xóa dịch vụ{" "}
+                    <strong>{selectedService?.name}</strong> khỏi hệ thống?
+                  </DialogDescription>
+                </DialogHeader>
+                <DialogFooter className="pt-4">
+                  <Button
+                    onClick={confirmDelete}
+                    className="bg-red-100 text-red-600 border-red-600 hover:bg-red-600 hover:text-white transition-colors"
+                  >
+                    Xác nhận
+                  </Button>
+                </DialogFooter>
+              </DialogContent>
+            </Dialog>
+          </CardContent>
+        </Card>
+      </>
+    );
+  }
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle>Chọn chi nhánh</CardTitle>
+        <CardDescription>
+          Chọn chi nhánh để xem và quản lý dịch vụ
+        </CardDescription>
+      </CardHeader>
+      <CardContent>
+        <div className="grid md:grid-cols-2 gap-3">
+          {branches.map((branch, index) => (
+            <Button
+              key={index}
+              variant="outline"
+              className="justify-start h-auto p-4 bg-transparent"
+              onClick={() => setSelectedBranch(branch)}
+            >
+              <div className="text-left">
+                <div className="font-semibold">{branch}</div>
+                <div className="text-sm text-gray-500">
+                  Xem dịch vụ chi nhánh
+                </div>
+              </div>
+            </Button>
+          ))}
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
+
+// ======================================================================
+// 9. COMPONENT CON: vaccineStockManagement
+// ======================================================================
+function VaccinestockManagement() {
+  // Loại bỏ khai báo kiểu TypeScript: useState<string | null>(null)
+  const [selectedBranch, setSelectedBranch] = useState(null);
+  const [isAddVaccineDialogOpen, setIsAddVaccineDialogOpen] = useState(false);
+  const [selectedVaccine, setSelectedVaccine] = useState("");
+
+  const allVaccines = [
+    { id: 1, name: "Vắc-xin 5 bệnh", manufacturer: "Nobivac" },
+    { id: 2, name: "Vắc-xin dại", manufacturer: "Rabigen" },
+    { id: 3, name: "Vắc-xin cúm", manufacturer: "Canigen" },
+    { id: 4, name: "Vắc-xin 7 bệnh", manufacturer: "Vanguard" },
+  ];
+
+  const branches = [
+    "PetCare Quận 1",
+    "PetCare Quận 3",
+    "PetCare Bình Thạnh",
+    "PetCare Thủ Đức",
+    "PetCare Gò Vấp",
+    "PetCare Tân Bình",
+    "PetCare Phú Nhuận",
+    "PetCare Quận 7",
+    "PetCare Quận 10",
+    "PetCare Bình Tân",
+  ];
+
+  const vaccines = [
+    {
+      id: 1,
+      name: "Vắc-xin cúm",
+      type: "Vắc-xin phòng bệnh",
+      quantity: 45,
+      price: 450000,
+    },
+    {
+      id: 2,
+      name: "Vắc-xin dại",
+      type: "Vắc-xin phòng bệnh",
+      quantity: 28,
+      price: 165000,
+    },
+    {
+      id: 3,
+      name: "Vắc-xin 5 bệnh",
+      type: "Vắc-xin phòng bệnh",
+      quantity: 67,
+      price: 120000,
+    },
+    {
+      id: 4,
+      name: "Vắc-xin 7 bệnh",
+      type: "Vắc-xin phòng bệnh",
+      quantity: 52,
+      price: 380000,
+    },
+  ];
+
+  if (selectedBranch) {
+    return (
+      <>
+        <Button
+          variant="ghost"
+          className="gap-2 mb-4 hover:text-red-600 hover:bg-red-50"
+          onClick={() => setSelectedBranch(null)}
+        >
+          <ArrowLeft className="h-4 w-4" />
+          Quay lại danh sách chi nhánh
+        </Button>
+        <Card>
+          <CardHeader>
+            <div className="flex items-center justify-between">
+              <div>
+                <CardTitle>Vắc-xin tại {selectedBranch}</CardTitle>
+                <CardDescription>
+                  Quản lý số lượng vắc-xin tồn kho
+                </CardDescription>
+              </div>
+              <Dialog
+                open={isAddVaccineDialogOpen}
+                onOpenChange={setIsAddVaccineDialogOpen}
+              >
+                <DialogTrigger asChild>
+                  <Button className="gap-2">
+                    <Plus className="h-4 w-4" />
+                    Thêm vắc-xin vào kho
+                  </Button>
+                </DialogTrigger>
+                <DialogContent>
+                  <DialogHeader>
+                    <DialogTitle>Thêm vắc-xin vào kho</DialogTitle>
+                    <DialogDescription>
+                      Chọn vắc-xin từ danh sách và nhập số lượng
+                    </DialogDescription>
+                  </DialogHeader>
+                  <div className="space-y-4 py-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="vaccineSelect">Chọn vắc-xin</Label>
+                      <select
+                        id="vaccineSelect"
+                        value={selectedVaccine}
+                        onChange={(e) => setSelectedVaccine(e.target.value)}
+                        className="w-full border rounded-lg p-2 flex h-10 border-input bg-background text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                      >
+                        <option value="">-- Chọn vắc-xin --</option>
+                        {allVaccines.map((vaccine) => (
+                          <option key={vaccine.id} value={vaccine.id}>
+                            {vaccine.name} ({vaccine.manufacturer})
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="vaccineInitialQuantity">
+                        Số lượng ban đầu
+                      </Label>
+                      <Input
+                        id="vaccineInitialQuantity"
+                        type="number"
+                        placeholder="0"
+                        defaultValue="0"
+                      />
+                    </div>
+                  </div>
+                  <DialogFooter>
+                    <Button
+                      variant="outline"
+                      onClick={() => setIsAddVaccineDialogOpen(false)}
+                    >
+                      Hủy
+                    </Button>
+                    <Button onClick={() => setIsAddVaccineDialogOpen(false)}>
+                      Thêm vào kho
+                    </Button>
+                  </DialogFooter>
+                </DialogContent>
+              </Dialog>
+            </div>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-3">
+              {vaccines.map((vaccine) => (
+                <div
+                  key={vaccine.id}
+                  className="flex items-center justify-between p-4 border rounded-lg"
+                >
+                  <div className="flex-1">
+                    <div className="font-semibold">{vaccine.name}</div>
+                    <div className="text-sm text-gray-500">{vaccine.type}</div>
+                    <div className="text-sm font-medium text-blue-600">
+                      {vaccine.price.toLocaleString("vi-VN")} ₫
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <Label
+                      htmlFor={`quantity-${vaccine.id}`}
+                      className="text-sm"
+                    >
+                      Số lượng:
+                    </Label>
+                    <Input
+                      id={`quantity-${vaccine.id}`}
+                      type="number"
+                      defaultValue={vaccine.quantity}
                       className="w-24"
                     />
                     <Button size="sm">Cập nhật</Button>
