@@ -1,33 +1,30 @@
-const express = require('express');
+const express = require("express");
 const router = express.Router();
-const { authenticate, authorize } = require('../../middlewares/auth');
-const { ROLES } = require('../../config/constants');
+const { authenticate, authorize } = require("../../middlewares/auth");
+const { ROLES } = require("../../config/constants");
+const branchesController = require("./branches.controller");
 
 /**
  * @route   GET /api/branches
- * @desc    Danh sách chi nhánh (có filter)
+ * @desc    Danh sách chi nhánh
  * @access  Public
  */
-router.get('/', (req, res) => {
-  res.json({ message: 'Get branches list' });
-});
+router.get("/", branchesController.getAllBranches);
 
 /**
  * @route   GET /api/branches/:id
  * @desc    Chi tiết chi nhánh
  * @access  Public
  */
-router.get('/:id', (req, res) => {
-  res.json({ message: 'Get branch details' });
-});
+router.get("/:id", branchesController.getBranchById);
 
 /**
  * @route   POST /api/branches
  * @desc    Tạo chi nhánh mới
  * @access  Private - QUAN_TRI
  */
-router.post('/', authenticate, authorize(ROLES.ADMIN), (req, res) => {
-  res.json({ message: 'Create branch' });
+router.post("/", authenticate, authorize(ROLES.ADMIN), (req, res) => {
+  res.json({ message: "Create branch" });
 });
 
 /**
@@ -35,17 +32,8 @@ router.post('/', authenticate, authorize(ROLES.ADMIN), (req, res) => {
  * @desc    Cập nhật thông tin chi nhánh
  * @access  Private - QUAN_TRI
  */
-router.put('/:id', authenticate, authorize(ROLES.ADMIN), (req, res) => {
-  res.json({ message: 'Update branch' });
-});
-
-/**
- * @route   DELETE /api/branches/:id
- * @desc    Xóa chi nhánh
- * @access  Private - QUAN_TRI
- */
-router.delete('/:id', authenticate, authorize(ROLES.ADMIN), (req, res) => {
-  res.json({ message: 'Delete branch' });
+router.put("/:id", authenticate, authorize(ROLES.ADMIN), (req, res) => {
+  res.json({ message: "Update branch" });
 });
 
 /**
@@ -53,8 +41,8 @@ router.delete('/:id', authenticate, authorize(ROLES.ADMIN), (req, res) => {
  * @desc    Danh sách dịch vụ của chi nhánh
  * @access  Public
  */
-router.get('/:id/services', (req, res) => {
-  res.json({ message: 'Get branch services' });
+router.get("/:id/services", (req, res) => {
+  res.json({ message: "Get branch services" });
 });
 
 /**
@@ -62,8 +50,13 @@ router.get('/:id/services', (req, res) => {
  * @desc    Danh sách nhân viên của chi nhánh
  * @access  Private - NHAN_VIEN, QUAN_TRI
  */
-router.get('/:id/employees', authenticate, authorize(ROLES.EMPLOYEE, ROLES.ADMIN), (req, res) => {
-  res.json({ message: 'Get branch employees' });
-});
+router.get(
+  "/:id/employees",
+  authenticate,
+  authorize(ROLES.EMPLOYEE, ROLES.ADMIN),
+  (req, res) => {
+    res.json({ message: "Get branch employees" });
+  }
+);
 
 module.exports = router;

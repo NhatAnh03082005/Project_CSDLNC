@@ -1,15 +1,23 @@
-const express = require('express');
+const express = require("express");
 const router = express.Router();
-const { authenticate, authorize } = require('../../middlewares/auth');
-const { ROLES } = require('../../config/constants');
+const { authenticate, authorize } = require("../../middlewares/auth");
+const { ROLES } = require("../../config/constants");
+const employeesController = require("../employees/employees.controller");
+
+/**
+ * @route   GET /api/customers/test-employees
+ * @desc    Test danh sách nhân viên (không cần auth)
+ * @access  Public
+ */
+router.get("/employees", employeesController.getAllEmployees);
 
 /**
  * @route   GET /api/customers/profile
  * @desc    Xem thông tin cá nhân khách hàng
  * @access  Private - KHACH_HANG
  */
-router.get('/profile', authenticate, authorize(ROLES.CUSTOMER), (req, res) => {
-  res.json({ message: 'Get customer profile' });
+router.get("/profile", authenticate, authorize(ROLES.CUSTOMER), (req, res) => {
+  res.json({ message: "Get customer profile" });
 });
 
 /**
@@ -17,8 +25,8 @@ router.get('/profile', authenticate, authorize(ROLES.CUSTOMER), (req, res) => {
  * @desc    Cập nhật thông tin cá nhân
  * @access  Private - KHACH_HANG
  */
-router.put('/profile', authenticate, authorize(ROLES.CUSTOMER), (req, res) => {
-  res.json({ message: 'Update customer profile' });
+router.put("/profile", authenticate, authorize(ROLES.CUSTOMER), (req, res) => {
+  res.json({ message: "Update customer profile" });
 });
 
 /**
@@ -26,26 +34,36 @@ router.put('/profile', authenticate, authorize(ROLES.CUSTOMER), (req, res) => {
  * @desc    Xem thông tin hạng thành viên & điểm loyalty
  * @access  Private - KHACH_HANG
  */
-router.get('/membership', authenticate, authorize(ROLES.CUSTOMER), (req, res) => {
-  res.json({ message: 'Get membership info' });
-});
+router.get(
+  "/membership",
+  authenticate,
+  authorize(ROLES.CUSTOMER),
+  (req, res) => {
+    res.json({ message: "Get membership info" });
+  }
+);
 
 /**
  * @route   GET /api/customers/appointments
  * @desc    Xem lịch hẹn của khách hàng
  * @access  Private - KHACH_HANG
  */
-router.get('/appointments', authenticate, authorize(ROLES.CUSTOMER), (req, res) => {
-  res.json({ message: 'Get customer appointments' });
-});
+router.get(
+  "/appointments",
+  authenticate,
+  authorize(ROLES.CUSTOMER),
+  (req, res) => {
+    res.json({ message: "Get customer appointments" });
+  }
+);
 
 /**
  * @route   GET /api/customers/invoices
  * @desc    Xem lịch sử hóa đơn
  * @access  Private - KHACH_HANG
  */
-router.get('/invoices', authenticate, authorize(ROLES.CUSTOMER), (req, res) => {
-  res.json({ message: 'Get customer invoices' });
+router.get("/invoices", authenticate, authorize(ROLES.CUSTOMER), (req, res) => {
+  res.json({ message: "Get customer invoices" });
 });
 
 module.exports = router;

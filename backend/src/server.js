@@ -1,4 +1,4 @@
-const express = require('express');
+﻿const express = require('express');
 const cors = require('cors');
 const dotenv = require('dotenv');
 const { errorHandler, notFound } = require('./middlewares/errorHandler');
@@ -60,9 +60,10 @@ app.use(errorHandler);
 // Start server
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
-  console.log(`🚀 PetCareX API running on port ${PORT}`);
-  console.log(`📍 API URL: http://localhost:${PORT}`);
-  console.log(`🌍 Environment: ${process.env.NODE_ENV || 'development'}`);
+  console.log(`ðŸš€ PetCareX API running on port ${PORT}`);
+  console.log(`ðŸ“ API URL: http://localhost:${PORT}`);
+  console.log(`ðŸŒ Environment: ${process.env.NODE_ENV || 'development'}`);
 });
 
 module.exports = app;
+ 
