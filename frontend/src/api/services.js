@@ -34,7 +34,7 @@ export const appointmentAPI = {
 };
 
 export const branchAPI = {
-  getAll: (params) => api.get("/branches", { params }),
+  getAll: () => api.get("/branches"),
   getById: (id) => api.get(`/branches/${id}`),
   create: (data) => api.post("/branches", data),
   update: (id, data) => api.put(`/branches/${id}`, data),
@@ -42,7 +42,7 @@ export const branchAPI = {
 };
 
 export const productAPI = {
-  getAll: (params) => api.get("/products", { params }),
+  getAll: () => api.get("/products"),
   getById: (id) => api.get(`/products/${id}`),
   create: (data) => api.post("/products", data),
   update: (id, data) => api.put(`/products/${id}`, data),
@@ -70,4 +70,19 @@ export const reportAPI = {
   getEmployeePerformance: (params) =>
     api.get("/reports/employees/performance", { params }),
   getDashboard: () => api.get("/reports/dashboard"),
+};
+
+export const promotionAPI = {
+  getAll: () => api.get("/promotions"),
+  getById: (id) => api.get(`/promotions/${id}`),
+  create: (data) => api.post("/promotions", data),
+  update: (id, data) => api.put(`/promotions/${id}`, data),
+};
+
+export const vaccinationAPI = {
+  getAll: () => api.get("/vaccinations"),
+  getById: (id) => api.get(`/vaccinations/${id}`),
+  create: (data) => api.post("/vaccinations", data),
+  update: (id, data) => api.put(`/vaccinations/${id}`, data),
+  delete: (id) => api.delete(`/vaccinations/${id}`),
 };

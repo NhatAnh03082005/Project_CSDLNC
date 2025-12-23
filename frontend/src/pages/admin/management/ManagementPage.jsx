@@ -1,7 +1,13 @@
 import React, { useState, useEffect } from "react";
 // Import UI components (giữ nguyên đường dẫn tương đối đã sửa)
 import { Button } from "../../../components/ui/button";
-import { employeeAPI, branchAPI } from "../../../api/services";
+import {
+  employeeAPI,
+  branchAPI,
+  promotionAPI,
+  productAPI,
+  vaccinationAPI,
+} from "../../../api/services";
 import AdminHeader from "../components/AdminHeader";
 //import { BranchManagement } from "./BranchManagement";
 //import { EmployeeTransferHistory } from "./EmployeeTransferHistory";
@@ -407,6 +413,7 @@ function ManagementDetail({ type, onBack }) {
 // ======================================================================
 function EmployeeManagement() {
   const [employees, setEmployees] = useState([]);
+  const [branches, setBranches] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
@@ -444,19 +451,6 @@ function EmployeeManagement() {
     "Quản lý chi nhánh",
   ];
 
-  const BRANCH_OPTIONS = [
-    "PetCare Hà Nội",
-    "PetCare TP.HCM",
-    "PetCare Đà Nẵng",
-    "PetCare Hải Phòng",
-    "PetCare Cần Thơ",
-    "PetCare Biên Hòa",
-    "PetCare Bình Dương",
-    "PetCare Nha Trang",
-    "PetCare Vũng Tàu",
-    "PetCare Huế",
-  ];
-
   // Fetch employees and branches on mount
   useEffect(() => {
     fetchData();
@@ -465,8 +459,23 @@ function EmployeeManagement() {
   const fetchData = async () => {
     try {
       setLoading(true);
-      const employeesRes = await employeeAPI.getAll();
-      setEmployees(employeesRes.data.data || []);
+      const results = await Promise.allSettled([
+        employeeAPI.getAll(),
+        branchAPI.getAll(),
+      ]);
+
+      const employeesRes =
+        results[0]?.status === "fulfilled" ? results[0].value : null;
+      const branchesRes =
+        results[1]?.status === "fulfilled" ? results[1].value : null;
+
+      // Support response shapes: { data: [...] } or { data: { data: [...] } }
+      const employeesData =
+        employeesRes?.data?.data ?? employeesRes?.data ?? [];
+      const branchesData = branchesRes?.data?.data ?? branchesRes?.data ?? [];
+
+      setEmployees(Array.isArray(employeesData) ? employeesData : []);
+      setBranches(Array.isArray(branchesData) ? branchesData : []);
       setError(null);
     } catch (err) {
       console.error("Error fetching data:", err);
@@ -571,8 +580,10 @@ function EmployeeManagement() {
       <CardHeader>
         <div className="flex items-center justify-between">
           <div>
-            <CardTitle>Danh sách nhân viên</CardTitle>
-            <CardDescription>
+            <CardTitle className="text-blue-600 font-semibold text-xl">
+              Danh sách nhân viên
+            </CardTitle>
+            <CardDescription className="text-gray-600">
               Quản lý nhân viên trên toàn công ty (10 chi nhánh)
             </CardDescription>
           </div>
@@ -581,7 +592,7 @@ function EmployeeManagement() {
               <DialogTrigger asChild>
                 <Button
                   variant="outline"
-                  className="gap-2 w-full bg-blue-100 hover:bg-blue-600 hover:text-white transition-colors"
+                  className="gap-2 bg-blue-100 hover:bg-blue-600 hover:text-white transition-colors"
                 >
                   <Plus className="h-4 w-4" />
                   Thêm nhân viên
@@ -589,7 +600,9 @@ function EmployeeManagement() {
               </DialogTrigger>
               <DialogContent>
                 <DialogHeader>
-                  <DialogTitle>Thêm nhân viên mới</DialogTitle>
+                  <DialogTitle className="text-blue-600 font-semibold">
+                    Thêm nhân viên mới
+                  </DialogTitle>
                   <DialogDescription>
                     <p className="text-gray-600 mt-1">
                       {" "}
@@ -719,9 +732,9 @@ function EmployeeManagement() {
                       className="w-full border rounded-lg p-2 flex h-10 border-input bg-background text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                     >
                       <option value="">Chọn chi nhánh</option>
-                      {BRANCH_OPTIONS.map((b) => (
-                        <option key={b} value={b}>
-                          {b}
+                      {branches.map((b) => (
+                        <option key={b.MaChiNhanh} value={b.TenChiNhanh}>
+                          {b.TenChiNhanh}
                         </option>
                       ))}
                     </select>
@@ -730,7 +743,8 @@ function EmployeeManagement() {
                 <DialogFooter>
                   <Button
                     onClick={handleAdd}
-                    className="bg-blue-100 text-blue-600 border-blue-600 hover:bg-blue-600 hover:text-white transition-colors"
+                    variant="outline"
+                    className="bg-blue-100 hover:bg-blue-600 hover:text-white transition-colors"
                   >
                     Thêm nhân viên
                   </Button>
@@ -753,7 +767,7 @@ function EmployeeManagement() {
                 className="flex items-center justify-between p-4 border rounded-lg"
               >
                 <div>
-                  <div className="font-semibold">
+                  <div className="font-semibold text-blue-600">
                     {employee.MaNhanVien} - {employee.HoTen}
                   </div>
                   <div className="text-sm text-gray-500">
@@ -786,9 +800,13 @@ function EmployeeManagement() {
         <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
           <DialogContent>
             <DialogHeader>
-              <DialogTitle>Chỉnh sửa thông tin nhân viên</DialogTitle>
+              <DialogTitle className="text-green-600 font-semibold">
+                {" "}
+                Chỉnh sửa thông tin nhân viên
+              </DialogTitle>
               <DialogDescription>
-                Cập nhật thông tin nhân viên {selectedEmployee?.HoTen}
+                Cập nhật thông tin nhân viên{" "}
+                <strong>{selectedEmployee?.HoTen}</strong>
               </DialogDescription>
             </DialogHeader>
             <div className="space-y-4 py-4">
@@ -905,9 +923,9 @@ function EmployeeManagement() {
                   className="w-full border rounded-lg p-2 flex h-10 border-input bg-background text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                 >
                   <option value="">Chọn chi nhánh</option>
-                  {BRANCH_OPTIONS.map((b) => (
-                    <option key={b} value={b}>
-                      {b}
+                  {branches.map((b) => (
+                    <option key={b.MaChiNhanh} value={b.TenChiNhanh}>
+                      {b.TenChiNhanh}
                     </option>
                   ))}
                 </select>
@@ -916,7 +934,8 @@ function EmployeeManagement() {
             <DialogFooter>
               <Button
                 onClick={saveEdit}
-                className="bg-green-100 text-green-600 border-green-600 hover:bg-green-600 hover:text-white transition-colors"
+                variant="outline"
+                className="bg-green-100 hover:bg-green-600 hover:text-white transition-colors"
               >
                 Lưu thay đổi
               </Button>
@@ -926,16 +945,19 @@ function EmployeeManagement() {
         {/* Delete Confirmation Dialog */}
         <Dialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
           <DialogContent className="gap-0">
-            <DialogHeader className="pb-4">
-              <DialogTitle>Xác nhận xóa nhân viên</DialogTitle>
+            <DialogHeader className="pb-3">
+              <DialogTitle className="text-red-600 font-semibold">
+                Xác nhận xóa nhân viên
+              </DialogTitle>
               <DialogDescription>
                 Bạn có chắc chắn muốn xóa nhân viên{" "}
                 <strong>{selectedEmployee?.HoTen}</strong> khỏi hệ thống?
               </DialogDescription>
             </DialogHeader>
-            <DialogFooter className="pt-4">
+            <DialogFooter className="pt-3">
               <Button
                 onClick={confirmDelete}
+                variant="outline"
                 className="bg-red-100 text-red-600 border-red-600 hover:bg-red-600 hover:text-white transition-colors"
               >
                 Xác nhận
@@ -952,76 +974,113 @@ function EmployeeManagement() {
 // 4. COMPONENT CON: PromotionManagement
 // ======================================================================
 function PromotionManagement() {
-  const [promotions, setPromotions] = useState([
-    {
-      id: 1,
-      code: "SUMMER2024",
-      startDate: "2024-06-01",
-      endDate: "2024-08-31",
-      discount: 15,
-    },
-    {
-      id: 2,
-      code: "NEWCUSTOMER",
-      startDate: "2024-01-01",
-      endDate: "2024-12-31",
-      discount: 20,
-    },
-    {
-      id: 3,
-      code: "VACCINE50",
-      startDate: "2024-07-01",
-      endDate: "2024-09-30",
-      discount: 10,
-    },
-  ]);
+  const [promotions, setPromotions] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
-  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [selectedPromotion, setSelectedPromotion] = useState(null);
-  const [editFormData, setEditFormData] = useState({
-    code: "",
-    startDate: "",
-    endDate: "",
-    discount: 0,
+
+  const [addFormData, setAddFormData] = useState({
+    NgayBatDau: "",
+    NgayKetThuc: "",
+    TiLeGiamGia: "",
   });
+
+  const [editFormData, setEditFormData] = useState({
+    NgayBatDau: "",
+    NgayKetThuc: "",
+    TiLeGiamGia: "",
+  });
+
+  useEffect(() => {
+    fetchData();
+  }, []);
+
+  const fetchData = async () => {
+    try {
+      setLoading(true);
+      const results = await Promise.allSettled([promotionAPI.getAll()]);
+
+      const promotionsRes =
+        results[0]?.status === "fulfilled" ? results[0].value : null;
+
+      const promotionsData =
+        promotionsRes?.data?.data ?? promotionsRes?.data ?? [];
+
+      setPromotions(Array.isArray(promotionsData) ? promotionsData : []);
+      setError(null);
+    } catch (err) {
+      console.error("Error fetching data:", err);
+      setError(err.response?.data?.message || "Không thể tải dữ liệu");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleAdd = async () => {
+    try {
+      await promotionAPI.create(addFormData);
+      await fetchData();
+      setIsAddDialogOpen(false);
+      setAddFormData({
+        NgayBatDau: "",
+        NgayKetThuc: "",
+        TiLeGiamGia: "",
+      });
+      alert("Thêm khuyến mãi thành công!");
+    } catch (err) {
+      console.error("Error adding promotion:", err);
+      alert(err.response?.data?.message || "Không thể thêm khuyến mãi");
+    }
+  };
 
   const handleEdit = (promotion) => {
     setSelectedPromotion(promotion);
     setEditFormData({
-      code: promotion.code,
-      startDate: promotion.startDate,
-      endDate: promotion.endDate,
-      discount: promotion.discount,
+      NgayBatDau: promotion.NgayBatDau?.split("T")[0] || "",
+      NgayKetThuc: promotion.NgayKetThuc?.split("T")[0] || "",
+      TiLeGiamGia: promotion.TiLeGiamGia || "",
     });
     setIsEditDialogOpen(true);
   };
 
-  const handleDelete = (promotion) => {
-    setSelectedPromotion(promotion);
-    setIsDeleteDialogOpen(true);
+  const saveEdit = async () => {
+    try {
+      await promotionAPI.update(selectedPromotion.MaKhuyenMai, editFormData);
+      await fetchData();
+      setIsEditDialogOpen(false);
+      setSelectedPromotion(null);
+      alert("Cập nhật khuyến mãi thành công!");
+    } catch (err) {
+      console.error("Error updating promotion:", err);
+      alert(err.response?.data?.message || "Không thể cập nhật khuyến mãi");
+    }
   };
 
-  const confirmDelete = () => {
-    setPromotions(
-      promotions.filter((promo) => promo.id !== selectedPromotion.id)
+  if (loading) {
+    return (
+      <Card>
+        <CardContent className="p-6">
+          <div className="text-center">Đang tải dữ liệu...</div>
+        </CardContent>
+      </Card>
     );
-    setIsDeleteDialogOpen(false);
-    setSelectedPromotion(null);
-  };
+  }
 
-  const saveEdit = () => {
-    setPromotions(
-      promotions.map((promo) =>
-        promo.id === selectedPromotion.id
-          ? { ...promo, ...editFormData }
-          : promo
-      )
+  if (error) {
+    return (
+      <Card>
+        <CardContent className="p-6">
+          <div className="text-center text-red-600">{error}</div>
+          <Button onClick={fetchData} className="mt-4 mx-auto block">
+            Thử lại
+          </Button>
+        </CardContent>
+      </Card>
     );
-    setIsEditDialogOpen(false);
-    setSelectedPromotion(null);
-  };
+  }
 
   return (
     <Card>
@@ -1035,7 +1094,10 @@ function PromotionManagement() {
           </div>
           <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
             <DialogTrigger asChild>
-              <Button className="gap-2 bg-blue-100 text-blue-600 hover:bg-blue-600 hover:text-white transition-colors">
+              <Button
+                variant="outline"
+                className="gap-2 bg-green-100 text-green-600 hover:bg-green-600 hover:text-white transition-colors"
+              >
                 <Plus className="h-4 w-4" />
                 Thêm khuyến mãi
               </Button>
@@ -1049,26 +1111,59 @@ function PromotionManagement() {
               </DialogHeader>
               <div className="space-y-4 py-4">
                 <div className="space-y-2">
-                  <Label htmlFor="code">Mã khuyến mãi</Label>
-                  <Input id="code" placeholder="SUMMER2024" />
+                  <Label htmlFor="NgayBatDau">Ngày bắt đầu</Label>
+                  <Input
+                    id="NgayBatDau"
+                    type="date"
+                    placeholder="Nhập ngày bắt đầu"
+                    value={addFormData.NgayBatDau}
+                    onChange={(e) =>
+                      setAddFormData({
+                        ...addFormData,
+                        NgayBatDau: e.target.value,
+                      })
+                    }
+                    className="text-black placeholder:text-gray-600"
+                  />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="startDate">Ngày bắt đầu</Label>
-                  <Input id="startDate" type="date" />
+                  <Label htmlFor="NgayKetThuc">Ngày kết thúc</Label>
+                  <Input
+                    id="NgayKetThuc"
+                    type="date"
+                    placeholder="Nhập ngày kết thúc"
+                    value={addFormData.NgayKetThuc}
+                    onChange={(e) =>
+                      setAddFormData({
+                        ...addFormData,
+                        NgayKetThuc: e.target.value,
+                      })
+                    }
+                    className="text-black placeholder:text-gray-600"
+                  />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="endDate">Ngày kết thúc</Label>
-                  <Input id="endDate" type="date" />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="discount">Tỉ lệ giảm giá (%)</Label>
-                  <Input id="discount" type="number" placeholder="15" />
+                  <Label htmlFor="TiLeGiamGia">Tỉ lệ giảm giá (%)</Label>
+                  <Input
+                    id="TiLeGiamGia"
+                    type="number"
+                    placeholder="Nhập tỉ lệ giảm giá"
+                    value={addFormData.TiLeGiamGia}
+                    onChange={(e) =>
+                      setAddFormData({
+                        ...addFormData,
+                        TiLeGiamGia: e.target.value,
+                      })
+                    }
+                    className="text-black placeholder:text-gray-600"
+                  />
                 </div>
               </div>
               <DialogFooter>
                 <Button
-                  onClick={() => setIsAddDialogOpen(false)}
-                  className="bg-blue-100 text-blue-600 border-blue-600 hover:bg-blue-600 hover:text-white transition-colors"
+                  onClick={handleAdd}
+                  variant="outline"
+                  className="bg-green-100 text-green-600 border-green-600 hover:bg-green-600 hover:text-white transition-colors"
                 >
                   Thêm khuyến mãi
                 </Button>
@@ -1079,40 +1174,38 @@ function PromotionManagement() {
       </CardHeader>
       <CardContent>
         <div className="space-y-3">
-          {promotions.map((promotion) => (
-            <div
-              key={promotion.id}
-              className="flex items-center justify-between p-4 border rounded-lg"
-            >
-              <div>
-                <div className="font-semibold text-lg">{promotion.code}</div>
-                <div className="text-sm text-gray-500">
-                  {promotion.startDate} đến {promotion.endDate}
-                </div>
-                <div className="text-sm font-medium text-green-600">
-                  Giảm {promotion.discount}%
-                </div>
-              </div>
-              <div className="flex gap-2">
-                <Button
-                  variant="outline"
-                  size="icon"
-                  className="text-green-600 hover:bg-green-600 hover:text-white transition-colors"
-                  onClick={() => handleEdit(promotion)}
-                >
-                  <Edit className="h-4 w-4" />
-                </Button>
-                <Button
-                  variant="outline"
-                  size="icon"
-                  className="text-red-600 hover:bg-red-600 hover:text-white transition-colors"
-                  onClick={() => handleDelete(promotion)}
-                >
-                  <Trash2 className="h-4 w-4" />
-                </Button>
-              </div>
+          {promotions.length === 0 ? (
+            <div className="text-center text-gray-500 py-8">
+              Không có khuyến mãi nào
             </div>
-          ))}
+          ) : (
+            promotions.map((promotion) => (
+              <div
+                key={promotion.MaKhuyenMai}
+                className="flex items-center justify-between p-4 border rounded-lg"
+              >
+                <div>
+                  <div className="font-semibold text-green-600">
+                    {promotion.MaKhuyenMai} - Giảm {promotion.TiLeGiamGia}%
+                  </div>
+                  <div className="text-sm text-gray-500">
+                    {promotion.NgayBatDau.split("T")[0]} đến{" "}
+                    {promotion.NgayKetThuc.split("T")[0]}
+                  </div>
+                </div>
+                <div className="flex gap-2">
+                  <Button
+                    variant="outline"
+                    size="icon"
+                    className="text-green-600 hover:bg-green-600 hover:text-white transition-colors"
+                    onClick={() => handleEdit(promotion)}
+                  >
+                    <Edit className="h-4 w-4" />
+                  </Button>
+                </div>
+              </div>
+            ))
+          )}
         </div>
 
         {/* Edit Dialog */}
@@ -1121,30 +1214,20 @@ function PromotionManagement() {
             <DialogHeader>
               <DialogTitle>Chỉnh sửa khuyến mãi</DialogTitle>
               <DialogDescription>
-                Cập nhật thông tin khuyến mãi {selectedPromotion?.code}
+                Cập nhật thông tin khuyến mãi {selectedPromotion?.MaKhuyenMai}
               </DialogDescription>
             </DialogHeader>
             <div className="space-y-4 py-4">
-              <div className="space-y-2">
-                <Label htmlFor="edit-code">Mã khuyến mãi</Label>
-                <Input
-                  id="edit-code"
-                  value={editFormData.code}
-                  onChange={(e) =>
-                    setEditFormData({ ...editFormData, code: e.target.value })
-                  }
-                />
-              </div>
               <div className="space-y-2">
                 <Label htmlFor="edit-startDate">Ngày bắt đầu</Label>
                 <Input
                   id="edit-startDate"
                   type="date"
-                  value={editFormData.startDate}
+                  value={editFormData.NgayBatDau}
                   onChange={(e) =>
                     setEditFormData({
                       ...editFormData,
-                      startDate: e.target.value,
+                      NgayBatDau: e.target.value,
                     })
                   }
                 />
@@ -1154,11 +1237,11 @@ function PromotionManagement() {
                 <Input
                   id="edit-endDate"
                   type="date"
-                  value={editFormData.endDate}
+                  value={editFormData.NgayKetThuc}
                   onChange={(e) =>
                     setEditFormData({
                       ...editFormData,
-                      endDate: e.target.value,
+                      NgayKetThuc: e.target.value,
                     })
                   }
                 />
@@ -1168,11 +1251,11 @@ function PromotionManagement() {
                 <Input
                   id="edit-discount"
                   type="number"
-                  value={editFormData.discount}
+                  value={editFormData.TiLeGiamGia}
                   onChange={(e) =>
                     setEditFormData({
                       ...editFormData,
-                      discount: parseInt(e.target.value),
+                      TiLeGiamGia: parseInt(e.target.value),
                     })
                   }
                 />
@@ -1181,30 +1264,10 @@ function PromotionManagement() {
             <DialogFooter>
               <Button
                 onClick={saveEdit}
+                variant="outline"
                 className="bg-green-100 text-green-600 border-green-600 hover:bg-green-600 hover:text-white transition-colors"
               >
                 Lưu thay đổi
-              </Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
-
-        {/* Delete Confirmation Dialog */}
-        <Dialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
-          <DialogContent className="gap-0">
-            <DialogHeader className="pb-4">
-              <DialogTitle>Xác nhận xóa khuyến mãi</DialogTitle>
-              <DialogDescription>
-                Bạn có chắc chắn muốn xóa khuyến mãi{" "}
-                <strong>{selectedPromotion?.code}</strong> khỏi hệ thống?
-              </DialogDescription>
-            </DialogHeader>
-            <DialogFooter className="pt-4">
-              <Button
-                onClick={confirmDelete}
-                className="bg-red-100 text-red-600 border-red-600 hover:bg-red-600 hover:text-white transition-colors"
-              >
-                Xác nhận
               </Button>
             </DialogFooter>
           </DialogContent>
@@ -1428,129 +1491,203 @@ function InventoryManagement() {
 // 6. COMPONENT CON: ProductManagement
 // ======================================================================
 function ProductManagement() {
-  const [products, setProducts] = useState([
-    {
-      id: 1,
-      name: "Royal Canin Mini Adult",
-      category: "Thức ăn",
-      price: 450000,
-      description: "Thức ăn cho chó trưởng thành giống nhỏ",
-    },
-    {
-      id: 2,
-      name: "Nexgard Spectra",
-      category: "Thuốc",
-      price: 165000,
-      description: "Thuốc trị ve, bọ chét",
-    },
-    {
-      id: 3,
-      name: "Vòng cổ chống bọ chét",
-      category: "Phụ kiện",
-      price: 120000,
-      description: "Vòng cổ phòng ngừa bọ chét",
-    },
-  ]);
+  const [products, setProducts] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
-  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [selectedProduct, setSelectedProduct] = useState(null);
-  const [editFormData, setEditFormData] = useState({
-    name: "",
-    category: "",
-    price: 0,
-    description: "",
+
+  const [addFormData, setAddFormData] = useState({
+    TenSanPham: "",
+    LoaiSanPham: "",
+    DonGia: "",
   });
+
+  const [editFormData, setEditFormData] = useState({
+    TenSanPham: "",
+    LoaiSanPham: "",
+    DonGia: "",
+  });
+
+  useEffect(() => {
+    fetchData();
+  }, []);
+
+  const fetchData = async () => {
+    try {
+      setLoading(true);
+      const results = await Promise.allSettled([productAPI.getAll()]);
+
+      const productsRes =
+        results[0]?.status === "fulfilled" ? results[0].value : null;
+
+      const productsData = productsRes?.data?.data ?? productsRes?.data ?? [];
+
+      setProducts(Array.isArray(productsData) ? productsData : []);
+      setError(null);
+    } catch (err) {
+      console.error("Error fetching data:", err);
+      setError(err.response?.data?.message || "Không thể tải dữ liệu");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleAdd = async () => {
+    try {
+      await productAPI.create(addFormData);
+      await fetchData();
+      setIsAddDialogOpen(false);
+      setAddFormData({
+        TenSanPham: "",
+        LoaiSanPham: "",
+        DonGia: "",
+      });
+      alert("Thêm sản phẩm thành công!");
+    } catch (err) {
+      console.error("Error adding product:", err);
+      alert(err.response?.data?.message || "Không thể thêm sản phẩm");
+    }
+  };
 
   const handleEdit = (product) => {
     setSelectedProduct(product);
     setEditFormData({
-      name: product.name,
-      category: product.category,
-      price: product.price,
-      description: product.description,
+      TenSanPham: product.TenSanPham || "",
+      LoaiSanPham: product.LoaiSanPham || "",
+      DonGia: product.DonGia || "",
     });
     setIsEditDialogOpen(true);
   };
 
-  const handleDelete = (product) => {
-    setSelectedProduct(product);
-    setIsDeleteDialogOpen(true);
+  const saveEdit = async () => {
+    try {
+      await productAPI.update(selectedProduct.MaSanPham, editFormData);
+      await fetchData();
+      setIsEditDialogOpen(false);
+      setSelectedProduct(null);
+      alert("Cập nhật sản phẩm thành công!");
+    } catch (err) {
+      console.error("Error updating product:", err);
+      alert(err.response?.data?.message || "Không thể cập nhật sản phẩm");
+    }
   };
 
-  const confirmDelete = () => {
-    setProducts(products.filter((prod) => prod.id !== selectedProduct.id));
-    setIsDeleteDialogOpen(false);
-    setSelectedProduct(null);
-  };
-
-  const saveEdit = () => {
-    setProducts(
-      products.map((prod) =>
-        prod.id === selectedProduct.id ? { ...prod, ...editFormData } : prod
-      )
+  if (loading) {
+    return (
+      <Card>
+        <CardContent className="p-6">
+          <div className="text-center">Đang tải dữ liệu...</div>
+        </CardContent>
+      </Card>
     );
-    setIsEditDialogOpen(false);
-    setSelectedProduct(null);
-  };
+  }
+
+  if (error) {
+    return (
+      <Card>
+        <CardContent className="p-6">
+          <div className="text-center text-red-600">{error}</div>
+          <Button onClick={fetchData} className="mt-4 mx-auto block">
+            Thử lại
+          </Button>
+        </CardContent>
+      </Card>
+    );
+  }
 
   return (
     <Card>
       <CardHeader>
         <div className="flex items-center justify-between">
           <div>
-            <CardTitle>Danh sách sản phẩm</CardTitle>
-            <CardDescription>
-              Quản lý tất cả sản phẩm trong hệ thống
+            <CardTitle className="text-orange-600 font-semibold text-xl">
+              Danh sách sản phẩm
+            </CardTitle>
+            <CardDescription className="text-gray-600">
+              Quản lý tất cả sản phẩm của công ty (10 chi nhánh)
             </CardDescription>
           </div>
+
           <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
             <DialogTrigger asChild>
-              <Button className="gap-2 bg-blue-100 text-blue-600 hover:bg-blue-600 hover:text-white transition-colors">
+              <Button
+                variant="outline"
+                className="gap-2 bg-orange-100 hover:bg-orange-600 hover:text-white transition-colors"
+              >
                 <Plus className="h-4 w-4" />
                 Thêm sản phẩm
               </Button>
             </DialogTrigger>
+
             <DialogContent>
               <DialogHeader>
-                <DialogTitle>Thêm sản phẩm mới</DialogTitle>
-                <DialogDescription>
+                <DialogTitle className="text-orange-600 font-semibold">
+                  Thêm sản phẩm mới
+                </DialogTitle>
+                <DialogDescription className="text-gray-600 mt-1">
                   Thêm sản phẩm mới vào danh mục
                 </DialogDescription>
               </DialogHeader>
+
               <div className="space-y-4 py-4">
                 <div className="space-y-2">
-                  <Label htmlFor="productName">Tên sản phẩm</Label>
+                  <Label htmlFor="TenSanPham">Tên sản phẩm</Label>
                   <Input
-                    id="productName"
-                    placeholder="Royal Canin Mini Adult"
+                    id="TenSanPham"
+                    placeholder="Nhập tên sản phẩm"
+                    value={addFormData.TenSanPham}
+                    onChange={(e) =>
+                      setAddFormData({
+                        ...addFormData,
+                        TenSanPham: e.target.value,
+                      })
+                    }
+                    className="text-black placeholder:text-gray-600"
                   />
                 </div>
+
                 <div className="space-y-2">
-                  <Label htmlFor="category">Danh mục</Label>
-                  <select
-                    id="category"
-                    className="w-full border rounded-lg p-2 flex h-10 border-input bg-background text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-                  >
-                    <option value="food">Thức ăn</option>
-                    <option value="medicine">Thuốc</option>
-                    <option value="accessory">Phụ kiện</option>
-                  </select>
+                  <Label htmlFor="LoaiSanPham">Loại sản phẩm</Label>
+                  <Input
+                    id="LoaiSanPham"
+                    placeholder="Thức ăn / Thuốc / Phụ kiện"
+                    value={addFormData.LoaiSanPham}
+                    onChange={(e) =>
+                      setAddFormData({
+                        ...addFormData,
+                        LoaiSanPham: e.target.value,
+                      })
+                    }
+                    className="text-black placeholder:text-gray-600"
+                  />
                 </div>
+
                 <div className="space-y-2">
-                  <Label htmlFor="price">Giá (VNĐ)</Label>
-                  <Input id="price" type="number" placeholder="450000" />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="description">Mô tả</Label>
-                  <Input id="description" placeholder="Mô tả sản phẩm" />
+                  <Label htmlFor="DonGia">Đơn giá (VNĐ)</Label>
+                  <Input
+                    id="DonGia"
+                    type="number"
+                    placeholder="Nhập đơn giá"
+                    value={addFormData.DonGia}
+                    onChange={(e) =>
+                      setAddFormData({
+                        ...addFormData,
+                        DonGia: Number(e.target.value),
+                      })
+                    }
+                    className="text-black placeholder:text-gray-600"
+                  />
                 </div>
               </div>
+
               <DialogFooter>
                 <Button
-                  onClick={() => setIsAddDialogOpen(false)}
-                  className="bg-blue-100 text-blue-600 border-blue-600 hover:bg-blue-600 hover:text-white transition-colors"
+                  onClick={handleAdd}
+                  variant="outline"
+                  className="bg-orange-100 hover:bg-orange-600 hover:text-white transition-colors"
                 >
                   Thêm sản phẩm
                 </Button>
@@ -1559,138 +1696,108 @@ function ProductManagement() {
           </Dialog>
         </div>
       </CardHeader>
+
       <CardContent>
         <div className="space-y-3">
-          {products.map((product) => (
-            <div
-              key={product.id}
-              className="flex items-center justify-between p-4 border rounded-lg"
-            >
-              <div>
-                <div className="font-semibold">{product.name}</div>
-                <div className="text-sm text-gray-500">{product.category}</div>
-                <div className="text-sm font-medium text-blue-600">
-                  {product.price.toLocaleString("vi-VN")} ₫
-                </div>
-                <div className="text-sm text-gray-500">
-                  {product.description}
-                </div>
-              </div>
-              <div className="flex gap-2">
-                <Button
-                  variant="outline"
-                  size="icon"
-                  className="text-green-600 hover:bg-green-600 hover:text-white transition-colors"
-                  onClick={() => handleEdit(product)}
-                >
-                  <Edit className="h-4 w-4" />
-                </Button>
-                <Button
-                  variant="outline"
-                  size="icon"
-                  className="text-red-600 hover:bg-red-600 hover:text-white transition-colors"
-                  onClick={() => handleDelete(product)}
-                >
-                  <Trash2 className="h-4 w-4" />
-                </Button>
-              </div>
+          {products.length === 0 ? (
+            <div className="text-center text-gray-500 py-8">
+              Không có sản phẩm nào
             </div>
-          ))}
+          ) : (
+            products.map((product) => (
+              <div
+                key={product.MaSanPham}
+                className="flex items-center justify-between p-4 border rounded-lg"
+              >
+                <div>
+                  <div className="font-semibold text-orange-600">
+                    {product.MaSanPham} - {product.TenSanPham}
+                  </div>
+                  <div className="text-sm text-gray-500">
+                    {product.LoaiSanPham} - {product.DonGia} VNĐ
+                  </div>
+                </div>
+
+                <div className="flex gap-2">
+                  <Button
+                    variant="outline"
+                    size="icon"
+                    className="text-green-600 hover:bg-green-600 hover:text-white transition-colors"
+                    onClick={() => handleEdit(product)}
+                  >
+                    <Edit className="h-4 w-4" />
+                  </Button>
+                </div>
+              </div>
+            ))
+          )}
         </div>
 
         {/* Edit Dialog */}
         <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
           <DialogContent>
             <DialogHeader>
-              <DialogTitle>Chỉnh sửa sản phẩm</DialogTitle>
+              <DialogTitle className="text-green-600 font-semibold">
+                Chỉnh sửa sản phẩm
+              </DialogTitle>
               <DialogDescription>
-                Cập nhật thông tin sản phẩm {selectedProduct?.name}
+                Cập nhật thông tin sản phẩm{" "}
+                <strong>{selectedProduct?.MaSanPham}</strong>
               </DialogDescription>
             </DialogHeader>
+
             <div className="space-y-4 py-4">
               <div className="space-y-2">
-                <Label htmlFor="edit-productName">Tên sản phẩm</Label>
+                <Label htmlFor="edit-TenSanPham">Tên sản phẩm</Label>
                 <Input
-                  id="edit-productName"
-                  value={editFormData.name}
-                  onChange={(e) =>
-                    setEditFormData({ ...editFormData, name: e.target.value })
-                  }
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="edit-category">Danh mục</Label>
-                <select
-                  id="edit-category"
-                  value={editFormData.category}
+                  id="edit-TenSanPham"
+                  value={editFormData.TenSanPham}
                   onChange={(e) =>
                     setEditFormData({
                       ...editFormData,
-                      category: e.target.value,
+                      TenSanPham: e.target.value,
                     })
                   }
-                  className="w-full border rounded-lg p-2 flex h-10 border-input bg-background text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-                >
-                  <option value="Thức ăn">Thức ăn</option>
-                  <option value="Thuốc">Thuốc</option>
-                  <option value="Phụ kiện">Phụ kiện</option>
-                </select>
+                />
               </div>
+
               <div className="space-y-2">
-                <Label htmlFor="edit-price">Giá (VNĐ)</Label>
+                <Label htmlFor="edit-LoaiSanPham">Loại sản phẩm</Label>
                 <Input
-                  id="edit-price"
+                  id="edit-LoaiSanPham"
+                  value={editFormData.LoaiSanPham}
+                  onChange={(e) =>
+                    setEditFormData({
+                      ...editFormData,
+                      LoaiSanPham: e.target.value,
+                    })
+                  }
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="edit-DonGia">Đơn giá (VNĐ)</Label>
+                <Input
+                  id="edit-DonGia"
                   type="number"
-                  value={editFormData.price}
+                  value={editFormData.DonGia}
                   onChange={(e) =>
                     setEditFormData({
                       ...editFormData,
-                      price: parseInt(e.target.value),
-                    })
-                  }
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="edit-description">Mô tả</Label>
-                <Input
-                  id="edit-description"
-                  value={editFormData.description}
-                  onChange={(e) =>
-                    setEditFormData({
-                      ...editFormData,
-                      description: e.target.value,
+                      DonGia: e.target.value,
                     })
                   }
                 />
               </div>
             </div>
+
             <DialogFooter>
               <Button
                 onClick={saveEdit}
-                className="bg-green-100 text-green-600 border-green-600 hover:bg-green-600 hover:text-white transition-colors"
+                variant="outline"
+                className="bg-green-100 hover:bg-green-600 hover:text-white transition-colors"
               >
                 Lưu thay đổi
-              </Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
-
-        {/* Delete Confirmation Dialog */}
-        <Dialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
-          <DialogContent className="gap-0">
-            <DialogHeader className="pb-4">
-              <DialogTitle>Xác nhận xóa sản phẩm</DialogTitle>
-              <DialogDescription>
-                Bạn có chắc chắn muốn xóa sản phẩm{" "}
-                <strong>{selectedProduct?.name}</strong> khỏi hệ thống?
-              </DialogDescription>
-            </DialogHeader>
-            <DialogFooter className="pt-4">
-              <Button
-                onClick={confirmDelete}
-                className="bg-red-100 text-red-600 border-red-600 hover:bg-red-600 hover:text-white transition-colors"
-              >
-                Xác nhận
               </Button>
             </DialogFooter>
           </DialogContent>
@@ -1704,65 +1811,116 @@ function ProductManagement() {
 // 7. COMPONENT CON: VaccineManagement
 // ======================================================================
 function VaccineManagement() {
-  const [vaccines, setVaccines] = useState([
-    {
-      id: 1,
-      name: "Vắc-xin 5 bệnh",
-      manufacturer: "Nobivac",
-      price: 200000,
-      description: "Phòng bệnh Care, Parvo, Parainfluenza, Adeno, Lepto",
-    },
-    {
-      id: 2,
-      name: "Vắc-xin dại",
-      manufacturer: "Rabigen",
-      price: 150000,
-      description: "Phòng bệnh dại cho chó mèo",
-    },
-  ]);
+  const [vaccines, setVaccines] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
-  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [selectedVaccine, setSelectedVaccine] = useState(null);
-  const [editFormData, setEditFormData] = useState({
-    name: "",
-    manufacturer: "",
-    price: 0,
-    description: "",
+
+  const [addFormData, setAddFormData] = useState({
+    TenVacXin: "",
+    HangSanXuat: "",
+    GiaTien: "",
+    MoTa: "",
   });
+
+  const [editFormData, setEditFormData] = useState({
+    TenVacXin: "",
+    HangSanXuat: "",
+    GiaTien: "",
+    MoTa: "",
+  });
+
+  useEffect(() => {
+    fetchData();
+  }, []);
+
+  const fetchData = async () => {
+    try {
+      setLoading(true);
+      const results = await Promise.allSettled([vaccinationAPI.getAll()]);
+
+      const vaccinesRes =
+        results[0]?.status === "fulfilled" ? results[0].value : null;
+
+      const vaccinesData = vaccinesRes?.data?.data ?? vaccinesRes?.data ?? [];
+
+      setVaccines(Array.isArray(vaccinesData) ? vaccinesData : []);
+      setError(null);
+    } catch (err) {
+      console.error("Error fetching data:", err);
+      setError(err.response?.data?.message || "Không thể tải dữ liệu");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleAdd = async () => {
+    try {
+      await vaccinationAPI.create(addFormData);
+      await fetchData();
+      setIsAddDialogOpen(false);
+      setAddFormData({
+        TenVacXin: "",
+        HangSanXuat: "",
+        GiaTien: "",
+        MoTa: "",
+      });
+      alert("Thêm vắc-xin thành công!");
+    } catch (err) {
+      console.error("Error adding vaccine:", err);
+      alert(err.response?.data?.message || "Không thể thêm vắc-xin");
+    }
+  };
 
   const handleEdit = (vaccine) => {
     setSelectedVaccine(vaccine);
     setEditFormData({
-      name: vaccine.name,
-      manufacturer: vaccine.manufacturer,
-      price: vaccine.price,
-      description: vaccine.description,
+      TenVacXin: vaccine.TenVacXin || "",
+      HangSanXuat: vaccine.HangSanXuat || "",
+      GiaTien: vaccine.GiaTien || "",
+      MoTa: vaccine.MoTa || "",
     });
     setIsEditDialogOpen(true);
   };
 
-  const handleDelete = (vaccine) => {
-    setSelectedVaccine(vaccine);
-    setIsDeleteDialogOpen(true);
+  const saveEdit = async () => {
+    try {
+      await vaccinationAPI.update(selectedVaccine.MaVacXin, editFormData);
+      await fetchData();
+      setIsEditDialogOpen(false);
+      setSelectedVaccine(null);
+      alert("Cập nhật vắc-xin thành công!");
+    } catch (err) {
+      console.error("Error updating vaccine:", err);
+      alert(err.response?.data?.message || "Không thể cập nhật vắc-xin");
+    }
   };
 
-  const confirmDelete = () => {
-    setVaccines(vaccines.filter((vac) => vac.id !== selectedVaccine.id));
-    setIsDeleteDialogOpen(false);
-    setSelectedVaccine(null);
-  };
-
-  const saveEdit = () => {
-    setVaccines(
-      vaccines.map((vac) =>
-        vac.id === selectedVaccine.id ? { ...vac, ...editFormData } : vac
-      )
+  if (loading) {
+    return (
+      <Card>
+        <CardContent className="p-6">
+          <div className="text-center">Đang tải dữ liệu...</div>
+        </CardContent>
+      </Card>
     );
-    setIsEditDialogOpen(false);
-    setSelectedVaccine(null);
-  };
+  }
+
+  if (error) {
+    return (
+      <Card>
+        <CardContent className="p-6">
+          <div className="text-center text-red-600">{error}</div>
+          <Button onClick={fetchData} className="mt-4 mx-auto block">
+            Thử lại
+          </Button>
+        </CardContent>
+      </Card>
+    );
+  }
 
   return (
     <Card>
@@ -1790,25 +1948,70 @@ function VaccineManagement() {
               </DialogHeader>
               <div className="space-y-4 py-4">
                 <div className="space-y-2">
-                  <Label htmlFor="vaccineName">Tên vắc-xin</Label>
-                  <Input id="vaccineName" placeholder="Vắc-xin 5 bệnh" />
+                  <Label htmlFor="TenVacXin">Tên vắc-xin</Label>
+                  <Input
+                    id="TenVacXin"
+                    placeholder="Vắc-xin 5 bệnh"
+                    value={addFormData.TenVacXin}
+                    onChange={(e) =>
+                      setAddFormData({
+                        ...addFormData,
+                        TenVacXin: e.target.value,
+                      })
+                    }
+                    className="text-black placeholder:text-gray-600"
+                  />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="manufacturer">Nhà sản xuất</Label>
-                  <Input id="manufacturer" placeholder="Nobivac" />
+                  <Label htmlFor="HangSanXuat">Nhà sản xuất</Label>
+                  <Input
+                    id="HangSanXuat"
+                    placeholder="Nobivac"
+                    value={addFormData.HangSanXuat}
+                    onChange={(e) =>
+                      setAddFormData({
+                        ...addFormData,
+                        HangSanXuat: e.target.value,
+                      })
+                    }
+                    className="text-black placeholder:text-gray-600"
+                  />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="vaccinePrice">Giá (VNĐ)</Label>
-                  <Input id="vaccinePrice" type="number" placeholder="200000" />
+                  <Label htmlFor="GiaTien">Giá (VNĐ)</Label>
+                  <Input
+                    id="GiaTien"
+                    type="number"
+                    placeholder="200000"
+                    value={addFormData.GiaTien}
+                    onChange={(e) =>
+                      setAddFormData({
+                        ...addFormData,
+                        GiaTien: e.target.value,
+                      })
+                    }
+                    className="text-black placeholder:text-gray-600"
+                  />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="vaccineDescription">Mô tả</Label>
-                  <Input id="vaccineDescription" placeholder="Mô tả vắc-xin" />
+                  <Label htmlFor="MoTa">Mô tả</Label>
+                  <Input
+                    id="MoTa"
+                    placeholder="Mô tả vắc-xin"
+                    value={addFormData.MoTa}
+                    onChange={(e) =>
+                      setAddFormData({
+                        ...addFormData,
+                        MoTa: e.target.value,
+                      })
+                    }
+                    className="text-black placeholder:text-gray-600"
+                  />
                 </div>
               </div>
               <DialogFooter>
                 <Button
-                  onClick={() => setIsAddDialogOpen(false)}
+                  onClick={handleAdd}
                   className="bg-blue-100 text-blue-600 border-blue-600 hover:bg-blue-600 hover:text-white transition-colors"
                 >
                   Thêm vắc-xin
@@ -1820,43 +2023,43 @@ function VaccineManagement() {
       </CardHeader>
       <CardContent>
         <div className="space-y-3">
-          {vaccines.map((vaccine) => (
-            <div
-              key={vaccine.id}
-              className="flex items-center justify-between p-4 border rounded-lg"
-            >
-              <div>
-                <div className="font-semibold">{vaccine.name}</div>
-                <div className="text-sm text-gray-500">
-                  {vaccine.manufacturer}
-                </div>
-                <div className="text-sm font-medium text-blue-600">
-                  {vaccine.price.toLocaleString("vi-VN")} ₫
-                </div>
-                <div className="text-sm text-gray-500">
-                  {vaccine.description}
-                </div>
-              </div>
-              <div className="flex gap-2">
-                <Button
-                  variant="outline"
-                  size="icon"
-                  className="text-green-600 hover:bg-green-600 hover:text-white transition-colors"
-                  onClick={() => handleEdit(vaccine)}
-                >
-                  <Edit className="h-4 w-4" />
-                </Button>
-                <Button
-                  variant="outline"
-                  size="icon"
-                  className="text-red-600 hover:bg-red-600 hover:text-white transition-colors"
-                  onClick={() => handleDelete(vaccine)}
-                >
-                  <Trash2 className="h-4 w-4" />
-                </Button>
-              </div>
+          {vaccines.length === 0 ? (
+            <div className="text-center text-gray-500 py-8">
+              Không có vắc-xin nào
             </div>
-          ))}
+          ) : (
+            vaccines.map((vaccine) => (
+              <div
+                key={vaccine.MaVacXin}
+                className="flex items-center justify-between p-4 border rounded-lg"
+              >
+                <div>
+                  <div className="font-semibold text-pink-600">
+                    {vaccine.MaVacXin} - {vaccine.TenVacXin}
+                  </div>
+                  <div className="text-sm text-gray-500">
+                    {vaccine.HangSanXuat}
+                  </div>
+                  <div className="text-sm font-medium text-green-600">
+                    {vaccine.GiaTien?.toLocaleString("vi-VN")} ₫
+                  </div>
+                  {vaccine.MoTa && (
+                    <div className="text-sm text-gray-500">{vaccine.MoTa}</div>
+                  )}
+                </div>
+                <div className="flex gap-2">
+                  <Button
+                    variant="outline"
+                    size="icon"
+                    className="text-green-600 hover:bg-green-600 hover:text-white transition-colors"
+                    onClick={() => handleEdit(vaccine)}
+                  >
+                    <Edit className="h-4 w-4" />
+                  </Button>
+                </div>
+              </div>
+            ))
+          )}
         </div>
 
         {/* Edit Dialog */}
@@ -1865,56 +2068,59 @@ function VaccineManagement() {
             <DialogHeader>
               <DialogTitle>Chỉnh sửa vắc-xin</DialogTitle>
               <DialogDescription>
-                Cập nhật thông tin vắc-xin {selectedVaccine?.name}
+                Cập nhật thông tin vắc-xin {selectedVaccine?.MaVacXin}
               </DialogDescription>
             </DialogHeader>
             <div className="space-y-4 py-4">
               <div className="space-y-2">
-                <Label htmlFor="edit-vaccineName">Tên vắc-xin</Label>
+                <Label htmlFor="edit-TenVacXin">Tên vắc-xin</Label>
                 <Input
-                  id="edit-vaccineName"
-                  value={editFormData.name}
-                  onChange={(e) =>
-                    setEditFormData({ ...editFormData, name: e.target.value })
-                  }
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="edit-manufacturer">Nhà sản xuất</Label>
-                <Input
-                  id="edit-manufacturer"
-                  value={editFormData.manufacturer}
+                  id="edit-TenVacXin"
+                  value={editFormData.TenVacXin}
                   onChange={(e) =>
                     setEditFormData({
                       ...editFormData,
-                      manufacturer: e.target.value,
+                      TenVacXin: e.target.value,
                     })
                   }
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="edit-vaccinePrice">Giá (VNĐ)</Label>
+                <Label htmlFor="edit-HangSanXuat">Nhà sản xuất</Label>
                 <Input
-                  id="edit-vaccinePrice"
+                  id="edit-HangSanXuat"
+                  value={editFormData.HangSanXuat}
+                  onChange={(e) =>
+                    setEditFormData({
+                      ...editFormData,
+                      HangSanXuat: e.target.value,
+                    })
+                  }
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="edit-GiaTien">Giá (VNĐ)</Label>
+                <Input
+                  id="edit-GiaTien"
                   type="number"
-                  value={editFormData.price}
+                  value={editFormData.GiaTien}
                   onChange={(e) =>
                     setEditFormData({
                       ...editFormData,
-                      price: parseInt(e.target.value),
+                      GiaTien: parseInt(e.target.value),
                     })
                   }
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="edit-vaccineDescription">Mô tả</Label>
+                <Label htmlFor="edit-MoTa">Mô tả</Label>
                 <Input
-                  id="edit-vaccineDescription"
-                  value={editFormData.description}
+                  id="edit-MoTa"
+                  value={editFormData.MoTa}
                   onChange={(e) =>
                     setEditFormData({
                       ...editFormData,
-                      description: e.target.value,
+                      MoTa: e.target.value,
                     })
                   }
                 />
@@ -1926,27 +2132,6 @@ function VaccineManagement() {
                 className="bg-green-100 text-green-600 border-green-600 hover:bg-green-600 hover:text-white transition-colors"
               >
                 Lưu thay đổi
-              </Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
-
-        {/* Delete Confirmation Dialog */}
-        <Dialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
-          <DialogContent className="gap-0">
-            <DialogHeader className="pb-4">
-              <DialogTitle>Xác nhận xóa vắc-xin</DialogTitle>
-              <DialogDescription>
-                Bạn có chắc chắn muốn xóa vắc-xin{" "}
-                <strong>{selectedVaccine?.name}</strong> khỏi hệ thống?
-              </DialogDescription>
-            </DialogHeader>
-            <DialogFooter className="pt-4">
-              <Button
-                onClick={confirmDelete}
-                className="bg-red-100 text-red-600 border-red-600 hover:bg-red-600 hover:text-white transition-colors"
-              >
-                Xác nhận
               </Button>
             </DialogFooter>
           </DialogContent>
