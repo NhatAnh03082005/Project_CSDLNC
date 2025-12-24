@@ -320,14 +320,14 @@ async function updatePet(customerId, petId, petData) {
 async function deletePet(customerId, petId) {
   try {
     // Kiểm tra thú cưng có thuộc về khách hàng này không
-    const petCheck = await verifyPetOwnership(customerId, petId);
-    if (!petCheck.success) {
-      return {
-        success: false,
-        status: 404,
-        message: "Không tìm thấy thú cưng hoặc bạn không có quyền xóa thú cưng này",
-      };
-    }
+    // const petCheck = await verifyPetOwnership(customerId, petId);
+    // if (!petCheck.success) {
+    //   return {
+    //     success: false,
+    //     status: 404,
+    //     message: "Không tìm thấy thú cưng hoặc bạn không có quyền xóa thú cưng này",
+    //   };
+    // }
 
     const pool = await poolPromise;
 

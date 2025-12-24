@@ -80,3 +80,8 @@
     @apply bg-background text-foreground;
   }
 }
+/* Tùy chỉnh màu sắc khi bôi đen văn bản trong các ô Input */
+input::selection {
+  background-color: #3b82f6 !important; /* Màu xanh đậm blue-500 */
+  color: white !important;
+}

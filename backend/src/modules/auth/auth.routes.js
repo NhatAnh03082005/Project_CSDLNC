@@ -2,6 +2,7 @@ const express = require('express');
 const { body } = require('express-validator');
 const validate = require('../../middlewares/validate');
 const authController = require('./auth.controller');
+const { authenticate } = require('../../middlewares/auth');
 const router = express.Router();
 
 // Controllers (sẽ implement sau)
@@ -22,20 +23,16 @@ router.post(
  * @desc    Đăng nhập
  * @access  Public
  */
-router.post('/login', (req, res) => {
-  // TODO: Implement login logic
-  res.json({ message: 'Login endpoint' });
-});
+router.post('/login',authController.login);
 
 /**
  * @route   POST /api/auth/logout
  * @desc    Đăng xuất
  * @access  Private
  */
-router.post('/logout', (req, res) => {
-  // TODO: Implement logout logic
-  res.json({ message: 'Logout endpoint' });
-});
+router.post('/logout',authenticate,
+  authController.logout
+);
 
 /**
  * @route   GET /api/auth/me
@@ -48,3 +45,4 @@ router.get('/me', (req, res) => {
 });
 
 module.exports = router;
+

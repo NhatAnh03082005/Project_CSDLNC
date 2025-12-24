@@ -20,6 +20,9 @@ class CustomersService {
         `
         );
 
+        console.log(result);
+        
+
       if (result.recordset.length === 0) {
         return {
           success: false,
@@ -44,25 +47,27 @@ class CustomersService {
     }
   }
 
+  // customers.service.js
+
   /**
    * Cập nhật thông tin hồ sơ khách hàng
    * @param {string} customerId
    * @param {object} payload
    */
   async updateProfile(customerId, payload) {
-    const { HoTen, GioiTinh, SDT, Email, NgaySinh } = payload;
+    const { HoTen, GioiTinh, SDT, Email, NgaySinh, CCCD } = payload;
 
-    // Không cho phép thay đổi Email vì đây là tài khoản đăng nhập
+    // 1. Kiểm tra Email (Giữ nguyên logic không cho đổi email)
     if (Email !== undefined) {
       return {
         success: false,
         status: 400,
-        message:
-          "Không được phép thay đổi email. Vui lòng liên hệ hỗ trợ nếu cần cập nhật email.",
+        message: "Không được phép thay đổi email. Vui lòng liên hệ hỗ trợ nếu cần cập nhật email.",
       };
     }
 
-    if (!HoTen && !GioiTinh && !SDT && !NgaySinh) {
+    // 2. Kiểm tra dữ liệu rỗng
+    if (!HoTen && !GioiTinh && !SDT && !NgaySinh && !CCCD) {
       return {
         success: false,
         status: 400,
@@ -72,13 +77,21 @@ class CustomersService {
 
     try {
       const pool = await poolPromise;
-      const request = pool.request().input(
-        "MaKhachHang",
-        sql.Char(7),
-        customerId
-      );
 
-      // Xây dựng phần SET động, chỉ cập nhật field được gửi lên
+      // 3. Kiểm tra trùng lặp CCCD nếu có thay đổi
+      if (CCCD !== undefined) {
+        const dupCheck = await pool.request()
+          .input("CCCD", sql.Char(12), CCCD)
+          .input("MaKH", sql.Char(7), customerId)
+          .query("SELECT 1 FROM dbo.KhachHang WHERE CCCD = @CCCD AND MaKhachHang <> @MaKH");
+
+        if (dupCheck.recordset.length > 0) {
+          return { success: false, status: 409, message: "Số CCCD đã tồn tại trong hệ thống" };
+        }
+      }
+
+      // 4. Khởi tạo request để thực hiện UPDATE
+      const request = pool.request().input("MaKhachHang", sql.Char(7), customerId);
       const setClauses = [];
 
       if (HoTen !== undefined) {
@@ -101,12 +114,17 @@ class CustomersService {
         request.input("NgaySinh", sql.Date, NgaySinh || null);
       }
 
+      if (CCCD !== undefined) {
+        setClauses.push("CCCD = @CCCD");
+        request.input("CCCD", sql.Char(12), CCCD);
+      }
+
       const updateQuery = `
         UPDATE dbo.KhachHang
         SET ${setClauses.join(", ")}
         WHERE MaKhachHang = @MaKhachHang;
 
-        SELECT TOP 1 *
+        SELECT TOP 1 MaKhachHang, HoTen, GioiTinh, SDT, CCCD, Email, NgaySinh, DiemLoyalty, CapHoiVien
         FROM dbo.KhachHang
         WHERE MaKhachHang = @MaKhachHang;
       `;

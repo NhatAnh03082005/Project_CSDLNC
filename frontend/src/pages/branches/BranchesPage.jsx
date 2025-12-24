@@ -137,7 +137,7 @@ export default function BranchesPage() {
         <div className="container mx-auto flex h-16 items-center justify-between px-4">
           <div className="flex items-center gap-2">
             <Heart className="h-8 w-8 text-blue-600 fill-blue-600" />
-            <span className="text-xl font-bold text-blue-900">PetCare</span>
+            <span className="text-xl font-bold text-blue-900">PetCareX</span>
           </div>
         </div>
       </header>
@@ -145,7 +145,7 @@ export default function BranchesPage() {
       {/* Main Content */}
       <div className="container mx-auto px-4 py-12">
         <div className="mb-8">
-          <Link to="/">
+          <Link to="/customer">
             <Button variant="ghost" className="gap-2 mb-4">
               <ArrowLeft className="h-4 w-4" />
               Quay lại
