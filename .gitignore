@@ -1,13 +1,13 @@
 # dependencies
 node_modules/
 
-# build
-dist/
-build/
-
 # env
 .env
 .env.local
+
+# build
+dist/
+build/
 
 # logs
 npm-debug.log*
