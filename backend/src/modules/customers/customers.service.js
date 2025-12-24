@@ -14,7 +14,7 @@ class CustomersService {
         .input("CustomerId", sql.Char(7), customerId)
         .query(
           `
-          SELECT TOP 1 *
+          SELECT TOP 1 MaKhachHang, HoTen, GioiTinh, SDT, CCCD, Email, NgaySinh, DiemLoyalty, CapHoiVien
           FROM dbo.KhachHang
           WHERE MaKhachHang = @CustomerId
         `

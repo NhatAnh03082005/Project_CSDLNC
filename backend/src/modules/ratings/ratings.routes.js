@@ -2,14 +2,25 @@ const express = require('express');
 const router = express.Router();
 const { authenticate, authorize } = require('../../middlewares/auth');
 const { ROLES } = require('../../config/constants');
+const ratingsService = require('./ratings.service');
 
 /**
  * @route   POST /api/ratings
- * @desc    Đánh giá dịch vụ
+ * @desc    Đánh giá dịch vụ (khám bệnh hoặc tiêm phòng)
  * @access  Private - KHACH_HANG
  */
-router.post('/', authenticate, authorize(ROLES.CUSTOMER), (req, res) => {
-  res.json({ message: 'Create rating' });
+router.post('/', authenticate, authorize(ROLES.CUSTOMER), async (req, res) => {
+  const customerId = req.user.maKhachHang;
+
+  if (!customerId) {
+    return res.status(400).json({
+      success: false,
+      message: 'Không tìm thấy mã khách hàng trong token',
+    });
+  }
+
+  const response = await ratingsService.createOrUpdateRating(customerId, req.body);
+  return res.status(response.status || 200).json(response);
 });
 
 /**
@@ -32,11 +43,21 @@ router.get('/service/:serviceId', (req, res) => {
 
 /**
  * @route   GET /api/ratings/my-ratings
- * @desc    Đánh giá của tôi
+ * @desc    Danh sách dịch vụ sức khỏe đã sử dụng để đánh giá (sắp xếp theo thời gian)
  * @access  Private - KHACH_HANG
  */
-router.get('/my-ratings', authenticate, authorize(ROLES.CUSTOMER), (req, res) => {
-  res.json({ message: 'Get my ratings' });
+router.get('/my-ratings', authenticate, authorize(ROLES.CUSTOMER), async (req, res) => {
+  const customerId = req.user.maKhachHang;
+
+  if (!customerId) {
+    return res.status(400).json({
+      success: false,
+      message: 'Không tìm thấy mã khách hàng trong token',
+    });
+  }
+
+  const response = await ratingsService.getRateableServices(customerId);
+  return res.status(response.status || 200).json(response);
 });
 
 /**

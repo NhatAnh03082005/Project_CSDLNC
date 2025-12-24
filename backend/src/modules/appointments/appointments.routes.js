@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const { authenticate, authorize } = require('../../middlewares/auth');
 const { ROLES } = require('../../config/constants');
+const appointmentsService = require('./appointments.service');
 
 /**
  * @route   GET /api/appointments
@@ -14,11 +15,21 @@ router.get('/', authenticate, (req, res) => {
 
 /**
  * @route   POST /api/appointments
- * @desc    Đặt lịch hẹn mới
+ * @desc    Đặt lịch hẹn mới (khám bệnh hoặc tiêm phòng)
  * @access  Private - KHACH_HANG
  */
-router.post('/', authenticate, authorize(ROLES.CUSTOMER), (req, res) => {
-  res.json({ message: 'Create appointment' });
+router.post('/', authenticate, authorize(ROLES.CUSTOMER), async (req, res) => {
+  const customerId = req.user.maKhachHang;
+
+  if (!customerId) {
+    return res.status(400).json({
+      success: false,
+      message: 'Không tìm thấy mã khách hàng trong token',
+    });
+  }
+
+  const response = await appointmentsService.createAppointment(customerId, req.body);
+  return res.status(response.status || 200).json(response);
 });
 
 /**
@@ -44,8 +55,26 @@ router.put('/:id', authenticate, (req, res) => {
  * @desc    Hủy lịch hẹn
  * @access  Private - KHACH_HANG
  */
-router.put('/:id/cancel', authenticate, authorize(ROLES.CUSTOMER), (req, res) => {
-  res.json({ message: 'Cancel appointment' });
+router.put('/:id/cancel', authenticate, authorize(ROLES.CUSTOMER), async (req, res) => {
+  const customerId = req.user.maKhachHang;
+  const { id: maLichHen } = req.params;
+
+  if (!customerId) {
+    return res.status(400).json({
+      success: false,
+      message: 'Không tìm thấy mã khách hàng trong token',
+    });
+  }
+
+  if (!maLichHen) {
+    return res.status(400).json({
+      success: false,
+      message: 'Thiếu mã lịch hẹn',
+    });
+  }
+
+  const response = await appointmentsService.cancelAppointment(customerId, maLichHen);
+  return res.status(response.status || 200).json(response);
 });
 
 /**
@@ -79,9 +108,11 @@ router.get('/schedule', authenticate, authorize(ROLES.EMPLOYEE, ROLES.ADMIN), (r
  * @route   GET /api/appointments/available-slots
  * @desc    Khung giờ còn trống để đặt lịch
  * @access  Private - KHACH_HANG
+ * @query   MaChiNhanh, LoaiDichVu, ThoiGianHen, BacSiPhuTrach? (optional)
  */
-router.get('/available-slots', authenticate, authorize(ROLES.CUSTOMER), (req, res) => {
-  res.json({ message: 'Get available time slots' });
+router.get('/available-slots', authenticate, authorize(ROLES.CUSTOMER), async (req, res) => {
+  const response = await appointmentsService.getAvailableSlots(req.query);
+  return res.status(response.status || 200).json(response);
 });
 
 module.exports = router;
