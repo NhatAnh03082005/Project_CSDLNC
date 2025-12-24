@@ -34,6 +34,9 @@ import VaccinationRecordsPage from './pages/staff/vaccination-records/Vaccinatio
 import AdminDemo from './pages/admin/demo/AdminDemo.jsx'; // Dashboard Admin (/admin/demo)
 import ManagementPage from './pages/admin/management/ManagementPage.jsx'; // Quản lý (/admin/management)
 import StatisticsPage from './pages/admin/statistics/StatisticsPage.jsx'; // Thống kê (/admin/statistics)
+import MainLayout from './components/layout/mainlayout.jsx';
+import InvoiceDetailPage from './pages/invoicesDetailPage/InvoicesDetailPage.jsx';
+import CustomerInvoicesPage from './pages/CustomerInvoicesPage/CustomerInvoicesPage.jsx';
 
 // =========================================================
 // 3. ĐỊNH TUYẾN CHÍNH
@@ -42,11 +45,22 @@ function App() {
   return (
     <Router>
       <Routes>
+        <Route element={<MainLayout />}>
         {/* === PHÂN KHU KHÁCH HÀNG (CUSTOMER) === */}
-        <Route path="/" element={<CustomerHome />} />
         <Route path="/services" element={<ServicesPage />} />
         <Route path="/products" element={<ProductsPage />} />
         <Route path="/about" element={<AboutPage />} />
+        <Route path="/customer" element={<CustomerHome />} />
+        <Route path="/reviews" element={<ReviewsPage />} />
+        <Route path="/vaccination-packages" element={<VaccinationPackagesPage />} />
+        <Route path="/pets" element={<PetsPage />} />
+        <Route path="/profile" element={<ProfilePage />} />
+        <Route path="/invoices" element={<CustomerInvoicesPage/>} />
+        <Route path="/invoices/:id" element={<InvoiceDetailPage/>} />
+        </Route>
+        
+        
+        
 
         {/* CÔNG CỤ */}
         <Route path="/branches" element={<BranchesPage />} />
@@ -54,18 +68,13 @@ function App() {
         <Route path="/checkout" element={<CheckoutPage />} />
         <Route path="/appointments" element={<AppointmentsPage />} />
         
-        {/* HỒ SƠ NGƯỜI DÙNG */}
-        <Route path="/pets" element={<PetsPage />} />
-        <Route path="/profile" element={<ProfilePage />} />
-        <Route path="/reviews" element={<ReviewsPage />} />
-        <Route path="/vaccination-packages" element={<VaccinationPackagesPage />} />
         
         {/* === PHÂN KHU XÁC THỰC (AUTH) === */}
-        <Route path="/auth/login" element={<LoginPage />} />
-        <Route path="/auth/register" element={<RegisterPage />} />
         {/* Định tuyến tiện lợi (cho Link đơn giản): */}
-        <Route path="/login" element={<LoginPage />} />
+       <Route path="/" element={<LoginPage />} />
         <Route path="/register" element={<RegisterPage />} />
+       <Route path="/login" element={<LoginPage />} />
+
 
 
         {/* === PHÂN KHU NHÂN VIÊN (STAFF) === */}

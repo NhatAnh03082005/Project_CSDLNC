@@ -17,7 +17,7 @@ function BookingContent() {
         <div className="container mx-auto flex h-16 items-center justify-between px-4">
           <div className="flex items-center gap-2">
             <Heart className="h-8 w-8 text-blue-600 fill-blue-600" />
-            <span className="text-xl font-bold text-blue-900">PetCare</span>
+            <span className="text-xl font-bold text-blue-900">PetCareX</span>
           </div>
         </div>
       </header>

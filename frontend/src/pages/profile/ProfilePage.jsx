@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 // 1. Thay thế Next.js Link bằng React Router DOM Link
 import { Link } from "react-router-dom"; 
 
@@ -20,113 +20,66 @@ import { Avatar, AvatarFallback, AvatarImage } from "../../components/ui/avatar"
 import { Badge } from "../../components/ui/badge";
 import { Progress } from "../../components/ui/progress";
 import { Heart, ArrowLeft, User, FolderOpen, ClipboardPlus, Star, Crown, TrendingUp, Award } from "lucide-react";
+import { useAuth } from "../../context/AuthContext";
+import { customerAPI } from "../../api/services";
 
 export default function ProfilePage() {
   const [isEditing, setIsEditing] = useState(false);
+  const {user} = useAuth();
   // Loại bỏ khai báo kiểu TypeScript cho state profile
-  const [profile, setProfile] = useState({
-    fullName: "Nguyễn Văn A",
-    phone: "0901234567",
-    email: "khachhang@email.com",
-    idCard: "001234567890",
-    dateOfBirth: "1990-01-15",
-    gender: "male",
-    loyaltyPoints: 850,
-    membershipTier: "Thân thiết",
-    currentSpending: 8500000,
-    basicTierMin: 0,
-    loyalTierMin: 5000000,
-    vipTierMin: 15000000,
-    maintainSpending: 3000000,
-  });
+  const [formData, setFormData] = useState(() => ({
+    HoTen: user.HoTen,
+    SDT: user.SDT,
+    CCCD: user.CCCD,
+    NgaySinh: user.NgaySinh?.split("T")[0] || "",
+    GioiTinh: user.GioiTinh || "Nam"
+  }));
 
-  // Loại bỏ khai báo kiểu TypeScript: (field: string, value: string)
-  const handleInputChange = (field, value) => {
-    setProfile({ ...profile, [field]: value });
+  useEffect(() => {
+    setFormData({
+      HoTen: user?.HoTen || "",
+      SDT: user?.SDT || "",
+      CCCD: user?.CCCD || "",
+      NgaySinh: user?.NgaySinh ? user.NgaySinh.split("T")[0] : "",
+      GioiTinh: user?.GioiTinh || "Nam",
+    });
+  }, [user]);
+ const handleChange = (e) => {
+    const { name, value } = e.target;
+    setFormData((prev) => ({
+      ...prev,
+      [name]: value,
+    }));
   };
 
-  const handleSave = () => {
-    setIsEditing(false);
-    // TODO: Save profile data to backend
+  const handleSelectChange = (value) => {
+    setFormData((prev) => ({
+      ...prev,
+      GioiTinh: value,
+    }));
+  };
+  const handleSave = async () => {
+    try {
+      const response = await customerAPI.updateProfile(formData);
+      setIsEditing(false);
+      if(response.status){
+        alert(
+        "Cập nhật thông tin thành công"
+        )
+      }
+    } catch (error) {
+      console.error("Lỗi khi lưu profile:", error);
+      // TODO: show toast error
+    }
   };
 
-  const progressToNextTier =
-    profile.membershipTier === "Cơ bản"
-      ? (profile.currentSpending / profile.loyalTierMin) * 100
-      : profile.membershipTier === "Thân thiết"
-      ? (profile.currentSpending / profile.vipTierMin) * 100
-      : 100;
-
+    const currentSpending = 8500000;
+    const basicTierMin = 0;
+    const loyalTierMin = 5000000;
+    const vipTierMin = 15000000;
+    const maintainSpending = 3000000;
   return (
     <div className="min-h-screen bg-gradient-to-b from-blue-50 to-white">
-      {/* Header */}
-      <header className="sticky top-0 z-50 w-full border-b bg-white/95 backdrop-blur supports-[backdrop-filter]:bg-white/60">
-        <div className="container mx-auto flex h-16 items-center justify-between px-4">
-          <div className="flex items-center gap-4">
-            {/* Sửa Link href -> to */}
-            <Link to="/">
-              <Button variant="ghost" size="icon">
-                <ArrowLeft className="h-5 w-5" />
-              </Button>
-            </Link>
-            <div className="flex items-center gap-2">
-              <Heart className="h-8 w-8 text-blue-600 fill-blue-600" />
-              <span className="text-xl font-bold text-blue-900">PetCare</span>
-            </div>
-          </div>
-          <div className="flex items-center gap-3">
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="ghost" className="relative h-10 w-10 rounded-full">
-                  <Avatar className="h-10 w-10">
-                    <AvatarImage src="/abstract-geometric-shapes.png" alt="User" />
-                    <AvatarFallback>KH</AvatarFallback>
-                  </Avatar>
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent className="w-56" align="end" forceMount>
-                <DropdownMenuLabel className="font-normal">
-                  <div className="flex flex-col space-y-1">
-                    <p className="text-sm font-medium leading-none">Khách hàng</p>
-                    <p className="text-xs leading-none text-muted-foreground">khachhang@email.com</p>
-                  </div>
-                </DropdownMenuLabel>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem>
-                  <User className="mr-2 h-4 w-4" />
-                  {/* Sửa Link href -> to */}
-                  <Link to="/profile" className="flex items-center w-full">
-                    Quản lý hồ sơ
-                  </Link>
-                </DropdownMenuItem>
-                <DropdownMenuItem>
-                  <FolderOpen className="mr-2 h-4 w-4" />
-                  {/* Sửa Link href -> to */}
-                  <Link to="/pets" className="flex items-center w-full">
-                    Thêm/xóa/cập nhật hồ sơ thú cưng
-                  </Link>
-                </DropdownMenuItem>
-                <DropdownMenuItem>
-                  <ClipboardPlus className="mr-2 h-4 w-4" />
-                  {/* Sửa Link href -> to */}
-                  <Link to="/vaccination-packages" className="flex items-center w-full">
-                    Đăng ký gói tiêm phòng
-                  </Link>
-                </DropdownMenuItem>
-                <DropdownMenuItem>
-                  <Star className="mr-2 h-4 w-4" />
-                  {/* Sửa Link href -> to */}
-                  <Link to="/reviews" className="flex items-center w-full">
-                    Đánh giá
-                  </Link>
-                </DropdownMenuItem>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem className="text-red-600">Đăng xuất</DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
-          </div>
-        </div>
-      </header>
 
       {/* Main Content */}
       <div className="container mx-auto px-4 py-8 max-w-5xl">
@@ -147,29 +100,21 @@ export default function ProfilePage() {
               </CardHeader>
               <CardContent className="space-y-4">
                 <div>
-                  <Badge className="bg-white/20 text-white border-white/30 mb-2">{profile.membershipTier}</Badge>
-                  <p className="text-2xl font-bold">{profile.loyaltyPoints} điểm</p>
+                  <Badge className="bg-white/20 text-white border-white/30 mb-2">{user.CapHoiVien}</Badge>
+                  <p className="text-2xl font-bold">{user.DiemLoyalty} </p>
                   <p className="text-sm text-blue-100">Điểm loyalty</p>
-                </div>
-
-                <div className="space-y-2">
-                  <div className="flex items-center justify-between text-sm">
-                    <span>Tiến độ lên hạng</span>
-                    <span>{Math.round(progressToNextTier)}%</span>
-                  </div>
-                  <Progress value={progressToNextTier} className="h-2 bg-white/20" />
                 </div>
 
                 <div className="pt-4 border-t border-white/20 space-y-2 text-sm">
                   <div className="flex items-center gap-2">
                     <TrendingUp className="h-4 w-4" />
                     <span>Chi tiêu hiện tại:</span>
-                    <span className="font-semibold ml-auto">{profile.currentSpending.toLocaleString("vi-VN")}đ</span>
+                    <span className="font-semibold ml-auto">{currentSpending.toLocaleString("vi-VN")}đ</span>
                   </div>
                   <div className="flex items-center gap-2">
                     <Award className="h-4 w-4" />
                     <span>Chi tiêu giữ hạng:</span>
-                    <span className="font-semibold ml-auto">{profile.maintainSpending.toLocaleString("vi-VN")}đ</span>
+                    <span className="font-semibold ml-auto">{maintainSpending.toLocaleString("vi-VN")}đ</span>
                   </div>
                 </div>
               </CardContent>
@@ -186,21 +131,21 @@ export default function ProfilePage() {
                     <div className="h-3 w-3 rounded-full bg-gray-400" />
                     <span className="text-sm">Cơ bản</span>
                   </div>
-                  <span className="text-sm text-gray-600">{profile.basicTierMin.toLocaleString("vi-VN")}đ</span>
+                  <span className="text-sm text-gray-600">{basicTierMin.toLocaleString("vi-VN")}đ</span>
                 </div>
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
                     <div className="h-3 w-3 rounded-full bg-blue-500" />
                     <span className="text-sm">Thân thiết</span>
                   </div>
-                  <span className="text-sm text-gray-600">{profile.loyalTierMin.toLocaleString("vi-VN")}đ</span>
+                  <span className="text-sm text-gray-600">{loyalTierMin.toLocaleString("vi-VN")}đ</span>
                 </div>
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
                     <div className="h-3 w-3 rounded-full bg-amber-500" />
                     <span className="text-sm">VIP</span>
                   </div>
-                  <span className="text-sm text-gray-600">{profile.vipTierMin.toLocaleString("vi-VN")}đ</span>
+                  <span className="text-sm text-gray-600">{vipTierMin.toLocaleString("vi-VN")}đ</span>
                 </div>
               </CardContent>
             </Card>
@@ -230,72 +175,77 @@ export default function ProfilePage() {
               <CardContent className="space-y-6">
                 <div className="grid md:grid-cols-2 gap-4">
                   <div className="space-y-2">
-                    <Label htmlFor="fullName">Họ tên</Label>
+                    <Label htmlFor="HoTen">Họ tên</Label>
                     <Input
-                      id="fullName"
-                      value={profile.fullName}
-                      onChange={(e) => handleInputChange("fullName", e.target.value)}
+                      name="HoTen"
+                      id="HoTen"
+                      value={formData.HoTen}
+                      onChange={handleChange}
                       disabled={!isEditing}
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="phone">Số điện thoại</Label>
+                    <Label htmlFor="SDT">Số điện thoại</Label>
                     <Input
-                      id="phone"
-                      value={profile.phone}
-                      onChange={(e) => handleInputChange("phone", e.target.value)}
+                    name="SDT"
+                      id="SDT"
+                     value={formData.SDT}
+                      onChange={handleChange}
                       disabled={!isEditing}
                     />
                   </div>
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="email">Email</Label>
+                  <Label htmlFor="Email">Email</Label>
                   <Input
-                    id="email"
+                    name="Email"
+                    id="Email"
                     type="email"
-                    value={profile.email}
-                    onChange={(e) => handleInputChange("email", e.target.value)}
-                    disabled={!isEditing}
+                    value={user.Email}
+                    disabled={true}
                   />
                 </div>
 
                 <div className="grid md:grid-cols-2 gap-4">
                   <div className="space-y-2">
-                    <Label htmlFor="idCard">CCCD</Label>
+                    <Label htmlFor="CCCD">CCCD</Label>
                     <Input
-                      id="idCard"
-                      value={profile.idCard}
-                      onChange={(e) => handleInputChange("idCard", e.target.value)}
+                    name="CCCD"
+                      id="CCCD"
+                      value={formData.CCCD}
+                      onChange={handleChange}
                       disabled={!isEditing}
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="dateOfBirth">Ngày sinh</Label>
+                    <Label htmlFor="NgaySinh">Ngày sinh</Label>
                     <Input
-                      id="dateOfBirth"
+                    name="NgaySinh"
+                      id="NgaySinh"
                       type="date"
-                      value={profile.dateOfBirth}
-                      onChange={(e) => handleInputChange("dateOfBirth", e.target.value)}
+                      value={formData.NgaySinh}
+                      onChange={handleChange}
                       disabled={!isEditing}
                     />
                   </div>
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="gender">Giới tính</Label>
+                  <Label htmlFor="GioiTinh">Giới tính</Label>
                   <Select
-                    value={profile.gender}
-                    onValueChange={(value) => handleInputChange("gender", value)}
+                  id="GioiTinh"
+                    value={formData.GioiTinh}
+                    onValueChange={handleSelectChange}
                     disabled={!isEditing}
                   >
-                    <SelectTrigger id="gender">
+                    <SelectTrigger id="GioiTinh">
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="male">Nam</SelectItem>
-                      <SelectItem value="female">Nữ</SelectItem>
-                      <SelectItem value="other">Khác</SelectItem>
+                      <SelectItem value="Nam">Nam</SelectItem>
+                      <SelectItem value="Nữ">Nữ</SelectItem>
+                      <SelectItem value="Other">Khác</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>

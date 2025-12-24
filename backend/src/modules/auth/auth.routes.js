@@ -22,10 +22,7 @@ router.post(
  * @desc    Đăng nhập
  * @access  Public
  */
-router.post('/login', (req, res) => {
-  // TODO: Implement login logic
-  res.json({ message: 'Login endpoint' });
-});
+router.post('/login',authController.login);
 
 /**
  * @route   POST /api/auth/logout
@@ -48,3 +45,4 @@ router.get('/me', (req, res) => {
 });
 
 module.exports = router;
+

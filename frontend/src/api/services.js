@@ -8,7 +8,7 @@ export const authAPI = {
 };
 
 export const customerAPI = {
-  getProfile: () => api.get('/customers/profile'),
+  getProfile: () => api.get("/customers/profile"),
   updateProfile: (data) => api.put('/customers/profile', data),
   getMembership: () => api.get('/customers/membership'),
   getInvoices: () => api.get('/customers/invoices'),
