@@ -150,7 +150,13 @@ class AuthService {
     }
 
     // 2. Kiểm tra mật khẩu
-    const isMatch = await bcrypt.compare(password, user.MatKhau);
+    // const isMatch = await bcrypt.compare(password, user.MatKhau);
+        
+    // if (!isMatch) {
+    //     return { success: false, status: 401, message: "Mật khẩu không chính xác" };
+    // }
+    // 2. So sánh trực tiếp mật khẩu (Sửa đổi tại đây)
+    const isMatch = (password === user.MatKhau);
         
     if (!isMatch) {
         return { success: false, status: 401, message: "Mật khẩu không chính xác" };
@@ -205,6 +211,7 @@ class AuthService {
     return { success: false, status: 500, message: "Lỗi lấy thông tin user", error: error.message };
   }
 }
+
 
   // Trong file auth.service.js
 

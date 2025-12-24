@@ -36,6 +36,15 @@ class AuthController {
     }
   }
 
+  async logout(req, res, next) {
+    return res.status(200).json({
+      success: true,
+      status: 200,
+      message: "Log out successfully!",
+      error: null
+    });
+  }
+
   /**
    * Lấy thông tin người dùng hiện tại từ Token
    */

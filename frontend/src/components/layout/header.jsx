@@ -25,9 +25,24 @@ import {
 } from "../ui/dropdown-menu";
 
 import { useAuth } from "../../context/AuthContext";
+import { authAPI } from "../../api/services";
 
 export default function Header() {
-  const { user, logout } = useAuth();
+  const { user, setUser, setIsAuthenticated, isAuthenticated } = useAuth();
+
+  const handleLogout = async () => {
+    try {
+      const response = await authAPI.logout();
+    if(response.data.status){
+      localStorage.removeItem("token");
+      setUser(null);
+      setIsAuthenticated(false);
+      alert(`${response.data.message}`);
+    }
+    } catch (error) {
+      console.log(error);
+    }
+  }
 
   // Hàm helper để định nghĩa style cho NavLink
   // isActive là biến boolean do NavLink cung cấp
@@ -121,7 +136,8 @@ export default function Header() {
                 <div className="flex flex-col space-y-1 py-1">
                   <p className="text-sm font-semibold text-gray-900">Khách hàng</p>
                   <p className="text-xs text-gray-500 truncate">
-                    {user?.Email || 'Đang tải thông tin...'}
+                    {/* {user?.Email || 'Đang tải thông tin...'} */}
+                    {isAuthenticated && <span>{user.Email}</span>}
                   </p>
                 </div>
               </DropdownMenuLabel>
@@ -149,7 +165,7 @@ export default function Header() {
               <DropdownMenuSeparator />
               <DropdownMenuItem 
                 className="text-red-600 focus:bg-red-50 focus:text-red-600 cursor-pointer"
-                onClick={logout}
+                onClick={() => handleLogout()}
               >
                 <LogOut className="mr-3 h-4 w-4" /> Đăng xuất
               </DropdownMenuItem>

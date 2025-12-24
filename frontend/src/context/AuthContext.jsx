@@ -6,48 +6,48 @@ const AuthContext = createContext(null);
 
 // 2. Provider
 export const AuthProvider = ({ children }) => {
-  const [user, setUser] = useState(null);      // thông tin user
-  const [loading, setLoading] = useState(true); // trạng thái load auth
+  const [user, setUser] = useState(null); // thông tin user
+  const [loading, setLoading] = useState(true);
+  const [isAuthenticated, setIsAuthenticated] = useState(false); // trạng thái load auth
 
   // 3. Load user từ localStorage khi reload trang
   useEffect(() => {
-  const fetchUser = async () => {
-    const token = localStorage.getItem("token");
+    const fetchUser = async () => {
+      const token = localStorage.getItem("token");
 
-    if (!token) {
-      setLoading(false);
-      return;
-    }
-
-    try {
-      const response = await customerAPI.getProfile();
-      // Kiểm tra kỹ cấu trúc dữ liệu trước khi set
-      if (response && response.data && response.data.success) {
-        setUser(response.data.data);
+      if (!token) {
+        setLoading(false);
+        return;
       }
-    } catch (error) {
-      console.error("Lỗi khi tải thông tin người dùng:", error);
-      // Nếu lỗi 401/500, có thể xóa token để bắt đăng nhập lại
-      // localStorage.removeItem("token");
-    } finally {
-      setLoading(false);
-    }
-  };
-  fetchUser();
-}, []);
+
+      try {
+        const response = await customerAPI.getProfile();
+        // Kiểm tra kỹ cấu trúc dữ liệu trước khi set
+        if (response && response.data && response.data.success) {
+          setUser(response.data.data);
+          setIsAuthenticated(true);
+        }
+      } catch (error) {
+        console.error("Lỗi khi tải thông tin người dùng:", error);
+        // Nếu lỗi 401/500, có thể xóa token để bắt đăng nhập lại
+        // localStorage.removeItem("token");
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchUser();
+  }, []);
   const value = {
+    setUser,
+    setIsAuthenticated,
     user,
-    isAuthenticated: !!user,
+    isAuthenticated: isAuthenticated,
   };
 
   // 7. Tránh render khi đang load
   if (loading) return <div>Loading</div>;
 
-  return (
-    <AuthContext.Provider value={value}>
-      {children}
-    </AuthContext.Provider>
-  );
+  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 };
 
 // 8. Custom hook

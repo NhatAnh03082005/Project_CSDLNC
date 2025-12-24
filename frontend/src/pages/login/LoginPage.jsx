@@ -6,6 +6,7 @@ import { Input } from "../../components/ui/input";
 import { Button } from "../../components/ui/button";
 import { Heart, User, Briefcase, Hash } from "lucide-react"; // Thêm icon Hash cho mã nhân viên
 import axios from "axios"; // Đảm bảo đã import axios
+import { useAuth } from "../../context/AuthContext";
 export default function LoginPage() {
   const navigate = useNavigate(); 
   
@@ -13,6 +14,7 @@ export default function LoginPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [staffCode, setStaffCode] = useState(""); // State mới cho mã nhân viên
+  const {setUser, setIsAuthenticated} = useAuth();
 
   const handleLogin = async (e) => {
   e.preventDefault();
@@ -27,6 +29,9 @@ export default function LoginPage() {
         password,
         role: "customer"
       });
+      setUser(response.data.data);
+      setIsAuthenticated(true);
+      
     } else if (selectedRole === "staff") {
       // Gửi yêu cầu đăng nhập nhân viên
       response = await axios.post("http://localhost:3000/api/auth/login", {
@@ -34,9 +39,11 @@ export default function LoginPage() {
         role: "staff"
       });
     }
+    console.log(response);
+    
 
     // Nếu đăng nhập thành công (Backend trả về status 200)
-    if (response.status === 200) {
+    if (response.data.status === 200) {
       // 1. Lưu token vào bộ nhớ trình duyệt để dùng cho các trang sau
       localStorage.setItem("token", response.data.token);
       

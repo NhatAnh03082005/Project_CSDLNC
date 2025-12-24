@@ -526,7 +526,7 @@ const handleEditPet = async () => {
             <DialogHeader>
               <DialogTitle>Xác nhận xóa</DialogTitle>
               <DialogDescription>
-                Bạn có chắc chắn muốn xóa thú cưng <strong>{selectedPet?.name}</strong>? Hành động này không thể hoàn tác.
+                Bạn có chắc chắn muốn xóa thú cưng <strong>{selectedPet?.TenThuCung}</strong>? Hành động này không thể hoàn tác.
               </DialogDescription>
             </DialogHeader>
             <DialogFooter>
