@@ -88,11 +88,9 @@ export default function VaccinationRecordsPage() {
   return (
     <div className="min-h-screen bg-gray-50 p-6">
       <div className="max-w-6xl mx-auto space-y-6">
-        {/* Sửa Link href -> to */}
         <Link to="/staff/demo">
-          <Button variant="ghost" className="gap-2">
-            <ArrowLeft className="h-4 w-4" />
-            Quay lại
+          <Button variant="ghost" className="gap-2 text-slate-500 hover:bg-white hover:shadow-sm transition-all">
+            <ArrowLeft className="h-4 w-4" /> Quay lại
           </Button>
         </Link>
 
