@@ -206,15 +206,26 @@ export default function VaccinationRecordsPage() {
                 </CardContent>
               </Card>
 
-              <div className="flex gap-3 pt-4">
-                <Button type="submit" className="gap-2">
-                  <Save className="h-4 w-4" />
-                  Lưu hồ sơ tiêm phòng
-                </Button>
-                <Button type="button" variant="outline" onClick={() => setShowForm(false)}>
-                  Hủy
-                </Button>
-              </div>
+            {/* Action Buttons - Đã căn chỉnh trực quan và thu gọn */}
+            <div className="flex items-center justify-start gap-3 pt-6 border-t border-gray-100 mt-6 ml-4">
+              {/* Nút Chính: Lưu hồ sơ - Nổi bật và bo góc đồng bộ */}
+              <Button 
+                className="flex-none px-6 h-10 bg-blue-600 hover:bg-blue-700 text-white text-sm font-bold rounded-xl shadow-md shadow-blue-100 gap-2 transition-all active:scale-95"
+              >
+                <Save className="h-4 w-4" />
+                Lưu hồ sơ khám bệnh
+              </Button>
+
+              {/* Nút Phụ: Hủy - Dạng ghost/outline để giảm sự chú ý, nhỏ gọn hơn */}
+              <Button 
+                type="button" 
+                variant="ghost" 
+                onClick={() => setShowForm(false)}
+                className="text-gray-500 hover:bg-gray-100 px-4 h-10 text-sm font-medium rounded-xl"
+              >
+                Hủy
+              </Button>
+            </div>
             </form>
           </DialogContent>
         </Dialog>

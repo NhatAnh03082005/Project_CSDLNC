@@ -16,7 +16,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "../../../components/ui/dialog";
-import { ArrowLeft, Search, Receipt, Plus, Trash2, FileText } from "lucide-react";
+import { ArrowLeft, Search, Receipt, Plus, Trash2, FileText, Printer, Mail } from "lucide-react";
 
 // Xóa bỏ "use client"
 
@@ -26,6 +26,7 @@ export default function InvoicePage() {
   // Loại bỏ khai báo kiểu TypeScript: <any[]>
   const [selectedProducts, setSelectedProducts] = useState([]);
   const [showInvoice, setShowInvoice] = useState(false);
+  const [searchTerm, setSearchTerm] = useState("");
 
   const customers = [
     {
@@ -44,6 +45,15 @@ export default function InvoicePage() {
       services: [{ type: "Khám bệnh", date: "12/12/2025", price: 200000, pet: "Mèo Anh Lông Ngắn - Miu" }],
     },
   ];
+
+  const filteredCustomers = customers.filter((customer) => {
+    const search = searchTerm.toLowerCase();
+    return (
+      customer.name.toLowerCase().includes(search) ||
+      customer.phone.includes(search) ||
+      customer.id.toLowerCase().includes(search)
+    );
+  });
 
   const availableProducts = [
     { id: "SP001", name: "Royal Canin Mini Adult", type: "Thức ăn", price: 450000 },
@@ -99,104 +109,160 @@ export default function InvoicePage() {
 
         <div className="grid lg:grid-cols-2 gap-6">
           {/* Customer Selection */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Danh sách khách hàng</CardTitle>
-              <CardDescription>Chọn khách hàng để lập hóa đơn</CardDescription>
+          <Card className="border-none shadow-sm overflow-hidden bg-white">
+            <CardHeader className="bg-white pb-3 space-y-2">
+              <div className="flex justify-between items-center">
+                <div>
+                  <CardTitle className="text-lg text-blue-800 mb-2">Danh sách khách hàng</CardTitle>
+                  <CardDescription className="text-xs"> Chọn khách hàng để lập hóa đơn</CardDescription>
+                </div>
+                {searchTerm && (
+                  <Badge variant="secondary" className="bg-blue-50 text-blue-600 border-none">
+                    Tìm thấy {filteredCustomers.length}
+                  </Badge>
+                )}
+              </div>
             </CardHeader>
+            
             <CardContent className="space-y-4">
-              <div className="flex gap-2">
-                <Input placeholder="Tìm kiếm khách hàng..." />
-                <Button size="icon" variant="outline">
-                  <Search className="h-4 w-4" />
-                </Button>
+              {/* Ô tìm kiếm */}
+              <div className="relative group">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400 group-focus-within:text-blue-500 transition-colors" />
+                <Input 
+                  placeholder="Tìm tên, SĐT hoặc mã khách hàng..." 
+                  className="pl-10 bg-gray-50 border-gray-100 focus:bg-white focus:ring-blue-500 transition-all placeholder:text-gray-400"
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                />
+                {searchTerm && (
+                  <button 
+                    onClick={() => setSearchTerm("")}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                  >
+                    <Plus className="h-4 w-4 rotate-45" /> {/* Dùng icon Plus xoay 45 độ làm dấu X */}
+                  </button>
+                )}
               </div>
 
-              <div className="space-y-2">
-                {customers.map((customer) => (
-                  <div
-                    key={customer.id}
-                    className={`border rounded-lg p-4 cursor-pointer transition-colors ${
-                      selectedCustomer?.id === customer.id ? "bg-blue-50 border-blue-500" : "hover:bg-gray-50"
-                    }`}
-                    onClick={() => {
-                        setSelectedCustomer(customer);
-                        setSelectedProducts([]); // Reset products when customer changes
-                    }}
-                  >
-                    <div className="flex items-start justify-between">
-                      <div>
-                        <div className="font-semibold">{customer.name}</div>
-                        <div className="text-sm text-gray-600">Mã KH: {customer.id}</div>
-                        <div className="text-sm text-gray-600">SĐT: {customer.phone}</div>
-                      </div>
-                      {selectedCustomer?.id === customer.id && <Badge className="bg-blue-600">Đã chọn</Badge>}
-                    </div>
+              {/* Danh sách khách hàng sau khi lọc */}
+              <div className="space-y-2 max-h-[500px] overflow-y-auto pr-1">
+                {filteredCustomers.length === 0 ? (
+                  <div className="text-center py-10">
+                    <Search className="h-10 w-10 text-gray-200 mx-auto mb-2" />
+                    <p className="text-gray-400 text-sm">Không tìm thấy khách hàng nào</p>
                   </div>
-                ))}
+                ) : (
+                  filteredCustomers.map((customer) => (
+                    <div
+                      key={customer.id}
+                      className={`group border rounded-xl p-4 cursor-pointer transition-all duration-200 relative overflow-hidden ${
+                        selectedCustomer?.id === customer.id 
+                          ? "bg-blue-50 border-blue-400 shadow-sm" 
+                          : "border-gray-100 hover:border-blue-200 hover:bg-blue-50/30"
+                      }`}
+                      onClick={() => {
+                          setSelectedCustomer(customer);
+                          setSelectedProducts([]);
+                      }}
+                    >
+                      {/* Dải màu trang trí khi được chọn */}
+                      {selectedCustomer?.id === customer.id && (
+                        <div className="absolute left-0 top-0 bottom-0 w-1.5 bg-blue-500" />
+                      )}
+                      
+                      <div className="flex items-start justify-between">
+                        <div className="flex items-center gap-3">
+                          <div className={`h-10 w-10 rounded-full flex items-center justify-center font-bold ${
+                            selectedCustomer?.id === customer.id ? "bg-blue-600 text-white" : "bg-blue-100 text-blue-600"
+                          }`}>
+                            {customer.name.charAt(0)}
+                          </div>
+                          <div>
+                            <div className="font-bold text-gray-800">{customer.name}</div>
+                            <div className="text-xs font-medium text-blue-500 mb-1">{customer.id}</div>
+                            <div className="text-sm text-gray-500 flex items-center gap-1">
+                              <span className="opacity-70">SĐT:</span> {customer.phone}
+                            </div>
+                          </div>
+                        </div>
+                        {selectedCustomer?.id === customer.id ? (
+                          <Badge className="bg-blue-600 hover:bg-blue-600 shadow-none px-3">Đã chọn</Badge>
+                        ) : (
+                          <div className="opacity-0 group-hover:opacity-100 transition-opacity">
+                            <Badge variant="outline" className="text-blue-500 border-blue-200 bg-white">Chọn</Badge>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  ))
+                )}
               </div>
             </CardContent>
           </Card>
 
           {/* Invoice Details */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Chi tiết hóa đơn</CardTitle>
-              <CardDescription>Dịch vụ đã sử dụng và sản phẩm mua thêm</CardDescription>
+          <Card className="border-none shadow-sm overflow-hidden bg-white">
+            <CardHeader className="bg-white pb-2"> 
+              <CardTitle className="text-lg text-blue-800">Chi tiết hóa đơn</CardTitle>
+              <CardDescription className="text-xs">Dịch vụ đã sử dụng và sản phẩm mua thêm</CardDescription>
             </CardHeader>
-            <CardContent className="space-y-4">
+
+            <CardContent className="space-y-6 pt-2">
               {!selectedCustomer ? (
-                <div className="text-center py-8 text-gray-500">Vui lòng chọn khách hàng</div>
+                <div className="text-center py-20 text-gray-400 text-sm">
+                  <Receipt className="h-10 w-10 mx-auto mb-2 opacity-20" />
+                  Vui lòng chọn khách hàng
+                </div>
               ) : (
                 <>
-                  {/* Services */}
-                  <div>
-                    <Label className="text-base font-semibold">Dịch vụ đã sử dụng</Label>
-                    <div className="mt-2 space-y-2">
-                      {/* Loại bỏ khai báo kiểu TypeScript: service: any, index: number */}
+                  {/* Services Section */}
+                  <div className="space-y-3">
+                    <div className="flex items-center gap-2">
+                      <div className="h-1 w-3 rounded-full bg-blue-500"></div>
+                      <Label className="text-sm font-bold text-gray-700">Dịch vụ đã sử dụng</Label>
+                    </div>
+                    <div className="space-y-2">
                       {selectedCustomer.services.map((service, index) => (
-                        <div key={index} className="flex justify-between items-start p-3 bg-gray-50 rounded-lg">
+                        <div key={index} className="flex justify-between items-center p-3 bg-gray-50 rounded-xl border border-transparent hover:border-blue-100 transition-all">
                           <div className="flex-1">
-                            <div className="font-medium">{service.type}</div>
-                            <div className="text-sm text-gray-600">{service.pet}</div>
-                            <div className="text-xs text-gray-500">{service.date}</div>
+                            <div className="text-sm font-bold text-gray-800">{service.type}</div>
+                            <div className="text-xs text-gray-500 italic">{service.pet}</div>
                           </div>
-                          <div className="font-semibold text-blue-600">{service.price.toLocaleString("vi-VN")} ₫</div>
+                          <div className="font-bold text-blue-600 text-sm">{service.price.toLocaleString("vi-VN")} ₫</div>
                         </div>
                       ))}
                     </div>
                   </div>
 
-                  {/* Products */}
-                  <div>
-                    <div className="flex items-center justify-between mb-2">
-                      <Label className="text-base font-semibold">Sản phẩm mua thêm</Label>
+                  {/* Products Section */}
+                  <div className="flex-1 flex flex-col min-h-0">
+                    <div className="flex items-center justify-between mb-3">
+                      <div className="flex items-center gap-2">
+                        <div className="h-1 w-3 rounded-full bg-green-500"></div>
+                        <Label className="text-sm font-bold text-gray-700">Sản phẩm mua thêm</Label>
+                      </div>
+
+                      {/* Dialog thêm sản phẩm */}
                       <Dialog>
                         <DialogTrigger asChild>
-                          <Button size="sm" variant="outline" className="gap-2 bg-transparent">
-                            <Plus className="h-4 w-4" />
-                            Thêm sản phẩm
+                          <Button size="sm" variant="outline" className="h-8 text-[11px] gap-1 border-dashed">
+                            <Plus className="h-3 w-3" /> Thêm sản phẩm
                           </Button>
                         </DialogTrigger>
-                        <DialogContent>
+                        <DialogContent className="max-w-md">
                           <DialogHeader>
-                            <DialogTitle>Chọn sản phẩm</DialogTitle>
-                            <DialogDescription>Chọn sản phẩm có tại chi nhánh để thêm vào hóa đơn</DialogDescription>
+                            <DialogTitle>Kho sản phẩm</DialogTitle>
+                            <DialogDescription>Chọn sản phẩm để thêm vào hóa đơn</DialogDescription>
                           </DialogHeader>
-                          <div className="space-y-2 max-h-[400px] overflow-y-auto">
+                          <div className="space-y-2 mt-4 max-h-[400px] overflow-y-auto">
                             {availableProducts.map((product) => (
-                              <div
-                                key={product.id}
-                                className="flex items-center justify-between p-3 border rounded-lg hover:bg-gray-50"
-                              >
+                              <div key={product.id} className="flex items-center justify-between p-3 border rounded-xl hover:bg-blue-50/50 transition-colors">
                                 <div>
-                                  <div className="font-medium">{product.name}</div>
-                                  <div className="text-sm text-gray-600">{product.type}</div>
-                                  <div className="text-sm font-semibold text-blue-600">
-                                    {product.price.toLocaleString("vi-VN")} ₫
-                                  </div>
+                                  <div className="font-bold text-sm text-gray-800">{product.name}</div>
+                                  <div className="text-xs text-gray-500">{product.type}</div>
+                                  <div className="text-sm font-bold text-blue-600">{product.price.toLocaleString("vi-VN")} ₫</div>
                                 </div>
-                                <Button size="sm" onClick={() => addProduct(product)}>
+                                <Button size="sm" className="h-8 bg-blue-600" onClick={() => addProduct(product)}>
                                   Thêm
                                 </Button>
                               </div>
@@ -206,45 +272,50 @@ export default function InvoicePage() {
                       </Dialog>
                     </div>
 
-                    {selectedProducts.length === 0 ? (
-                      <div className="text-center py-4 text-gray-500 text-sm bg-gray-50 rounded-lg">
-                        Chưa có sản phẩm nào
-                      </div>
-                    ) : (
-                      <div className="space-y-2">
-                        {selectedProducts.map((product, index) => (
-                          <div key={index} className="flex justify-between items-center p-3 bg-green-50 rounded-lg">
+                    {/* Hiển thị danh sách sản phẩm đã chọn */}
+                    <div className="flex-1 overflow-y-auto space-y-2 pr-1">
+                      {selectedProducts.length === 0 ? (
+                        <div className="h-24 flex items-center justify-center border-2 border-dashed border-gray-50 rounded-2xl text-gray-400 text-xs text-center px-4">
+                          Nhấn "Thêm sản phẩm" để bán thêm phụ kiện, thức ăn...
+                        </div>
+                      ) : (
+                        selectedProducts.map((product, index) => (
+                          <div key={index} className="flex justify-between items-center p-3 bg-green-50/50 rounded-xl border border-green-100">
                             <div className="flex-1">
-                              <div className="font-medium">{product.name}</div>
-                              <div className="text-sm text-gray-600">
-                                {product.type} - SL: {product.quantity}
-                              </div>
+                              <div className="text-sm font-bold text-green-800">{product.name}</div>
+                              <div className="text-[10px] text-green-600">Số lượng: {product.quantity}</div>
                             </div>
                             <div className="flex items-center gap-3">
-                              <div className="font-semibold text-green-600">
+                              <div className="font-bold text-green-700 text-sm">
                                 {(product.price * product.quantity).toLocaleString("vi-VN")} ₫
                               </div>
-                              <Button size="sm" variant="ghost" onClick={() => removeProduct(index)}>
-                                <Trash2 className="h-4 w-4 text-red-600" />
-                              </Button>
+                              <button 
+                                type="button"
+                                onClick={() => removeProduct(index)} 
+                                className="text-gray-400 hover:text-red-500 transition-colors"
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </button>
                             </div>
                           </div>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-
-                  {/* Total */}
-                  <div className="pt-4 border-t">
-                    <div className="flex justify-between items-center text-lg font-bold">
-                      <span>Tổng cộng:</span>
-                      <span className="text-blue-600 text-2xl">{calculateTotal().toLocaleString("vi-VN")} ₫</span>
+                        ))
+                      )}
                     </div>
                   </div>
 
-                  <Button className="w-full gap-2" size="lg" onClick={() => setShowInvoice(true)}>
-                    <FileText className="h-5 w-5" />
-                    Xuất hóa đơn
+                  {/* Total Section */}
+                  <div className="mt-auto pt-4 border-t border-gray-50 space-y-4">
+                    <div className="flex justify-between items-center p-5 bg-[#f0f7ff] rounded-2xl border border-blue-50">
+                      <span className="text-xl font-bold text-gray-900">Tổng cộng:</span>
+                      <span className="text-blue-600 font-bold text-2xl">
+                        {calculateTotal().toLocaleString("vi-VN")} <span className="underline">đ</span>
+                      </span>
+                    </div>
+                  </div>
+
+                  <Button className="w-full h-11 bg-gray-900 hover:bg-black text-white rounded-xl font-bold shadow-sm" onClick={() => setShowInvoice(true)}>
+                    <FileText className="h-4 w-4 mr-2" />
+                    XUẤT HÓA ĐƠN
                   </Button>
                 </>
               )}
@@ -329,9 +400,21 @@ export default function InvoicePage() {
                   </div>
                 </div>
 
-                <div className="flex gap-3">
-                  <Button className="flex-1">In hóa đơn</Button>
-                  <Button variant="outline" className="flex-1 bg-transparent">
+                <div className="flex gap-4 mt-6 pt-4 border-t border-gray-100">
+                  {/* Nút chính: In hóa đơn */}
+                  <Button 
+                    className="flex-1 h-11 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl shadow-md shadow-blue-100 gap-2 transition-all active:scale-95"
+                  >
+                    <Printer className="h-4 w-4" />
+                    In hóa đơn
+                  </Button>
+
+                  {/* Nút phụ: Gửi email */}
+                  <Button 
+                    variant="outline" 
+                    className="flex-1 h-11 border-blue-200 text-blue-600 hover:bg-blue-50 font-bold rounded-xl gap-2 transition-all active:scale-95 bg-transparent"
+                  >
+                    <Mail className="h-4 w-4" />
                     Gửi email
                   </Button>
                 </div>
