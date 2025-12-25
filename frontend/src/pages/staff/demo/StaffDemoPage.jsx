@@ -34,9 +34,7 @@ export default function StaffDemoPage() {
             <Menu className="h-5 w-5" />
           </Button>
           <div className="flex items-center gap-2">
-            <div className="h-8 w-8 rounded-full bg-blue-600 flex items-center justify-center">
-              <span className="text-white font-bold text-sm">PC</span>
-            </div>
+          <img src="/logo.png" alt="PetCare Logo" className="h-8 w-8 rounded-full object-cover"/>
             <div>
               <div className="font-semibold text-sm">PetCareX Staff</div>
               <div className="text-xs text-gray-500">Chi nhánh Quận 1</div>
