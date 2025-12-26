@@ -4,19 +4,16 @@ import { CheckIcon, ChevronRightIcon, CircleIcon } from "lucide-react";
 
 import { cn } from "../../lib/utils";
 
-// Loại bỏ khai báo kiểu TypeScript: React.ComponentProps<typeof DropdownMenuPrimitive.Root>
 function DropdownMenu(props) {
   return <DropdownMenuPrimitive.Root data-slot="dropdown-menu" {...props} />;
 }
 
-// Loại bỏ khai báo kiểu TypeScript: React.ComponentProps<typeof DropdownMenuPrimitive.Portal>
 function DropdownMenuPortal(props) {
   return (
     <DropdownMenuPrimitive.Portal data-slot="dropdown-menu-portal" {...props} />
   );
 }
 
-// Loại bỏ khai báo kiểu TypeScript: React.ComponentProps<typeof DropdownMenuPrimitive.Trigger>
 function DropdownMenuTrigger(props) {
   return (
     <DropdownMenuPrimitive.Trigger
@@ -26,7 +23,6 @@ function DropdownMenuTrigger(props) {
   );
 }
 
-// Loại bỏ khai báo kiểu TypeScript: React.ComponentProps<typeof DropdownMenuPrimitive.Content>
 function DropdownMenuContent({
   className,
   sideOffset = 4,
@@ -47,14 +43,12 @@ function DropdownMenuContent({
   );
 }
 
-// Loại bỏ khai báo kiểu TypeScript: React.ComponentProps<typeof DropdownMenuPrimitive.Group>
 function DropdownMenuGroup(props) {
   return (
     <DropdownMenuPrimitive.Group data-slot="dropdown-menu-group" {...props} />
   );
 }
 
-// Loại bỏ khai báo kiểu TypeScript: React.ComponentProps<typeof DropdownMenuPrimitive.Item> & { inset?: boolean; variant?: "default" | "destructive"; }
 function DropdownMenuItem({
   className,
   inset,
@@ -75,7 +69,6 @@ function DropdownMenuItem({
   );
 }
 
-// Loại bỏ khai báo kiểu TypeScript: React.ComponentProps<typeof DropdownMenuPrimitive.CheckboxItem>
 function DropdownMenuCheckboxItem({
   className,
   children,
@@ -102,7 +95,6 @@ function DropdownMenuCheckboxItem({
   );
 }
 
-// Loại bỏ khai báo kiểu TypeScript: React.ComponentProps<typeof DropdownMenuPrimitive.RadioGroup>
 function DropdownMenuRadioGroup(props) {
   return (
     <DropdownMenuPrimitive.RadioGroup
@@ -112,7 +104,6 @@ function DropdownMenuRadioGroup(props) {
   );
 }
 
-// Loại bỏ khai báo kiểu TypeScript: React.ComponentProps<typeof DropdownMenuPrimitive.RadioItem>
 function DropdownMenuRadioItem({
   className,
   children,
@@ -137,7 +128,6 @@ function DropdownMenuRadioItem({
   );
 }
 
-// Loại bỏ khai báo kiểu TypeScript: React.ComponentProps<typeof DropdownMenuPrimitive.Label> & { inset?: boolean; }
 function DropdownMenuLabel({
   className,
   inset,
@@ -156,7 +146,6 @@ function DropdownMenuLabel({
   );
 }
 
-// Loại bỏ khai báo kiểu TypeScript: React.ComponentProps<typeof DropdownMenuPrimitive.Separator>
 function DropdownMenuSeparator({
   className,
   ...props
@@ -170,7 +159,6 @@ function DropdownMenuSeparator({
   );
 }
 
-// Loại bỏ khai báo kiểu TypeScript: React.ComponentProps<"span">
 function DropdownMenuShortcut({ className, ...props }) {
   return (
     <span
@@ -184,12 +172,10 @@ function DropdownMenuShortcut({ className, ...props }) {
   );
 }
 
-// Loại bỏ khai báo kiểu TypeScript: React.ComponentProps<typeof DropdownMenuPrimitive.Sub>
 function DropdownMenuSub(props) {
   return <DropdownMenuPrimitive.Sub data-slot="dropdown-menu-sub" {...props} />;
 }
 
-// Loại bỏ khai báo kiểu TypeScript: React.ComponentProps<typeof DropdownMenuPrimitive.SubTrigger> & { inset?: boolean; }
 function DropdownMenuSubTrigger({
   className,
   inset,
@@ -212,7 +198,6 @@ function DropdownMenuSubTrigger({
   );
 }
 
-// Loại bỏ khai báo kiểu TypeScript: React.ComponentProps<typeof DropdownMenuPrimitive.SubContent>
 function DropdownMenuSubContent({ className, ...props }) {
   return (
     <DropdownMenuPrimitive.SubContent

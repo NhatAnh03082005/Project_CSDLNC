@@ -1,12 +1,7 @@
 const express = require('express');
-const { body } = require('express-validator');
-const validate = require('../../middlewares/validate');
 const authController = require('./auth.controller');
 const { authenticate } = require('../../middlewares/auth');
 const router = express.Router();
-
-// Controllers (sẽ implement sau)
-// const authController = require('./auth.controller');
 
 /**
  * @route   POST /api/auth/register
@@ -23,26 +18,14 @@ router.post(
  * @desc    Đăng nhập
  * @access  Public
  */
-router.post('/login',authController.login);
+router.post('/login', authController.login);
 
 /**
  * @route   POST /api/auth/logout
  * @desc    Đăng xuất
  * @access  Private
  */
-router.post('/logout',authenticate,
-  authController.logout
-);
-
-/**
- * @route   GET /api/auth/me
- * @desc    Lấy thông tin user hiện tại
- * @access  Private
- */
-router.get('/me', (req, res) => {
-  // TODO: Implement get current user logic
-  res.json({ message: 'Get me endpoint' });
-});
+router.post('/logout', authenticate, authController.logout);
 
 module.exports = router;
 

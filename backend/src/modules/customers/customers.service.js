@@ -8,20 +8,38 @@ class CustomersService {
   async getProfile(customerId) {
     try {
       const pool = await poolPromise;
+      
       const result = await pool
         .request()
-        // MaKhachHang là CHAR(7) nên dùng sql.Char(7)
         .input("CustomerId", sql.Char(7), customerId)
         .query(
           `
-          SELECT TOP 1 MaKhachHang, HoTen, GioiTinh, SDT, CCCD, Email, NgaySinh, DiemLoyalty, CapHoiVien
-          FROM dbo.KhachHang
-          WHERE MaKhachHang = @CustomerId
+          SELECT 
+            kh.MaKhachHang, 
+            kh.HoTen, 
+            kh.GioiTinh, 
+            kh.SDT, 
+            kh.CCCD, 
+            kh.Email, 
+            kh.NgaySinh, 
+            kh.DiemLoyalty, 
+            kh.CapHoiVien,
+            ISNULL(SUM(hd.TongTien), 0) AS TongChiTieu
+          FROM dbo.KhachHang kh
+          LEFT JOIN dbo.HoaDon hd ON kh.MaKhachHang = hd.MaKhachHang
+          WHERE kh.MaKhachHang = @CustomerId
+          GROUP BY 
+            kh.MaKhachHang, 
+            kh.HoTen, 
+            kh.GioiTinh, 
+            kh.SDT, 
+            kh.CCCD, 
+            kh.Email, 
+            kh.NgaySinh, 
+            kh.DiemLoyalty, 
+            kh.CapHoiVien
         `
         );
-
-        console.log(result);
-        
 
       if (result.recordset.length === 0) {
         return {
@@ -31,10 +49,46 @@ class CustomersService {
         };
       }
 
+      const customerData = result.recordset[0];
+      const tongChiTieu = customerData.TongChiTieu || 0;
+
+      let capHoiVien = "Cơ bản";
+      let chiTieuGiuHang = 0;
+      
+      if (tongChiTieu >= 15000000) {
+        capHoiVien = "VIP";
+        chiTieuGiuHang = 15000000;
+      } else if (tongChiTieu >= 5000000) {
+        capHoiVien = "Thân thiết";
+        chiTieuGiuHang = 5000000;
+      } else {
+        capHoiVien = "Cơ bản";
+        chiTieuGiuHang = 0;
+      }
+
+      if (customerData.CapHoiVien !== capHoiVien) {
+        await pool
+          .request()
+          .input("MaKhachHang", sql.Char(7), customerId)
+          .input("CapHoiVien", sql.NVarChar(20), capHoiVien)
+          .query(
+            `
+            UPDATE dbo.KhachHang
+            SET CapHoiVien = @CapHoiVien
+            WHERE MaKhachHang = @MaKhachHang
+          `
+          );
+      }
+
       return {
         success: true,
         status: 200,
-        data: result.recordset[0],
+        data: {
+          ...customerData,
+          CapHoiVien: capHoiVien,
+          TongChiTieu: tongChiTieu,
+          ChiTieuGiuHang: chiTieuGiuHang,
+        },
       };
     } catch (error) {
       console.error("Error fetching customer profile:", error);
@@ -57,7 +111,6 @@ class CustomersService {
   async updateProfile(customerId, payload) {
     const { HoTen, GioiTinh, SDT, Email, NgaySinh, CCCD } = payload;
 
-    // 1. Kiểm tra Email (Giữ nguyên logic không cho đổi email)
     if (Email !== undefined) {
       return {
         success: false,
@@ -66,7 +119,6 @@ class CustomersService {
       };
     }
 
-    // 2. Kiểm tra dữ liệu rỗng
     if (!HoTen && !GioiTinh && !SDT && !NgaySinh && !CCCD) {
       return {
         success: false,
@@ -78,7 +130,6 @@ class CustomersService {
     try {
       const pool = await poolPromise;
 
-      // 3. Kiểm tra trùng lặp CCCD nếu có thay đổi
       if (CCCD !== undefined) {
         const dupCheck = await pool.request()
           .input("CCCD", sql.Char(12), CCCD)
@@ -90,7 +141,6 @@ class CustomersService {
         }
       }
 
-      // 4. Khởi tạo request để thực hiện UPDATE
       const request = pool.request().input("MaKhachHang", sql.Char(7), customerId);
       const setClauses = [];
 
@@ -262,7 +312,6 @@ class CustomersService {
     try {
       const pool = await poolPromise;
 
-      // Kiểm tra hóa đơn có thuộc về khách hàng này không
       const checkInvoice = await pool
         .request()
         .input("MaHoaDon", sql.Char(8), maHoaDon)
@@ -284,7 +333,6 @@ class CustomersService {
         };
       }
 
-      // Lấy thông tin hóa đơn chính
       const invoiceInfo = await pool
         .request()
         .input("MaHoaDon", sql.Char(8), maHoaDon)
@@ -311,7 +359,6 @@ class CustomersService {
         `
         );
 
-      // Lấy tất cả chi tiết hóa đơn (CTHD) với thông tin đầy đủ
       const invoiceDetails = await pool
         .request()
         .input("MaHoaDon", sql.Char(8), maHoaDon)
@@ -360,17 +407,15 @@ class CustomersService {
         `
         );
 
-      // Format lại dữ liệu để dễ hiểu hơn
       const formattedDetails = invoiceDetails.recordset.map((item) => {
         const detail = {
           STT: item.STT,
           LoaiDichVu: item.LoaiDichVu,
           ThanhTien: item.ThanhTien,
-          LoaiChiTiet: null, // MuaHang, KhamBenh, hoặc TiemPhong (3 dịch vụ chính của hệ thống)
+          LoaiChiTiet: null, 
           ChiTiet: {},
         };
 
-        // Xác định loại chi tiết
         if (item.MaSanPham) {
           detail.LoaiChiTiet = "MuaHang";
           detail.ChiTiet = {

@@ -61,21 +61,43 @@ router.get('/my-ratings', authenticate, authorize(ROLES.CUSTOMER), async (req, r
 });
 
 /**
- * @route   PUT /api/ratings/:id
+ * @route   PUT /api/ratings/:maHoaDon/:stt
  * @desc    Cập nhật đánh giá
  * @access  Private - KHACH_HANG
  */
-router.put('/:id', authenticate, authorize(ROLES.CUSTOMER), (req, res) => {
-  res.json({ message: 'Update rating' });
+router.put('/:maHoaDon/:stt', authenticate, authorize(ROLES.CUSTOMER), async (req, res) => {
+  const customerId = req.user.maKhachHang;
+  const { maHoaDon, stt } = req.params;
+
+  if (!customerId) {
+    return res.status(400).json({
+      success: false,
+      message: 'Không tìm thấy mã khách hàng trong token',
+    });
+  }
+
+  const response = await ratingsService.updateRating(customerId, maHoaDon, parseInt(stt), req.body);
+  return res.status(response.status || 200).json(response);
 });
 
 /**
- * @route   DELETE /api/ratings/:id
+ * @route   DELETE /api/ratings/:maHoaDon/:stt
  * @desc    Xóa đánh giá
  * @access  Private - KHACH_HANG
  */
-router.delete('/:id', authenticate, authorize(ROLES.CUSTOMER), (req, res) => {
-  res.json({ message: 'Delete rating' });
+router.delete('/:maHoaDon/:stt', authenticate, authorize(ROLES.CUSTOMER), async (req, res) => {
+  const customerId = req.user.maKhachHang;
+  const { maHoaDon, stt } = req.params;
+
+  if (!customerId) {
+    return res.status(400).json({
+      success: false,
+      message: 'Không tìm thấy mã khách hàng trong token',
+    });
+  }
+
+  const response = await ratingsService.deleteRating(customerId, maHoaDon, parseInt(stt));
+  return res.status(response.status || 200).json(response);
 });
 
 module.exports = router;

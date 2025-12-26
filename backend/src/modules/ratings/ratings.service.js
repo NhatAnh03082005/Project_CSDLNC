@@ -9,7 +9,6 @@ const { sql, poolPromise } = require("../../config/database");
 async function createOrUpdateRating(customerId, ratingData) {
   const { MaHoaDon, STT, DiemChatLuongDV, DiemThaiDoNV, DiemTongThe, BinhLuan } = ratingData;
 
-  // Validation: Kiểm tra các trường bắt buộc
   if (!MaHoaDon || STT === undefined || DiemChatLuongDV === undefined || DiemThaiDoNV === undefined || DiemTongThe === undefined) {
     return {
       success: false,
@@ -18,7 +17,6 @@ async function createOrUpdateRating(customerId, ratingData) {
     };
   }
 
-  // Validation: Điểm phải từ 0-10
   if (
     DiemChatLuongDV < 0 || DiemChatLuongDV > 10 ||
     DiemThaiDoNV < 0 || DiemThaiDoNV > 10 ||
@@ -34,7 +32,6 @@ async function createOrUpdateRating(customerId, ratingData) {
   try {
     const pool = await poolPromise;
 
-    // 1. Kiểm tra hóa đơn có thuộc về khách hàng này không
     const invoiceCheck = await pool
       .request()
       .input("MaHoaDon", sql.Char(8), MaHoaDon)
@@ -55,7 +52,6 @@ async function createOrUpdateRating(customerId, ratingData) {
       };
     }
 
-    // 2. Kiểm tra CTHD có phải là dịch vụ sức khỏe không (phải có trong CTHD_DVSucKhoe)
     const serviceCheck = await pool
       .request()
       .input("MaHoaDon", sql.Char(8), MaHoaDon)
@@ -87,8 +83,6 @@ async function createOrUpdateRating(customerId, ratingData) {
     }
 
     const serviceInfo = serviceCheck.recordset[0];
-
-    // 3. Kiểm tra đã có đánh giá chưa
     const existingRating = await pool
       .request()
       .input("MaHoaDon", sql.Char(8), MaHoaDon)
@@ -101,9 +95,7 @@ async function createOrUpdateRating(customerId, ratingData) {
       `
       );
 
-    // 4. Insert hoặc Update đánh giá
     if (existingRating.recordset.length > 0) {
-      // Update đánh giá đã có
       await pool
         .request()
         .input("MaHoaDon", sql.Char(8), MaHoaDon)
@@ -123,7 +115,6 @@ async function createOrUpdateRating(customerId, ratingData) {
         `
         );
     } else {
-      // Insert đánh giá mới
       await pool
         .request()
         .input("MaHoaDon", sql.Char(8), MaHoaDon)
@@ -142,7 +133,6 @@ async function createOrUpdateRating(customerId, ratingData) {
         );
     }
 
-    // 5. Lấy thông tin đánh giá vừa tạo/cập nhật
     const ratingResult = await pool
       .request()
       .input("MaHoaDon", sql.Char(8), MaHoaDon)
@@ -185,7 +175,6 @@ async function createOrUpdateRating(customerId, ratingData) {
   } catch (error) {
     console.error("Error creating/updating rating:", error);
 
-    // Xử lý lỗi constraint
     if (error.number === 547 || error.message.includes("FOREIGN KEY")) {
       return {
         success: false,
@@ -212,8 +201,6 @@ async function createOrUpdateRating(customerId, ratingData) {
 async function getRateableServices(customerId) {
   try {
     const pool = await poolPromise;
-
-    // Lấy danh sách tất cả dịch vụ sức khỏe của khách hàng kèm thông tin đánh giá (nếu có)
     const result = await pool
       .request()
       .input("MaKhachHang", sql.Char(7), customerId)
@@ -286,7 +273,6 @@ async function getRateableServices(customerId) {
       };
     }
 
-    // Format lại dữ liệu để dễ sử dụng hơn
     const services = result.recordset.map((item) => {
       const service = {
         MaHoaDon: item.MaHoaDon,
@@ -307,7 +293,6 @@ async function getRateableServices(customerId) {
         ChiTiet: {},
       };
 
-      // Thông tin đánh giá (nếu có)
       if (item.DaDanhGia === 1) {
         service.DanhGia = {
           DiemChatLuongDV: item.DiemChatLuongDV,
@@ -317,7 +302,6 @@ async function getRateableServices(customerId) {
         };
       }
 
-      // Chi tiết dịch vụ
       if (item.LoaiDichVuSK === "Khám bệnh") {
         service.ChiTiet = {
           TrieuChung: item.TrieuChung,
@@ -353,8 +337,261 @@ async function getRateableServices(customerId) {
   }
 }
 
+/**
+ * Cập nhật đánh giá của khách hàng
+ * @param {string} customerId - Mã khách hàng
+ * @param {string} maHoaDon - Mã hóa đơn
+ * @param {number} stt - Số thứ tự chi tiết hóa đơn
+ * @param {object} ratingData - Dữ liệu đánh giá { DiemChatLuongDV, DiemThaiDoNV, DiemTongThe, BinhLuan? }
+ * @returns {Promise<{success: boolean, status?: number, message?: string, data?: object, error?: string}>}
+ */
+async function updateRating(customerId, maHoaDon, stt, ratingData) {
+  const { DiemChatLuongDV, DiemThaiDoNV, DiemTongThe, BinhLuan } = ratingData;
+
+  if (DiemChatLuongDV === undefined || DiemThaiDoNV === undefined || DiemTongThe === undefined) {
+    return {
+      success: false,
+      status: 400,
+      message: "Thiếu thông tin bắt buộc: DiemChatLuongDV, DiemThaiDoNV, DiemTongThe",
+    };
+  }
+
+  if (
+    DiemChatLuongDV < 0 || DiemChatLuongDV > 10 ||
+    DiemThaiDoNV < 0 || DiemThaiDoNV > 10 ||
+    DiemTongThe < 0 || DiemTongThe > 10
+  ) {
+    return {
+      success: false,
+      status: 400,
+      message: "Điểm đánh giá phải từ 0 đến 10",
+    };
+  }
+
+  try {
+    const pool = await poolPromise;
+
+    const invoiceCheck = await pool
+      .request()
+      .input("MaHoaDon", sql.Char(8), maHoaDon)
+      .input("MaKhachHang", sql.Char(7), customerId)
+      .query(
+        `
+        SELECT TOP 1 MaHoaDon
+        FROM dbo.HoaDon
+        WHERE MaHoaDon = @MaHoaDon AND MaKhachHang = @MaKhachHang
+      `
+      );
+
+    if (invoiceCheck.recordset.length === 0) {
+      return {
+        success: false,
+        status: 404,
+        message: "Không tìm thấy hóa đơn hoặc bạn không có quyền cập nhật đánh giá này",
+      };
+    }
+
+    const existingRating = await pool
+      .request()
+      .input("MaHoaDon", sql.Char(8), maHoaDon)
+      .input("STT", sql.Int, stt)
+      .query(
+        `
+        SELECT TOP 1 *
+        FROM dbo.DanhGia
+        WHERE MaHoaDon = @MaHoaDon AND STT = @STT
+      `
+      );
+
+    if (existingRating.recordset.length === 0) {
+      return {
+        success: false,
+        status: 404,
+        message: "Không tìm thấy đánh giá để cập nhật",
+      };
+    }
+
+    const serviceCheck = await pool
+      .request()
+      .input("MaHoaDon", sql.Char(8), maHoaDon)
+      .input("STT", sql.Int, stt)
+      .query(
+        `
+        SELECT TOP 1 1
+        FROM dbo.CTHD cthd
+        INNER JOIN dbo.CTHD_DVSucKhoe dvsk
+          ON cthd.MaHoaDon = dvsk.MaHoaDon AND cthd.STT = dvsk.STT
+        WHERE cthd.MaHoaDon = @MaHoaDon AND cthd.STT = @STT
+      `
+      );
+
+    if (serviceCheck.recordset.length === 0) {
+      return {
+        success: false,
+        status: 400,
+        message: "Chỉ có thể cập nhật đánh giá cho dịch vụ sức khỏe",
+      };
+    }
+
+    await pool
+      .request()
+      .input("MaHoaDon", sql.Char(8), maHoaDon)
+      .input("STT", sql.Int, stt)
+      .input("DiemChatLuongDV", sql.Int, DiemChatLuongDV)
+      .input("DiemThaiDoNV", sql.Int, DiemThaiDoNV)
+      .input("DiemTongThe", sql.Int, DiemTongThe)
+      .input("BinhLuan", sql.NVarChar(100), BinhLuan || null)
+      .query(
+        `
+        UPDATE dbo.DanhGia
+        SET DiemChatLuongDV = @DiemChatLuongDV,
+            DiemThaiDoNV = @DiemThaiDoNV,
+            DiemTongThe = @DiemTongThe,
+            BinhLuan = @BinhLuan
+        WHERE MaHoaDon = @MaHoaDon AND STT = @STT
+      `
+      );
+
+    const ratingResult = await pool
+      .request()
+      .input("MaHoaDon", sql.Char(8), maHoaDon)
+      .input("STT", sql.Int, stt)
+      .query(
+        `
+        SELECT 
+          dg.MaHoaDon,
+          dg.STT,
+          dg.DiemChatLuongDV,
+          dg.DiemThaiDoNV,
+          dg.DiemTongThe,
+          dg.BinhLuan,
+          cthd.LoaiDichVu,
+          dvsk.BacSi AS MaBacSi,
+          nvBs.HoTen AS TenBacSi,
+          hd.MaChiNhanh,
+          cn.TenChiNhanh
+        FROM dbo.DanhGia dg
+        INNER JOIN dbo.CTHD cthd
+          ON dg.MaHoaDon = cthd.MaHoaDon AND dg.STT = cthd.STT
+        INNER JOIN dbo.CTHD_DVSucKhoe dvsk
+          ON dg.MaHoaDon = dvsk.MaHoaDon AND dg.STT = dvsk.STT
+        LEFT JOIN dbo.NhanVien nvBs
+          ON dvsk.BacSi = nvBs.MaNhanVien
+        LEFT JOIN dbo.HoaDon hd
+          ON dg.MaHoaDon = hd.MaHoaDon
+        LEFT JOIN dbo.ChiNhanh cn
+          ON hd.MaChiNhanh = cn.MaChiNhanh
+        WHERE dg.MaHoaDon = @MaHoaDon AND dg.STT = @STT
+      `
+      );
+
+    return {
+      success: true,
+      status: 200,
+      message: "Cập nhật đánh giá thành công",
+      data: ratingResult.recordset[0],
+    };
+  } catch (error) {
+    console.error("Error updating rating:", error);
+    return {
+      success: false,
+      status: 500,
+      message: "Lỗi khi cập nhật đánh giá",
+      error: error.message,
+    };
+  }
+}
+
+/**
+ * Xóa đánh giá của khách hàng
+ * @param {string} customerId - Mã khách hàng
+ * @param {string} maHoaDon - Mã hóa đơn
+ * @param {number} stt - Số thứ tự chi tiết hóa đơn
+ * @returns {Promise<{success: boolean, status?: number, message?: string, error?: string}>}
+ */
+async function deleteRating(customerId, maHoaDon, stt) {
+  try {
+    const pool = await poolPromise;
+
+    const invoiceCheck = await pool
+      .request()
+      .input("MaHoaDon", sql.Char(8), maHoaDon)
+      .input("MaKhachHang", sql.Char(7), customerId)
+      .query(
+        `
+        SELECT TOP 1 MaHoaDon
+        FROM dbo.HoaDon
+        WHERE MaHoaDon = @MaHoaDon AND MaKhachHang = @MaKhachHang
+      `
+      );
+
+    if (invoiceCheck.recordset.length === 0) {
+      return {
+        success: false,
+        status: 404,
+        message: "Không tìm thấy hóa đơn hoặc bạn không có quyền xóa đánh giá này",
+      };
+    }
+
+    const existingRating = await pool
+      .request()
+      .input("MaHoaDon", sql.Char(8), maHoaDon)
+      .input("STT", sql.Int, stt)
+      .query(
+        `
+        SELECT TOP 1 *
+        FROM dbo.DanhGia
+        WHERE MaHoaDon = @MaHoaDon AND STT = @STT
+      `
+      );
+
+    if (existingRating.recordset.length === 0) {
+      return {
+        success: false,
+        status: 404,
+        message: "Không tìm thấy đánh giá để xóa",
+      };
+    }
+
+    const deleteResult = await pool
+      .request()
+      .input("MaHoaDon", sql.Char(8), maHoaDon)
+      .input("STT", sql.Int, stt)
+      .query(
+        `
+        DELETE FROM dbo.DanhGia
+        WHERE MaHoaDon = @MaHoaDon AND STT = @STT
+      `
+      );
+
+    if (deleteResult.rowsAffected[0] === 0) {
+      return {
+        success: false,
+        status: 500,
+        message: "Không thể xóa đánh giá",
+      };
+    }
+
+    return {
+      success: true,
+      status: 200,
+      message: "Xóa đánh giá thành công",
+    };
+  } catch (error) {
+    console.error("Error deleting rating:", error);
+    return {
+      success: false,
+      status: 500,
+      message: "Lỗi khi xóa đánh giá",
+      error: error.message,
+    };
+  }
+}
+
 module.exports = {
   createOrUpdateRating,
   getRateableServices,
+  updateRating,
+  deleteRating,
 };
 

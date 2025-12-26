@@ -41,7 +41,6 @@ import Header from "../../components/layout/header";
 export default function CustomerHome() {
 
   const {user} = useAuth();
-  console.log(user);
   
   return (
     <div className="min-h-screen bg-gradient-to-b from-blue-50 to-white">

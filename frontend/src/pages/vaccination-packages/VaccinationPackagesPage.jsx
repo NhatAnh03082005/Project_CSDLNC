@@ -1,18 +1,6 @@
-import React, { useState } from "react";
-// 1. Thay thế Next.js Link bằng React Router DOM Link
-import { Link } from "react-router-dom"; 
-
-// 2. Chuyển đổi imports alias (@/) sang đường dẫn tương đối (../../...)
+import React, { useState, useEffect } from "react";
 import { Button } from "../../components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../../components/ui/card";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "../../components/ui/dropdown-menu";
 import {
   Dialog,
   DialogContent,
@@ -21,94 +9,120 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "../../components/ui/dialog";
-import { Avatar, AvatarFallback, AvatarImage } from "../../components/ui/avatar";
 import { Badge } from "../../components/ui/badge";
-import { Heart, User, FolderOpen, ClipboardPlus, Star, Plus, Trash2, Calendar, Gift, Clock } from "lucide-react";
+import { Plus, Calendar, Gift, Clock, Loader2 } from "lucide-react";
+import { vaccinationAPI } from "../../api/services";
 
-// Mock data for registered packages
-// Loại bỏ khai báo kiểu TypeScript: (typeof availablePackages)[0] | null
-const registeredPackages = [
-  {
-    id: 1,
-    name: "Gói tiêm phòng cơ bản cho chó",
-    duration: "6 tháng",
-    benefits: "Miễn phí tái khám 1 lần, giảm 10% chi phí khám bệnh",
-    startDate: "01/01/2025",
-    endDate: "01/07/2025",
-  },
-  {
-    id: 2,
-    name: "Gói tiêm phòng toàn diện cho mèo",
-    duration: "12 tháng",
-    benefits: "Miễn phí tái khám 3 lần, giảm 20% chi phí khám bệnh, tặng 1 lần tắm spa",
-    startDate: "15/12/2024",
-    endDate: "15/12/2025",
-  },
-];
-
-// Mock data for available packages
-const availablePackages = [
-  {
-    id: 3,
-    name: "Gói tiêm phòng cơ bản cho chó",
-    duration: "6 tháng",
-    benefits: "Miễn phí tái khám 1 lần, giảm 10% chi phí khám bệnh",
-  },
-  {
-    id: 4,
-    name: "Gói tiêm phòng nâng cao cho chó",
-    duration: "12 tháng",
-    benefits: "Miễn phí tái khám 2 lần, giảm 15% chi phí khám bệnh",
-  },
-  {
-    id: 5,
-    name: "Gói tiêm phòng cơ bản cho mèo",
-    duration: "6 tháng",
-    benefits: "Miễn phí tái khám 1 lần, giảm 10% chi phí khám bệnh",
-  },
-  {
-    id: 6,
-    name: "Gói tiêm phòng toàn diện cho mèo",
-    duration: "12 tháng",
-    extra: "3 lần miễn phí tái khám, tặng 1 lần tắm spa",
-    benefits: "Miễn phí tái khám 3 lần, giảm 20% chi phí khám bệnh, tặng 1 lần tắm spa",
-  },
-  {
-    id: 7,
-    name: "Gói tiêm phòng VIP cho thú cưng",
-    duration: "12 tháng",
-    benefits: "Miễn phí tái khám không giới hạn, giảm 30% chi phí khám bệnh, tặng gói chăm sóc spa trọn năm",
-  },
-];
+// Helper function để format tên gói đẹp hơn
+const formatPackageName = (loaiGoi) => {
+  if (!loaiGoi) return loaiGoi;
+  // Nếu là format "06Thang", "03Thang" -> "Gói 6 tháng", "Gói 3 tháng"
+  const match = loaiGoi.match(/^(\d+)(Thang|thang)$/i);
+  if (match) {
+    const months = parseInt(match[1]);
+    return `Gói ${months} tháng`;
+  }
+  // Nếu không match, trả về nguyên bản
+  return loaiGoi;
+};
 
 export default function VaccinationPackagesPage() {
-  // Loại bỏ khai báo kiểu TypeScript: (typeof registeredPackages)
-  const [packages, setPackages] = useState(registeredPackages);
+  const [subscriptions, setSubscriptions] = useState([]);
+  const [availablePackages, setAvailablePackages] = useState([]);
+  const [loading, setLoading] = useState(true);
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [registering, setRegistering] = useState(false);
 
-  // Loại bỏ khai báo kiểu TypeScript: (id: number)
-  const handleDelete = (id) => {
-    setPackages(packages.filter((pkg) => pkg.id !== id));
+  // Fetch danh sách gói đã đăng ký
+  const fetchSubscriptions = async () => {
+    try {
+      const response = await vaccinationAPI.getSubscriptions();
+      if (response.data.success) {
+        // Map dữ liệu từ backend sang frontend format
+        const mapped = (response.data.data || []).map((sub) => ({
+          MaGoiDK: sub.MaGoiDK,
+          LoaiGoi: sub.LoaiGoi,
+          displayName: formatPackageName(sub.LoaiGoi),
+          duration: `${sub.ThoiHan} tháng`,
+          benefits: `Giảm ${sub.UuDai}% chi phí tiêm phòng`,
+          startDate: new Date(sub.ThoiGianBatDau).toLocaleDateString("vi-VN"),
+          endDate: new Date(sub.ThoiGianKetThuc).toLocaleDateString("vi-VN"),
+          TrangThai: sub.TrangThai,
+        }));
+        setSubscriptions(mapped);
+      }
+    } catch (error) {
+      console.error("Lỗi khi tải danh sách gói đã đăng ký:", error);
+    }
   };
 
-  // Loại bỏ khai báo kiểu TypeScript: (pkg: (typeof availablePackages)[0])
-  const handleRegister = (pkg) => {
-    const newPackage = {
-      id: pkg.id,
-      name: pkg.name,
-      duration: pkg.duration,
-      benefits: pkg.benefits,
-      startDate: new Date().toLocaleDateString("vi-VN"),
-      // Tính toán ngày kết thúc (chỉ là ví dụ, không chính xác 6 tháng)
-      endDate: new Date(Date.now() + 180 * 24 * 60 * 60 * 1000).toLocaleDateString("vi-VN"),
+  // Fetch danh sách gói tiêm có sẵn
+  const fetchAvailablePackages = async () => {
+    try {
+      const response = await vaccinationAPI.getPackages();
+      if (response.data.success) {
+        // Map dữ liệu từ backend sang frontend format
+        const mapped = (response.data.data || []).map((pkg) => ({
+          LoaiGoi: pkg.LoaiGoi,
+          displayName: formatPackageName(pkg.LoaiGoi),
+          duration: `${pkg.ThoiHan} tháng`,
+          benefits: `Giảm ${pkg.UuDai}% chi phí tiêm phòng`,
+        }));
+        setAvailablePackages(mapped);
+      }
+    } catch (error) {
+      console.error("Lỗi khi tải danh sách gói tiêm:", error);
+    }
+  };
+
+  useEffect(() => {
+    const loadData = async () => {
+      setLoading(true);
+      await Promise.all([fetchSubscriptions(), fetchAvailablePackages()]);
+      setLoading(false);
     };
-    setPackages([...packages, newPackage]);
+    loadData();
+  }, []);
+
+  const handleRegister = async (pkg) => {
+    try {
+      setRegistering(true);
+      const response = await vaccinationAPI.subscribe({ LoaiGoi: pkg.LoaiGoi });
+      
+      if (response.data.success) {
+        // Refresh danh sách gói đã đăng ký
+        await fetchSubscriptions();
     setDialogOpen(false);
+        alert("Đăng ký gói tiêm phòng thành công!");
+      } else {
+        alert(response.data.message || "Đăng ký thất bại");
+      }
+    } catch (error) {
+      console.error("Lỗi khi đăng ký gói:", error);
+      alert(error.response?.data?.message || "Đăng ký thất bại. Vui lòng thử lại!");
+    } finally {
+      setRegistering(false);
+    }
   };
+
+  // Kiểm tra xem gói đã được đăng ký và đang hoạt động chưa
+  // Chỉ disable nếu gói đang hoạt động, nếu hết hạn thì cho phép đăng ký lại
+  const isPackageRegistered = (loaiGoi) => {
+    return subscriptions.some(
+      (sub) => sub.LoaiGoi === loaiGoi && sub.TrangThai === "Đang hoạt động"
+    );
+  };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-b from-blue-50 to-white flex items-center justify-center">
+        <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-blue-50 to-white">
-
       {/* Main Content */}
       <main className="container mx-auto px-4 py-8">
         <div className="max-w-4xl mx-auto">
@@ -130,12 +144,15 @@ export default function VaccinationPackagesPage() {
                   <DialogDescription>Chọn gói tiêm phòng phù hợp cho thú cưng của bạn</DialogDescription>
                 </DialogHeader>
                 <div className="grid gap-4 py-4">
-                  {availablePackages.map((pkg) => (
-                    <Card key={pkg.id} className="hover:shadow-md transition-shadow">
+                  {availablePackages.length === 0 ? (
+                    <p className="text-center text-gray-500 py-4">Không có gói tiêm phòng nào</p>
+                  ) : (
+                    availablePackages.map((pkg, index) => (
+                      <Card key={pkg.LoaiGoi || index} className="hover:shadow-md transition-shadow">
                       <CardHeader>
                         <div className="flex items-start justify-between">
                           <div className="flex-1">
-                            <CardTitle className="text-lg mb-2">{pkg.name}</CardTitle>
+                              <CardTitle className="text-lg mb-2">{pkg.displayName || pkg.LoaiGoi}</CardTitle>
                             <div className="flex items-center gap-4 text-sm text-gray-600 mb-2">
                               <div className="flex items-center gap-1">
                                 <Clock className="h-4 w-4" />
@@ -150,23 +167,28 @@ export default function VaccinationPackagesPage() {
                           <Button
                             size="sm"
                             onClick={() => handleRegister(pkg)}
-                            disabled={packages.some((p) => p.id === pkg.id)}
+                              disabled={isPackageRegistered(pkg.LoaiGoi) || registering}
                           >
-                            {packages.some((p) => p.id === pkg.id) ? "Đã đăng ký" : "Đăng ký"}
+                              {registering
+                                ? "Đang xử lý..."
+                                : isPackageRegistered(pkg.LoaiGoi)
+                                ? "Đã đăng ký"
+                                : "Đăng ký"}
                           </Button>
                         </div>
                       </CardHeader>
                     </Card>
-                  ))}
+                    ))
+                  )}
                 </div>
               </DialogContent>
             </Dialog>
           </div>
 
-          {packages.length === 0 ? (
+          {subscriptions.length === 0 ? (
             <Card className="text-center py-12">
               <CardContent>
-                <ClipboardPlus className="h-16 w-16 text-gray-300 mx-auto mb-4" />
+                <Calendar className="h-16 w-16 text-gray-300 mx-auto mb-4" />
                 <h3 className="text-lg font-semibold text-gray-900 mb-2">Chưa có gói tiêm phòng nào</h3>
                 <p className="text-gray-600 mb-6">
                   Đăng ký gói tiêm phòng để nhận ưu đãi và chăm sóc tốt hơn cho thú cưng
@@ -180,15 +202,22 @@ export default function VaccinationPackagesPage() {
             </Card>
           ) : (
             <div className="grid gap-6">
-              {packages.map((pkg) => (
-                <Card key={pkg.id} className="hover:shadow-lg transition-shadow">
+              {subscriptions.map((pkg) => (
+                <Card key={pkg.MaGoiDK} className="hover:shadow-lg transition-shadow">
                   <CardHeader>
                     <div className="flex items-start justify-between">
                       <div className="flex-1">
                         <div className="flex items-center gap-3 mb-2">
-                          <CardTitle className="text-xl">{pkg.name}</CardTitle>
-                          <Badge variant="secondary" className="bg-green-100 text-green-700">
-                            Đang hoạt động
+                          <CardTitle className="text-xl">{pkg.displayName || pkg.LoaiGoi}</CardTitle>
+                          <Badge
+                            variant="secondary"
+                            className={
+                              pkg.TrangThai === "Đang hoạt động"
+                                ? "bg-green-100 text-green-700"
+                                : "bg-gray-100 text-gray-700"
+                            }
+                          >
+                            {pkg.TrangThai}
                           </Badge>
                         </div>
                         <CardDescription className="text-base">
@@ -214,14 +243,6 @@ export default function VaccinationPackagesPage() {
                           </div>
                         </CardDescription>
                       </div>
-                      <Button
-                        variant="destructive"
-                        size="icon"
-                        onClick={() => handleDelete(pkg.id)}
-                        className="flex-shrink-0"
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
                     </div>
                   </CardHeader>
                 </Card>
@@ -230,8 +251,6 @@ export default function VaccinationPackagesPage() {
           )}
         </div>
       </main>
-
-      
     </div>
   );
 }

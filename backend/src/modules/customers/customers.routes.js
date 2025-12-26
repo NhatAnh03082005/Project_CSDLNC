@@ -38,8 +38,6 @@ router.put(
   authenticate,
   authorize(ROLES.CUSTOMER),
   async (req, res) => {
-    console.log(req.user);
-    
     const customerId = req.user.maKhachHang;
 
     if (!customerId) {

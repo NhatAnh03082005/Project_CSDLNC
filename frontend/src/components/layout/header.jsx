@@ -1,6 +1,5 @@
 import React from "react";
-// Thay đổi Link thành NavLink
-import { NavLink, Link } from "react-router-dom"; 
+import { NavLink, Link, useNavigate } from "react-router-dom"; 
 import { 
   ShoppingCart, 
   User, 
@@ -9,7 +8,8 @@ import {
   Star, 
   Heart, 
   LogOut,
-  History // Thêm icon này
+  History, 
+  Calendar 
 } from "lucide-react";
 
 import { Button } from "../ui/button";
@@ -26,26 +26,39 @@ import {
 
 import { useAuth } from "../../context/AuthContext";
 import { authAPI } from "../../api/services";
+import { useAuthStore } from "../../store/authStore";
 
 export default function Header() {
   const { user, setUser, setIsAuthenticated, isAuthenticated } = useAuth();
+  const navigate = useNavigate();
 
   const handleLogout = async () => {
     try {
       const response = await authAPI.logout();
-    if(response.data.status){
+      if (response.data.success) {
+        localStorage.removeItem("token");
+
+        setUser(null);
+        setIsAuthenticated(false);
+        useAuthStore.getState().logout();
+        navigate("/login");
+      } else {
+        localStorage.removeItem("token");
+        setUser(null);
+        setIsAuthenticated(false);
+        useAuthStore.getState().logout();
+        navigate("/login");
+      }
+    } catch (error) {
+      console.error("Lỗi khi đăng xuất:", error);
       localStorage.removeItem("token");
       setUser(null);
       setIsAuthenticated(false);
-      alert(`${response.data.message}`);
-    }
-    } catch (error) {
-      console.log(error);
+      useAuthStore.getState().logout();
+      navigate("/login");
     }
   }
 
-  // Hàm helper để định nghĩa style cho NavLink
-  // isActive là biến boolean do NavLink cung cấp
   const navLinkClass = ({ isActive }) => 
     `text-sm font-medium transition-colors hover:text-blue-600 ${
       isActive ? "text-blue-600" : "text-gray-600"
@@ -78,10 +91,7 @@ export default function Header() {
           </NavLink>
         </nav>
 
-        {/* Action Buttons (Giữ nguyên) */}
         <div className="flex items-center gap-3">
-          {/* ... phần Cart và User Dropdown giữ nguyên như cũ ... */}
-          {/* Nút Lịch sử hóa đơn mới */}
   <Link to="/invoices">
     <Button variant="ghost" size="icon" title="Lịch sử hóa đơn">
       <History className="h-5 w-5" />
@@ -136,7 +146,6 @@ export default function Header() {
                 <div className="flex flex-col space-y-1 py-1">
                   <p className="text-sm font-semibold text-gray-900">Khách hàng</p>
                   <p className="text-xs text-gray-500 truncate">
-                    {/* {user?.Email || 'Đang tải thông tin...'} */}
                     {isAuthenticated && <span>{user.Email}</span>}
                   </p>
                 </div>
@@ -150,6 +159,11 @@ export default function Header() {
               <DropdownMenuItem asChild>
                 <Link to="/pets" className="cursor-pointer">
                   <FolderOpen className="mr-3 h-4 w-4 text-gray-500" /> Hồ sơ thú cưng
+                </Link>
+              </DropdownMenuItem>
+              <DropdownMenuItem asChild>
+                <Link to="/appointments" className="cursor-pointer">
+                  <Calendar className="mr-3 h-4 w-4 text-gray-500" /> Lịch hẹn của tôi
                 </Link>
               </DropdownMenuItem>
               <DropdownMenuItem asChild>

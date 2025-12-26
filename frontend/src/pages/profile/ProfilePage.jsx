@@ -1,6 +1,5 @@
 import React, { useEffect, useState } from "react";
 
-// 2. Chuyển đổi imports alias (@/) sang đường dẫn tương đối (../../...)
 import { Button } from "../../components/ui/button";
 import {
   Card,
@@ -25,34 +24,60 @@ import { customerAPI } from "../../api/services";
 
 export default function ProfilePage() {
   const [isEditing, setIsEditing] = useState(false);
-  const { user } = useAuth(); // user có thể là null nếu API lỗi hoặc đang load
+  const { user, setUser } = useAuth();
   const [errors, setErrors] = useState({});
-  // SỬA TẠI ĐÂY: Sử dụng dấu ? và giá trị mặc định
+  const [loading, setLoading] = useState(true);
+  const [profileData, setProfileData] = useState(null);
+  
   const [formData, setFormData] = useState({
-    HoTen: user?.HoTen || "",
-    SDT: user?.SDT || "",
-    CCCD: user?.CCCD || "",
-    NgaySinh: user?.NgaySinh ? user.NgaySinh.split("T")[0] : "",
-    GioiTinh: user?.GioiTinh || "Nam",
+    HoTen: "",
+    SDT: "",
+    CCCD: "",
+    NgaySinh: "",
+    GioiTinh: "Nam",
   });
 
-  // Đảm bảo formData cập nhật khi user load xong
   useEffect(() => {
-    if (user) {
+    const fetchProfile = async () => {
+      try {
+        setLoading(true);
+        const response = await customerAPI.getProfile();
+        if (response && response.data && response.data.success) {
+          const data = response.data.data;
+          setProfileData(data);
+          setFormData({
+            HoTen: data.HoTen || "",
+            SDT: data.SDT || "",
+            CCCD: data.CCCD || "",
+            NgaySinh: data.NgaySinh ? data.NgaySinh.split("T")[0] : "",
+            GioiTinh: data.GioiTinh || "Nam",
+          });
+        }
+      } catch (error) {
+        console.error("Lỗi khi tải thông tin hồ sơ:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+    
+    fetchProfile();
+  }, []);
+
+  useEffect(() => {
+    if (profileData) {
       setFormData({
-        HoTen: user.HoTen || "",
-        SDT: user.SDT || "",
-        CCCD: user.CCCD || "",
-        NgaySinh: user.NgaySinh ? user.NgaySinh.split("T")[0] : "",
-        GioiTinh: user.GioiTinh || "Nam",
+        HoTen: profileData.HoTen || "",
+        SDT: profileData.SDT || "",
+        CCCD: profileData.CCCD || "",
+        NgaySinh: profileData.NgaySinh ? profileData.NgaySinh.split("T")[0] : "",
+        GioiTinh: profileData.GioiTinh || "Nam",
       });
     }
-  }, [user]);
+  }, [profileData]);
 
-  // THÊM KIỂM TRA: Nếu chưa có user, hiển thị màn hình chờ thay vì render form
-  if (!user) {
+  if (loading || !profileData) {
     return (
-      <div className="flex justify-center py-20">
+      <div className="flex justify-center items-center py-20">
         <Loader2 className="animate-spin h-8 w-8 text-blue-600" />
         <p className="ml-2">Đang tải hồ sơ...</p>
       </div>
@@ -75,17 +100,14 @@ export default function ProfilePage() {
   const handleSave = async () => {
     const newErrors = {};
 
-    // 1. Kiểm tra Số điện thoại (10 số)
     if (!formData.SDT || formData.SDT.length !== 10) {
       newErrors.SDT = "Số điện thoại phải có đúng 10 chữ số";
     }
 
-    // 2. Kiểm tra CCCD (12 số)
     if (!formData.CCCD || formData.CCCD.length !== 12) {
       newErrors.CCCD = "Căn cước công dân phải có đúng 12 chữ số";
     }
 
-    // Nếu có lỗi ở frontend thì cập nhật state errors và dừng lại
     if (Object.keys(newErrors).length > 0) {
       setErrors(newErrors);
       return;
@@ -94,16 +116,20 @@ export default function ProfilePage() {
     try {
       const response = await customerAPI.updateProfile(formData);
 
-      // Kiểm tra data.success dựa trên cấu trúc trả về từ customer.service.js của bạn
       if (response.data.success) {
         alert("Cập nhật thông tin thành công");
         setIsEditing(false);
         setErrors({});
+        const updatedResponse = await customerAPI.getProfile();
+        if (updatedResponse && updatedResponse.data && updatedResponse.data.success) {
+          const updatedData = updatedResponse.data.data;
+          setProfileData(updatedData);
+          setUser(updatedData);
+        }
       }
     } catch (error) {
       console.error("Lỗi khi lưu profile:", error);
 
-      // 3. Bắt lỗi trùng lặp từ Backend (Mã 409 hoặc 400 kèm message)
       const serverMessage = error.response?.data?.message;
       if (
         serverMessage?.includes("đã tồn tại") ||
@@ -118,14 +144,13 @@ export default function ProfilePage() {
     }
   };
 
-  const currentSpending = 8500000;
+  const currentSpending = profileData?.TongChiTieu || 0;
+  const maintainSpending = profileData?.ChiTieuGiuHang || 0;
   const basicTierMin = 0;
   const loyalTierMin = 5000000;
   const vipTierMin = 15000000;
-  const maintainSpending = 3000000;
   return (
     <div className="min-h-screen bg-gradient-to-b from-blue-50 to-white">
-      {/* Main Content */}
       <div className="container mx-auto px-4 py-8 max-w-5xl">
         <div className="mb-6">
           <h1 className="text-3xl font-bold text-blue-900 mb-2">
@@ -137,7 +162,6 @@ export default function ProfilePage() {
         </div>
 
         <div className="grid lg:grid-cols-3 gap-6">
-          {/* Membership Card */}
           <div className="lg:col-span-1">
             <Card className="bg-gradient-to-br from-blue-600 to-blue-800 text-white">
               <CardHeader>
@@ -149,9 +173,9 @@ export default function ProfilePage() {
               <CardContent className="space-y-4">
                 <div>
                   <Badge className="bg-white/20 text-white border-white/30 mb-2">
-                    {user.CapHoiVien}
+                    {profileData.CapHoiVien}
                   </Badge>
-                  <p className="text-2xl font-bold">{user.DiemLoyalty} </p>
+                  <p className="text-2xl font-bold">{profileData.DiemLoyalty || 0} </p>
                   <p className="text-sm text-blue-100">Điểm loyalty</p>
                 </div>
 
@@ -174,7 +198,6 @@ export default function ProfilePage() {
               </CardContent>
             </Card>
 
-            {/* Membership Tiers Info */}
             <Card className="mt-6">
               <CardHeader>
                 <CardTitle className="text-lg">Các cấp hội viên</CardTitle>
@@ -211,7 +234,6 @@ export default function ProfilePage() {
             </Card>
           </div>
 
-          {/* Profile Information */}
           <div className="lg:col-span-2">
             <Card>
               <CardHeader>
@@ -232,17 +254,16 @@ export default function ProfilePage() {
                         variant="outline"
                         onClick={() => {
                           setIsEditing(false);
-                          setErrors({}); // Xóa sạch thông báo lỗi
+                          setErrors({});
 
-                          // HOÀN TÁC DỮ LIỆU: Đưa formData về giá trị của user hiện tại
                           setFormData({
-                            HoTen: user?.HoTen || "",
-                            SDT: user?.SDT || "",
-                            CCCD: user?.CCCD || "",
-                            NgaySinh: user?.NgaySinh
-                              ? user.NgaySinh.split("T")[0]
+                            HoTen: profileData?.HoTen || "",
+                            SDT: profileData?.SDT || "",
+                            CCCD: profileData?.CCCD || "",
+                            NgaySinh: profileData?.NgaySinh
+                              ? profileData.NgaySinh.split("T")[0]
                               : "",
-                            GioiTinh: user?.GioiTinh || "Nam",
+                            GioiTinh: profileData?.GioiTinh || "Nam",
                           });
                         }}
                       >
@@ -289,7 +310,7 @@ export default function ProfilePage() {
                     name="Email"
                     id="Email"
                     type="email"
-                    value={user.Email}
+                    value={profileData.Email || ""}
                     disabled={true}
                   />
                 </div>

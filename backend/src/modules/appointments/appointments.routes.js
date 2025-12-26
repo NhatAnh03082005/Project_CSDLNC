@@ -6,11 +6,28 @@ const appointmentsService = require('./appointments.service');
 
 /**
  * @route   GET /api/appointments
- * @desc    Danh sách lịch hẹn
- * @access  Private
+ * @desc    Danh sách lịch hẹn của khách hàng (có phân trang)
+ * @access  Private - KHACH_HANG
+ * @query   page, limit, status?
  */
-router.get('/', authenticate, (req, res) => {
-  res.json({ message: 'Get appointments list' });
+router.get('/', authenticate, authorize(ROLES.CUSTOMER), async (req, res) => {
+  const customerId = req.user.maKhachHang;
+
+  if (!customerId) {
+    return res.status(400).json({
+      success: false,
+      message: 'Không tìm thấy mã khách hàng trong token',
+    });
+  }
+
+  const { page, limit, status } = req.query;
+  const response = await appointmentsService.getCustomerAppointments(customerId, {
+    page: parseInt(page) || 1,
+    limit: parseInt(limit) || 10,
+    status,
+  });
+  
+  return res.status(response.status || 200).json(response);
 });
 
 /**
@@ -30,6 +47,37 @@ router.post('/', authenticate, authorize(ROLES.CUSTOMER), async (req, res) => {
 
   const response = await appointmentsService.createAppointment(customerId, req.body);
   return res.status(response.status || 200).json(response);
+});
+
+/**
+ * @route   GET /api/appointments/available-slots
+ * @desc    Khung giờ còn trống để đặt lịch
+ * @access  Private - KHACH_HANG
+ * @query   MaChiNhanh, LoaiDichVu, ThoiGianHen, BacSiPhuTrach? (optional)
+ */
+router.get('/available-slots', authenticate, authorize(ROLES.CUSTOMER), async (req, res) => {
+  const response = await appointmentsService.getAvailableSlots(req.query);
+  return res.status(response.status || 200).json(response);
+});
+
+/**
+ * @route   GET /api/appointments/available-doctors
+ * @desc    Danh sách bác sĩ rảnh theo chi nhánh và ngày
+ * @access  Private - KHACH_HANG
+ * @query   MaChiNhanh, ThoiGianHen, LoaiDichVu? (optional)
+ */
+router.get('/available-doctors', authenticate, authorize(ROLES.CUSTOMER), async (req, res) => {
+  const response = await appointmentsService.getAvailableDoctors(req.query);
+  return res.status(response.status || 200).json(response);
+});
+
+/**
+ * @route   GET /api/appointments/schedule
+ * @desc    Lịch hẹn theo chi nhánh/bác sĩ/ngày
+ * @access  Private - NHAN_VIEN
+ */
+router.get('/schedule', authenticate, authorize(ROLES.EMPLOYEE, ROLES.ADMIN), (req, res) => {
+  res.json({ message: 'Get schedule' });
 });
 
 /**
@@ -93,26 +141,6 @@ router.put('/:id/confirm', authenticate, authorize(ROLES.EMPLOYEE, ROLES.ADMIN),
  */
 router.put('/:id/complete', authenticate, authorize(ROLES.EMPLOYEE, ROLES.ADMIN), (req, res) => {
   res.json({ message: 'Complete appointment' });
-});
-
-/**
- * @route   GET /api/appointments/schedule
- * @desc    Lịch hẹn theo chi nhánh/bác sĩ/ngày
- * @access  Private - NHAN_VIEN
- */
-router.get('/schedule', authenticate, authorize(ROLES.EMPLOYEE, ROLES.ADMIN), (req, res) => {
-  res.json({ message: 'Get schedule' });
-});
-
-/**
- * @route   GET /api/appointments/available-slots
- * @desc    Khung giờ còn trống để đặt lịch
- * @access  Private - KHACH_HANG
- * @query   MaChiNhanh, LoaiDichVu, ThoiGianHen, BacSiPhuTrach? (optional)
- */
-router.get('/available-slots', authenticate, authorize(ROLES.CUSTOMER), async (req, res) => {
-  const response = await appointmentsService.getAvailableSlots(req.query);
-  return res.status(response.status || 200).json(response);
 });
 
 module.exports = router;

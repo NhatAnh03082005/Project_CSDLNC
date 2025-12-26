@@ -1,56 +1,85 @@
-import { createContext, useContext, useEffect, useState } from "react";
+import { createContext, useContext, useEffect, useState, useMemo, useCallback } from "react";
 import { customerAPI } from "../api/services";
 
-// 1. Tạo Context
 const AuthContext = createContext(null);
 
-// 2. Provider
 export const AuthProvider = ({ children }) => {
-  const [user, setUser] = useState(null); // thông tin user
+  const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [isAuthenticated, setIsAuthenticated] = useState(false); // trạng thái load auth
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
 
-  // 3. Load user từ localStorage khi reload trang
   useEffect(() => {
+    let mounted = true;
+    
     const fetchUser = async () => {
       const token = localStorage.getItem("token");
-
       if (!token) {
-        setLoading(false);
+        if (mounted) setLoading(false);
+        return;
+      }
+
+      const path = window.location.pathname;
+      if (path === '/login' || path === '/register' || path === '/') {
+        if (mounted) setLoading(false);
         return;
       }
 
       try {
         const response = await customerAPI.getProfile();
-        // Kiểm tra kỹ cấu trúc dữ liệu trước khi set
-        if (response && response.data && response.data.success) {
+        if (!mounted) return;
+        
+        if (response?.data?.success) {
           setUser(response.data.data);
           setIsAuthenticated(true);
+        } else {
+          setUser(null);
+          setIsAuthenticated(false);
         }
       } catch (error) {
+        if (!mounted) return;
+        
         console.error("Lỗi khi tải thông tin người dùng:", error);
-        // Nếu lỗi 401/500, có thể xóa token để bắt đăng nhập lại
-        // localStorage.removeItem("token");
+        setUser(null);
+        setIsAuthenticated(false);
+        
+        if (error.response?.status === 401) {
+          const path = window.location.pathname;
+          if (!['/login', '/register', '/'].includes(path)) {
+            localStorage.removeItem("token");
+          }
+        }
       } finally {
-        setLoading(false);
+        if (mounted) setLoading(false);
       }
     };
+    
     fetchUser();
+    
+    return () => {
+      mounted = false;
+    };
   }, []);
-  const value = {
-    setUser,
-    setIsAuthenticated,
-    user,
-    isAuthenticated: isAuthenticated,
-  };
+  
+  const setUserMemo = useCallback((userData) => {
+    setUser(userData);
+  }, []);
 
-  // 7. Tránh render khi đang load
+  const setIsAuthenticatedMemo = useCallback((auth) => {
+    setIsAuthenticated(auth);
+  }, []);
+  
+  const value = useMemo(() => ({
+    setUser: setUserMemo,
+    setIsAuthenticated: setIsAuthenticatedMemo,
+    user,
+    isAuthenticated,
+  }), [user, isAuthenticated, setUserMemo, setIsAuthenticatedMemo]);
+
   if (loading) return <div>Loading</div>;
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 };
 
-// 8. Custom hook
 export const useAuth = () => {
   const context = useContext(AuthContext);
   if (!context) {

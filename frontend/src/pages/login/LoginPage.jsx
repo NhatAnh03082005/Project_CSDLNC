@@ -4,8 +4,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../..
 import { Label } from "../../components/ui/label";
 import { Input } from "../../components/ui/input";
 import { Button } from "../../components/ui/button";
-import { Heart, User, Briefcase, Hash } from "lucide-react"; // Thêm icon Hash cho mã nhân viên
-import axios from "axios"; // Đảm bảo đã import axios
+import { Heart, User, Briefcase, Hash } from "lucide-react";
+import axios from "axios";
 import { useAuth } from "../../context/AuthContext";
 export default function LoginPage() {
   const navigate = useNavigate(); 
@@ -13,7 +13,7 @@ export default function LoginPage() {
   const [selectedRole, setSelectedRole] = useState(null);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [staffCode, setStaffCode] = useState(""); // State mới cho mã nhân viên
+  const [staffCode, setStaffCode] = useState("");
   const {setUser, setIsAuthenticated} = useAuth();
 
   const handleLogin = async (e) => {
@@ -23,7 +23,6 @@ export default function LoginPage() {
     let response;
     
     if (selectedRole === "customer") {
-      // Gửi yêu cầu đăng nhập khách hàng đến Backend
       response = await axios.post("http://localhost:3000/api/auth/login", {
         email,
         password,
@@ -33,23 +32,17 @@ export default function LoginPage() {
       setIsAuthenticated(true);
       
     } else if (selectedRole === "staff") {
-      // Gửi yêu cầu đăng nhập nhân viên
       response = await axios.post("http://localhost:3000/api/auth/login", {
         staffCode,
         role: "staff"
       });
     }
-    console.log(response);
-    
 
-    // Nếu đăng nhập thành công (Backend trả về status 200)
     if (response.data.status === 200) {
-      // 1. Lưu token vào bộ nhớ trình duyệt để dùng cho các trang sau
       localStorage.setItem("token", response.data.token);
       
       alert("Đăng nhập thành công!");
 
-      // 2. Chuyển hướng trang
       if (selectedRole === "customer") {
         navigate("/customer"); 
       } else {
@@ -57,7 +50,6 @@ export default function LoginPage() {
       }
     }
   } catch (error) {
-    // Nếu có lỗi (Sai mật khẩu, email không tồn tại...), hiện thông báo lỗi
     console.error("Lỗi đăng nhập:", error);
     alert(error.response?.data?.message || "Đăng nhập thất bại. Vui lòng thử lại!");
   }
@@ -106,9 +98,7 @@ export default function LoginPage() {
             </div>
 
             <form onSubmit={handleLogin} className="space-y-4">
-              {/* Hiển thị Input tùy theo vai trò */}
               {selectedRole === "staff" ? (
-                /* Giao diện cho NHÂN VIÊN */
                 <div className="space-y-2 animate-in fade-in duration-300">
                   <Label htmlFor="staffCode">Mã số nhân viên</Label>
                   <div className="relative">
@@ -125,7 +115,6 @@ export default function LoginPage() {
                   </div>
                 </div>
               ) : (
-                /* Giao diện cho KHÁCH HÀNG (Mặc định hoặc khi chọn Customer) */
                 <div className="space-y-4 animate-in fade-in duration-300">
                   <div className="space-y-2">
                     <Label htmlFor="email">Email</Label>

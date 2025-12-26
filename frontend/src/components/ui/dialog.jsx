@@ -4,27 +4,22 @@ import { XIcon } from "lucide-react";
 
 import { cn } from "../../lib/utils";
 
-// Loại bỏ khai báo kiểu TypeScript: React.ComponentProps<typeof DialogPrimitive.Root>
 function Dialog(props) {
   return <DialogPrimitive.Root data-slot="dialog" {...props} />;
 }
 
-// Loại bỏ khai báo kiểu TypeScript: React.ComponentProps<typeof DialogPrimitive.Trigger>
 function DialogTrigger(props) {
   return <DialogPrimitive.Trigger data-slot="dialog-trigger" {...props} />;
 }
 
-// Loại bỏ khai báo kiểu TypeScript: React.ComponentProps<typeof DialogPrimitive.Portal>
 function DialogPortal(props) {
   return <DialogPrimitive.Portal data-slot="dialog-portal" {...props} />;
 }
 
-// Loại bỏ khai báo kiểu TypeScript: React.ComponentProps<typeof DialogPrimitive.Close>
 function DialogClose(props) {
   return <DialogPrimitive.Close data-slot="dialog-close" {...props} />;
 }
 
-// Loại bỏ khai báo kiểu TypeScript: React.ComponentProps<typeof DialogPrimitive.Overlay>
 function DialogOverlay({ className, ...props }) {
   return (
     <DialogPrimitive.Overlay
@@ -38,7 +33,6 @@ function DialogOverlay({ className, ...props }) {
   );
 }
 
-// Loại bỏ khai báo kiểu TypeScript: React.ComponentProps<typeof DialogPrimitive.Content> & { showCloseButton?: boolean; }
 function DialogContent({
   className,
   children,
@@ -71,7 +65,6 @@ function DialogContent({
   );
 }
 
-// Loại bỏ khai báo kiểu TypeScript: React.ComponentProps<"div">
 function DialogHeader({ className, ...props }) {
   return (
     <div
@@ -82,7 +75,6 @@ function DialogHeader({ className, ...props }) {
   );
 }
 
-// Loại bỏ khai báo kiểu TypeScript: React.ComponentProps<"div">
 function DialogFooter({ className, ...props }) {
   return (
     <div
@@ -96,7 +88,6 @@ function DialogFooter({ className, ...props }) {
   );
 }
 
-// Loại bỏ khai báo kiểu TypeScript: React.ComponentProps<typeof DialogPrimitive.Title>
 function DialogTitle({ className, ...props }) {
   return (
     <DialogPrimitive.Title
@@ -107,7 +98,6 @@ function DialogTitle({ className, ...props }) {
   );
 }
 
-// Loại bỏ khai báo kiểu TypeScript: React.ComponentProps<typeof DialogPrimitive.Description>
 function DialogDescription({ className, ...props }) {
   return (
     <DialogPrimitive.Description

@@ -9,8 +9,6 @@ const { sql, poolPromise } = require("../../config/database");
 async function getVaccinationPackages() {
   try {
     const pool = await poolPromise;
-
-    // Lấy danh sách các loại gói tiêm phòng từ bảng GoiTiemPhong
     const result = await pool.request().query(
       `
       SELECT 
@@ -22,11 +20,10 @@ async function getVaccinationPackages() {
     `
     );
 
-    // Format lại dữ liệu
     const packages = result.recordset.map((pkg) => ({
       LoaiGoi: pkg.LoaiGoi,
-      ThoiHan: pkg.ThoiHan, // Thời hạn tính bằng tháng
-      UuDai: pkg.UuDai, // Tỷ lệ ưu đãi (%)
+      ThoiHan: pkg.ThoiHan, 
+      UuDai: pkg.UuDai,
     }));
 
     return {
@@ -55,7 +52,6 @@ async function getVaccinationPackages() {
 async function subscribeToPackage(customerId, subscriptionData) {
   const { LoaiGoi } = subscriptionData;
 
-  // Validation: Kiểm tra các trường bắt buộc
   if (!LoaiGoi) {
     return {
       success: false,
@@ -66,8 +62,6 @@ async function subscribeToPackage(customerId, subscriptionData) {
 
   try {
     const pool = await poolPromise;
-
-    // 1. Kiểm tra gói tiêm có tồn tại không
     const packageCheck = await pool
       .request()
       .input("LoaiGoi", sql.Char(7), LoaiGoi)
@@ -88,7 +82,7 @@ async function subscribeToPackage(customerId, subscriptionData) {
     }
 
     const packageInfo = packageCheck.recordset[0];
-    const thoiHan = packageInfo.ThoiHan; // Thời hạn tính bằng tháng
+    const thoiHan = packageInfo.ThoiHan; 
 
     const today = new Date();
     today.setHours(0, 0, 0, 0);
@@ -111,7 +105,7 @@ async function subscribeToPackage(customerId, subscriptionData) {
       `
       );
 
-    // 4. Lấy thông tin gói đăng ký vừa tạo (bao gồm MaGoiDK được trigger sinh)
+  
     const newSubscription = await pool
       .request()
       .input("MaKhachHang", sql.Char(7), customerId)
@@ -155,7 +149,6 @@ async function subscribeToPackage(customerId, subscriptionData) {
   } catch (error) {
     console.error("Error subscribing to vaccination package:", error);
 
-    // Xử lý lỗi constraint
     if (error.number === 547 || error.message.includes("FOREIGN KEY")) {
       return {
         success: false,
@@ -184,8 +177,6 @@ async function subscribeToPackage(customerId, subscriptionData) {
 async function getCustomerSubscriptions(customerId) {
   try {
     const pool = await poolPromise;
-
-    // Lấy danh sách gói đăng ký của khách hàng
     const result = await pool
       .request()
       .input("MaKhachHang", sql.Char(7), customerId)
@@ -220,12 +211,11 @@ async function getCustomerSubscriptions(customerId) {
       };
     }
 
-    // Format lại dữ liệu
     const subscriptions = result.recordset.map((sub) => ({
       MaGoiDK: sub.MaGoiDK,
       LoaiGoi: sub.LoaiGoi,
-      ThoiHan: sub.ThoiHan, // Thời hạn gói (tháng)
-      UuDai: sub.UuDai, // Tỷ lệ ưu đãi (%)
+      ThoiHan: sub.ThoiHan, 
+      UuDai: sub.UuDai, 
       ThoiGianBatDau: sub.ThoiGianBatDau,
       ThoiGianKetThuc: sub.ThoiGianKetThuc,
       TrangThai: sub.TrangThai,
@@ -257,8 +247,6 @@ async function getCustomerSubscriptions(customerId) {
 async function getSubscriptionDetails(customerId, maGoiDK) {
   try {
     const pool = await poolPromise;
-
-    // Kiểm tra gói đăng ký có thuộc về khách hàng này không
     const subscriptionCheck = await pool
       .request()
       .input("MaGoiDK", sql.Char(6), maGoiDK)
@@ -288,8 +276,6 @@ async function getSubscriptionDetails(customerId, maGoiDK) {
     }
 
     const subscriptionInfo = subscriptionCheck.recordset[0];
-
-    // Lấy danh sách vaccine đã chọn trong gói này
     const vaccinesResult = await pool
       .request()
       .input("MaGoiDK", sql.Char(6), maGoiDK)
@@ -307,19 +293,17 @@ async function getSubscriptionDetails(customerId, maGoiDK) {
       `
       );
 
-    // Tính trạng thái gói
     const today = new Date();
     today.setHours(0, 0, 0, 0);
     const thoiGianKetThuc = new Date(subscriptionInfo.ThoiGianKetThuc);
     const trangThai =
       thoiGianKetThuc >= today ? "Đang hoạt động" : "Đã hết hạn";
 
-    // Format dữ liệu
     const subscriptionDetails = {
       MaGoiDK: subscriptionInfo.MaGoiDK,
       LoaiGoi: subscriptionInfo.LoaiGoi,
-      ThoiHan: subscriptionInfo.ThoiHan, // Thời hạn gói (tháng)
-      UuDai: subscriptionInfo.UuDai, // Tỷ lệ ưu đãi (%)
+      ThoiHan: subscriptionInfo.ThoiHan, 
+      UuDai: subscriptionInfo.UuDai, 
       ThoiGianBatDau: subscriptionInfo.ThoiGianBatDau,
       ThoiGianKetThuc: subscriptionInfo.ThoiGianKetThuc,
       TrangThai: trangThai,

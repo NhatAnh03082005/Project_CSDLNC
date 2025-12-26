@@ -502,7 +502,6 @@ async function verifyPetOwnership(customerId, petId) {
  */
 async function getPetMedicalHistory(customerId, petId) {
   try {
-    // Kiểm tra thú cưng có thuộc về khách hàng này không
     const petCheck = await verifyPetOwnership(customerId, petId);
     if (!petCheck.success) {
       return {
@@ -516,7 +515,6 @@ async function getPetMedicalHistory(customerId, petId) {
     const petInfo = petCheck.petInfo;
     const pool = await poolPromise;
 
-    // Lấy lịch sử khám bệnh của thú cưng (chỉ lấy của khách hàng này)
     const medicalHistory = await pool
       .request()
       .input("MaThuCung", sql.Int, parseInt(petId))
@@ -598,7 +596,6 @@ async function getPetMedicalHistory(customerId, petId) {
  */
 async function getPetVaccinationHistory(customerId, petId) {
   try {
-    // Kiểm tra thú cưng có thuộc về khách hàng này không
     const petCheck = await verifyPetOwnership(customerId, petId);
     if (!petCheck.success) {
       return {
@@ -612,7 +609,6 @@ async function getPetVaccinationHistory(customerId, petId) {
     const petInfo = petCheck.petInfo;
     const pool = await poolPromise;
 
-    // Lấy lịch sử tiêm phòng của thú cưng (chỉ lấy của khách hàng này)
     const vaccinationHistory = await pool
       .request()
       .input("MaThuCung", sql.Int, parseInt(petId))

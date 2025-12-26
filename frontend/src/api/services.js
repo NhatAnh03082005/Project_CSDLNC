@@ -12,7 +12,6 @@ export const customerAPI = {
   updateProfile: (data) => api.put('/customers/profile', data),
   getMembership: () => api.get('/customers/membership'),
   getInvoices: () => api.get('/customers/invoices'),
-  // Hàm mới bổ sung: Lấy chi tiết hóa đơn dựa trên ID
   getInvoiceDetails: (id) => api.get(`/customers/invoices/${id}`),
 };
 
@@ -27,11 +26,12 @@ export const petAPI = {
 };
 
 export const appointmentAPI = {
-  getAll: () => api.get('/appointments'),
+  getAll: (params) => api.get('/appointments', { params }),
   getById: (id) => api.get(`/appointments/${id}`),
   create: (data) => api.post('/appointments', data),
   cancel: (id) => api.put(`/appointments/${id}/cancel`),
   getAvailableSlots: (params) => api.get('/appointments/available-slots', { params }),
+  getAvailableDoctors: (params) => api.get('/appointments/available-doctors', { params }),
 };
 
 export const branchAPI = {
@@ -62,4 +62,18 @@ export const reportAPI = {
   getVaccinations: (params) => api.get('/reports/vaccinations', { params }),
   getEmployeePerformance: (params) => api.get('/reports/employees/performance', { params }),
   getDashboard: () => api.get('/reports/dashboard'),
+};
+
+export const vaccinationAPI = {
+  getPackages: () => api.get('/vaccinations/packages'),
+  subscribe: (data) => api.post('/vaccinations/packages/subscribe', data),
+  getSubscriptions: () => api.get('/vaccinations/subscriptions'),
+  getSubscriptionDetails: (maGoiDK) => api.get(`/vaccinations/subscriptions/${maGoiDK}`),
+};
+
+export const ratingAPI = {
+  getMyRatings: () => api.get('/ratings/my-ratings'),
+  createOrUpdate: (data) => api.post('/ratings', data),
+  update: (maHoaDon, stt, data) => api.put(`/ratings/${maHoaDon}/${stt}`, data),
+  delete: (maHoaDon, stt) => api.delete(`/ratings/${maHoaDon}/${stt}`),
 };

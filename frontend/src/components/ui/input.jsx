@@ -2,7 +2,6 @@ import * as React from "react";
 
 import { cn } from "../../lib/utils";
 
-// Loại bỏ khai báo kiểu TypeScript: React.ComponentProps<"input">
 function Input({ className, type, ...props }) {
   return (
     <input
