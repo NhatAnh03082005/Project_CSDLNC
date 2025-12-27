@@ -1,6 +1,6 @@
 // Import UI components (giữ nguyên đường dẫn tương đối đã sửa)
 import { Button } from "../../../../components/ui/button";
-import { branchAPI, vaccinationAPI } from "../../../../api/services";
+import { branchAPI, productAPI } from "../../../../api/services";
 import {
   Card,
   CardContent,
@@ -22,26 +22,26 @@ import {
 // Import Icons
 import { Plus, ArrowLeft } from "lucide-react";
 
-export default function VaccinestockManagement() {
+export default function ProductstockManagement() {
   const [localQty, setLocalQty] = useState({});
   const [branches, setBranches] = useState([]);
   const [selectedBranch, setSelectedBranch] = useState(null);
-  const [vaccinesStock, setVaccinesStock] = useState([]);
-  const [allVaccines, setAllVaccines] = useState([]);
-  const [updatingQuantities, setUpdatingQuantities] = useState({});
+
+  const [productsStock, setProductsStock] = useState([]);
+  const [allProducts, setAllProducts] = useState([]);
 
   const [loading, setLoading] = useState(true); // loading chung
   const [error, setError] = useState(null);
 
-  const [isAddVaccineDialogOpen, setIsAddVaccineDialogOpen] = useState(false);
-  const [selectedVaccine, setSelectedVaccine] = useState("");
+  const [isAddProductDialogOpen, setIsAddProductDialogOpen] = useState(false);
+  const [selectedProduct, setSelectedProduct] = useState("");
   const [initialQuantity, setInitialQuantity] = useState("0"); // string cho input
 
   // ✅ chỉ hiện sản phẩm CHƯA có trong kho của chi nhánh
-  const availableVaccines = useMemo(() => {
-    const stockIds = new Set(vaccinesStock.map((v) => v.MaVacXin));
-    return allVaccines.filter((v) => !stockIds.has(v.MaVacXin));
-  }, [vaccinesStock, allVaccines]);
+  const availableProducts = useMemo(() => {
+    const stockIds = new Set(productsStock.map((p) => p.MaSanPham));
+    return allProducts.filter((p) => !stockIds.has(p.MaSanPham));
+  }, [productsStock, allProducts]);
 
   // Fetch danh sách chi nhánh + sản phẩm khi mount
   useEffect(() => {
@@ -49,15 +49,16 @@ export default function VaccinestockManagement() {
       try {
         setLoading(true);
 
-        const [bRes, vRes] = await Promise.all([
+        const [bRes, pRes] = await Promise.all([
           branchAPI.getAll(),
-          vaccinationAPI.getAll(),
+          productAPI.getAll(),
         ]);
 
         const branchesData = bRes.data?.data ?? bRes.data ?? [];
-        const vaccinesData = vRes.data?.data ?? vRes.data ?? [];
+        const productsData = pRes.data?.data ?? pRes.data ?? [];
+
         setBranches(branchesData);
-        setAllVaccines(vaccinesData);
+        setAllProducts(productsData);
         setError(null);
       } catch (err) {
         setError("Không thể tải dữ liệu ban đầu");
@@ -70,29 +71,30 @@ export default function VaccinestockManagement() {
   // Fetch tồn kho khi chọn chi nhánh
   useEffect(() => {
     if (selectedBranch?.MaChiNhanh) {
-      fetchVaccinesStock(selectedBranch.MaChiNhanh);
+      fetchProductsStock(selectedBranch.MaChiNhanh);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedBranch]);
 
-  const fetchVaccinesStock = async (branchId) => {
+  const fetchProductsStock = async (branchId) => {
     try {
       setLoading(true);
-      const res = await branchAPI.getVaccinesStock(branchId);
+      const res = await branchAPI.getProductsStock(branchId);
 
       const list = res.data?.data ?? res.data ?? [];
 
-      setVaccinesStock(list);
+      setProductsStock(list);
+
       // init localQty theo tồn kho
       const next = {};
-      list.forEach((v) => (next[v.MaVacXin] = String(v.SoLuongTon ?? 0)));
+      list.forEach((p) => (next[p.MaSanPham] = String(p.SoLuongTon ?? 0)));
       setLocalQty(next);
 
       setError(null);
     } catch (err) {
       console.error("Lỗi khi tải tồn kho:", err);
       setError("Không thể tải tồn kho");
-      setVaccinesStock([]);
+      setProductsStock([]);
       setLocalQty({});
     } finally {
       setLoading(false);
@@ -101,19 +103,19 @@ export default function VaccinestockManagement() {
 
   const handleBackToBranches = () => {
     setSelectedBranch(null);
-    setVaccinesStock([]);
+    setProductsStock([]);
     setLocalQty({});
-    setSelectedVaccine("");
+    setSelectedProduct("");
     setInitialQuantity("0");
-    setIsAddVaccineDialogOpen(false);
+    setIsAddProductDialogOpen(false);
     setError(null);
   };
 
-  const handleAddVaccineToStock = async () => {
+  const handleAddProductToStock = async () => {
     if (!selectedBranch?.MaChiNhanh) return;
 
-    if (!selectedVaccine) {
-      alert("Vui lòng chọn vaccine để thêm vào kho");
+    if (!selectedProduct) {
+      alert("Vui lòng chọn sản phẩm");
       return;
     }
 
@@ -124,46 +126,48 @@ export default function VaccinestockManagement() {
     }
 
     try {
-      await branchAPI.addVaccineToStock(selectedBranch.MaChiNhanh, {
-        MaVacXin: selectedVaccine,
+      await branchAPI.addProductToStock(selectedBranch.MaChiNhanh, {
+        MaSanPham: selectedProduct,
         SoLuongTon: qty,
       });
 
-      await fetchVaccinesStock(selectedBranch.MaChiNhanh);
+      await fetchProductsStock(selectedBranch.MaChiNhanh);
+
       // reset dialog
-      setSelectedVaccine("");
+      setSelectedProduct("");
       setInitialQuantity("0");
-      setIsAddVaccineDialogOpen(false);
-      alert("Thêm vaccine vào kho thành công");
+      setIsAddProductDialogOpen(false);
+
+      alert("Thêm sản phẩm vào kho thành công");
     } catch (err) {
-      console.error("Lỗi khi thêm vaccine:", err);
-      alert(err.response?.data?.message || "Không thể thêm vaccine vào kho");
+      console.error("Lỗi khi thêm sản phẩm:", err);
+      alert(err.response?.data?.message || "Không thể thêm sản phẩm vào kho");
     }
   };
 
-  const handleUpdateQuantity = async (maVacXin) => {
+  const handleUpdateQuantity = async (maSanPham) => {
     if (!selectedBranch?.MaChiNhanh) return;
 
-    const qty = Number(localQty[maVacXin]);
+    const qty = Number(localQty[maSanPham]);
     if (!Number.isInteger(qty) || qty < 0) {
       alert("Số lượng phải là số nguyên >= 0");
       return;
     }
 
     try {
-      setUpdatingQuantities((prev) => ({ ...prev, [maVacXin]: true }));
+      setUpdatingQuantities((prev) => ({ ...prev, [maSanPham]: true }));
 
-      await branchAPI.updateVaccineQty(selectedBranch.MaChiNhanh, maVacXin, {
+      await branchAPI.updateProductQty(selectedBranch.MaChiNhanh, maSanPham, {
         SoLuongTon: qty,
       });
 
-      await fetchVaccinesStock(selectedBranch.MaChiNhanh);
+      await fetchProductsStock(selectedBranch.MaChiNhanh);
       alert("Cập nhật số lượng thành công");
     } catch (err) {
       console.error("Lỗi khi cập nhật số lượng:", err);
       alert(err.response?.data?.message || "Không thể cập nhật số lượng");
     } finally {
-      setUpdatingQuantities((prev) => ({ ...prev, [maVacXin]: false }));
+      setUpdatingQuantities((prev) => ({ ...prev, [maSanPham]: false }));
     }
   };
 
@@ -215,7 +219,7 @@ export default function VaccinestockManagement() {
                     {branch.TenChiNhanh}
                   </div>
                   <div className="text-sm text-gray-500">
-                    {branch.ThanhPho} - Xem vắc xin tồn kho
+                    {branch.ThanhPho} - Xem sản phẩm tồn kho
                   </div>
                 </div>
               </Button>
@@ -245,60 +249,60 @@ export default function VaccinestockManagement() {
           <div className="flex items-center justify-between">
             <div>
               <CardTitle className="text-teal-600 font-semibold text-xl">
-                Vắc xin tại {selectedBranch.TenChiNhanh}
+                Sản phẩm tại {selectedBranch.TenChiNhanh}
               </CardTitle>
               <CardDescription className="text-gray-600">
-                Quản lý số lượng vắc xin tồn kho
+                Quản lý số lượng sản phẩm tồn kho
               </CardDescription>
             </div>
 
             <Dialog
-              open={isAddVaccineDialogOpen}
-              onOpenChange={setIsAddVaccineDialogOpen}
+              open={isAddProductDialogOpen}
+              onOpenChange={setIsAddProductDialogOpen}
             >
               <DialogTrigger asChild>
                 <Button
                   variant="outline"
                   className="bg-teal-100 text-teal-600 border-teal-600 hover:bg-teal-600 hover:text-white transition-colors"
-                  disabled={availableVaccines.length === 0}
+                  disabled={availableProducts.length === 0}
                 >
                   <Plus className="h-4 w-4" />
-                  Thêm vắc xin vào kho
+                  Thêm sản phẩm vào kho
                 </Button>
               </DialogTrigger>
 
               <DialogContent>
                 <DialogHeader>
                   <DialogTitle className="text-teal-600 font-semibold">
-                    Thêm vắc xin vào kho
+                    Thêm sản phẩm vào kho
                   </DialogTitle>
                   <DialogDescription className="text-gray-600">
-                    Chỉ hiển thị các vắc xin chưa có trong kho chi nhánh
+                    Chỉ hiển thị các sản phẩm chưa có trong kho chi nhánh
                   </DialogDescription>
                 </DialogHeader>
 
                 <div className="space-y-4 py-4">
                   <div className="space-y-2">
-                    <Label htmlFor="vaccineSelect">Chọn vắc xin</Label>
+                    <Label htmlFor="productSelect">Chọn sản phẩm</Label>
 
-                    {availableVaccines.length === 0 ? (
+                    {availableProducts.length === 0 ? (
                       <div className="text-sm text-gray-500">
-                        Chi nhánh này đã có tất cả vắc xin trong danh mục.
+                        Chi nhánh này đã có tất cả sản phẩm trong danh mục.
                       </div>
                     ) : (
                       <select
-                        id="vaccineSelect"
-                        value={selectedVaccine}
-                        onChange={(e) => setSelectedVaccine(e.target.value)}
+                        id="productSelect"
+                        value={selectedProduct}
+                        onChange={(e) => setSelectedProduct(e.target.value)}
                         className="w-full border rounded-lg p-2 flex h-10 border-input bg-background text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                       >
-                        <option value="">Chọn vắc xin</option>
-                        {availableVaccines.map((vaccine) => (
+                        <option value="">Chọn sản phẩm</option>
+                        {availableProducts.map((product) => (
                           <option
-                            key={vaccine.MaVacXin}
-                            value={vaccine.MaVacXin}
+                            key={product.MaSanPham}
+                            value={product.MaSanPham}
                           >
-                            {vaccine.TenVacXin}
+                            {product.TenSanPham} ({product.LoaiSanPham})
                           </option>
                         ))}
                       </select>
@@ -320,10 +324,10 @@ export default function VaccinestockManagement() {
 
                 <DialogFooter>
                   <Button
-                    onClick={handleAddVaccineToStock}
+                    onClick={handleAddProductToStock}
                     variant="outline"
                     className="bg-teal-100 border-teal-600 text-teal-600 hover:bg-teal-600 hover:text-white transition-colors"
-                    disabled={availableVaccines.length === 0}
+                    disabled={availableProducts.length === 0}
                   >
                     Thêm vào kho
                   </Button>
@@ -338,23 +342,23 @@ export default function VaccinestockManagement() {
             <div className="text-center py-8 text-gray-500">
               Đang tải tồn kho...
             </div>
-          ) : vaccinesStock.length === 0 ? (
+          ) : productsStock.length === 0 ? (
             <div className="text-center py-8 text-gray-500">
-              Chưa có vắc xin nào trong kho
+              Chưa có sản phẩm nào trong kho
             </div>
           ) : (
             <div className="space-y-3">
-              {vaccinesStock.map((vaccine) => (
+              {productsStock.map((product) => (
                 <div
-                  key={vaccine.MaVacXin}
+                  key={product.MaSanPham}
                   className="flex items-center justify-between p-4 border rounded-lg"
                 >
                   <div className="flex-1">
                     <div className="font-semibold text-teal-600">
-                      {vaccine.TenVacXin}
+                      {product.TenSanPham}
                     </div>
                     <div className="text-sm text-gray-600">
-                      {Number(vaccine.GiaTien ?? 0).toLocaleString("vi-VN")} ₫
+                      {product.LoaiSanPham} - {product.DonGia} VNĐ
                     </div>
                   </div>
 
@@ -365,11 +369,11 @@ export default function VaccinestockManagement() {
                       type="number"
                       min="0"
                       className="w-24"
-                      value={localQty[vaccine.MaVacXin] ?? "0"}
+                      value={localQty[product.MaSanPham] ?? "0"}
                       onChange={(e) =>
                         setLocalQty((prev) => ({
                           ...prev,
-                          [vaccine.MaVacXin]: e.target.value,
+                          [product.MaSanPham]: e.target.value,
                         }))
                       }
                     />
@@ -378,7 +382,7 @@ export default function VaccinestockManagement() {
                       size="sm"
                       variant="outline"
                       className="bg-green-100 border-green-600 text-green-600 hover:bg-green-600 hover:text-white transition-colors"
-                      onClick={() => handleUpdateQuantity(vaccine.MaVacXin)}
+                      onClick={() => handleUpdateQuantity(product.MaSanPham)}
                     >
                       Cập nhật
                     </Button>

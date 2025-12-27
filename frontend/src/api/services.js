@@ -39,6 +39,20 @@ export const branchAPI = {
   create: (data) => api.post("/branches", data),
   update: (id, data) => api.put(`/branches/${id}`, data),
   delete: (id) => api.delete(`/branches/${id}`),
+  getProductsStock: (id) => api.get(`/branches/${id}/products`),
+  addProductToStock: (id, data) => api.post(`/branches/${id}/products`, data),
+  updateProductQty: (id, maSanPham, data) =>
+    api.put(`/branches/${id}/products/${maSanPham}`, data),
+  getVaccinesStock: (id) => api.get(`/branches/${id}/vaccines`),
+  addVaccineToStock: (id, data) => api.post(`/branches/${id}/vaccines`, data),
+  updateVaccineQty: (id, maVacXin, data) =>
+    api.put(`/branches/${id}/vaccines/${maVacXin}`, data),
+  getServicesStock: (id) => api.get(`/branches/${id}/services`),
+  addServiceToBranch: (id, data) => api.post(`/branches/${id}/services`, data),
+  deleteServiceFromBranch: (id, loaiDichVu) =>
+    api.delete(`/branches/${id}/services/${loaiDichVu}`),
+  getEmployeeTransferHistory: (id) =>
+    api.get(`/branches/${id}/transferHistory`),
 };
 
 export const productAPI = {
@@ -85,4 +99,8 @@ export const vaccinationAPI = {
   create: (data) => api.post("/vaccinations", data),
   update: (id, data) => api.put(`/vaccinations/${id}`, data),
   delete: (id) => api.delete(`/vaccinations/${id}`),
+};
+
+export const serviceAPI = {
+  getAll: () => api.get("/services"),
 };

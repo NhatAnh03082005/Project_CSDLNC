@@ -1,5 +1,6 @@
-import React, { useState } from "react";
+// Import UI components (giữ nguyên đường dẫn tương đối đã sửa)
 import { Button } from "../../../../components/ui/button";
+import { promotionAPI } from "../../../../api/services";
 import {
   Card,
   CardContent,
@@ -18,126 +19,204 @@ import {
   DialogTrigger,
   DialogFooter,
 } from "../../../../components/ui/dialog";
-import { Plus, Edit, Trash2 } from "lucide-react";
+// Import Icons
+import { Plus, Edit } from "lucide-react";
 
 export default function PromotionManagement() {
-  const [promotions, setPromotions] = useState([
-    {
-      id: 1,
-      code: "SUMMER2024",
-      startDate: "2024-06-01",
-      endDate: "2024-08-31",
-      discount: 15,
-    },
-    {
-      id: 2,
-      code: "NEWCUSTOMER",
-      startDate: "2024-01-01",
-      endDate: "2024-12-31",
-      discount: 20,
-    },
-    {
-      id: 3,
-      code: "VACCINE50",
-      startDate: "2024-07-01",
-      endDate: "2024-09-30",
-      discount: 10,
-    },
-  ]);
+  const [promotions, setPromotions] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
-  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [selectedPromotion, setSelectedPromotion] = useState(null);
-  const [editFormData, setEditFormData] = useState({
-    code: "",
-    startDate: "",
-    endDate: "",
-    discount: 0,
+
+  const [addFormData, setAddFormData] = useState({
+    NgayBatDau: "",
+    NgayKetThuc: "",
+    TiLeGiamGia: "",
   });
+
+  const [editFormData, setEditFormData] = useState({
+    NgayBatDau: "",
+    NgayKetThuc: "",
+    TiLeGiamGia: "",
+  });
+
+  useEffect(() => {
+    fetchData();
+  }, []);
+
+  const fetchData = async () => {
+    try {
+      setLoading(true);
+      const results = await Promise.allSettled([promotionAPI.getAll()]);
+
+      const promotionsRes =
+        results[0]?.status === "fulfilled" ? results[0].value : null;
+
+      const promotionsData =
+        promotionsRes?.data?.data ?? promotionsRes?.data ?? [];
+
+      setPromotions(Array.isArray(promotionsData) ? promotionsData : []);
+      setError(null);
+    } catch (err) {
+      console.error("Error fetching data:", err);
+      setError(err.response?.data?.message || "Không thể tải dữ liệu");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleAdd = async () => {
+    try {
+      await promotionAPI.create(addFormData);
+      await fetchData();
+      setIsAddDialogOpen(false);
+      setAddFormData({
+        NgayBatDau: "",
+        NgayKetThuc: "",
+        TiLeGiamGia: "",
+      });
+      alert("Thêm khuyến mãi thành công!");
+    } catch (err) {
+      console.error("Error adding promotion:", err);
+      alert(err.response?.data?.message || "Không thể thêm khuyến mãi");
+    }
+  };
 
   const handleEdit = (promotion) => {
     setSelectedPromotion(promotion);
     setEditFormData({
-      code: promotion.code,
-      startDate: promotion.startDate,
-      endDate: promotion.endDate,
-      discount: promotion.discount,
+      NgayBatDau: promotion.NgayBatDau?.split("T")[0] || "",
+      NgayKetThuc: promotion.NgayKetThuc?.split("T")[0] || "",
+      TiLeGiamGia: promotion.TiLeGiamGia || "",
     });
     setIsEditDialogOpen(true);
   };
 
-  const handleDelete = (promotion) => {
-    setSelectedPromotion(promotion);
-    setIsDeleteDialogOpen(true);
+  const saveEdit = async () => {
+    try {
+      await promotionAPI.update(selectedPromotion.MaKhuyenMai, editFormData);
+      await fetchData();
+      setIsEditDialogOpen(false);
+      setSelectedPromotion(null);
+      alert("Cập nhật khuyến mãi thành công!");
+    } catch (err) {
+      console.error("Error updating promotion:", err);
+      alert(err.response?.data?.message || "Không thể cập nhật khuyến mãi");
+    }
   };
 
-  const confirmDelete = () => {
-    setPromotions(
-      promotions.filter((promo) => promo.id !== selectedPromotion.id)
+  if (loading) {
+    return (
+      <Card>
+        <CardContent className="p-6">
+          <div className="text-center">Đang tải dữ liệu...</div>
+        </CardContent>
+      </Card>
     );
-    setIsDeleteDialogOpen(false);
-    setSelectedPromotion(null);
-  };
+  }
 
-  const saveEdit = () => {
-    setPromotions(
-      promotions.map((promo) =>
-        promo.id === selectedPromotion.id
-          ? { ...promo, ...editFormData }
-          : promo
-      )
+  if (error) {
+    return (
+      <Card>
+        <CardContent className="p-6">
+          <div className="text-center text-red-600">{error}</div>
+          <Button onClick={fetchData} className="mt-4 mx-auto block">
+            Thử lại
+          </Button>
+        </CardContent>
+      </Card>
     );
-    setIsEditDialogOpen(false);
-    setSelectedPromotion(null);
-  };
+  }
 
   return (
     <Card>
       <CardHeader>
         <div className="flex items-center justify-between">
           <div>
-            <CardTitle>Danh sách khuyến mãi</CardTitle>
-            <CardDescription>
+            <CardTitle className="text-green-600 font-semibold text-xl">
+              Danh sách khuyến mãi
+            </CardTitle>
+            <CardDescription className="text-gray-600">
               Quản lý các chương trình khuyến mãi trên hệ thống
             </CardDescription>
           </div>
           <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
             <DialogTrigger asChild>
-              <Button className="gap-2 bg-blue-100 text-blue-600 hover:bg-blue-600 hover:text-white transition-colors">
+              <Button
+                variant="outline"
+                className="gap-2 bg-green-100 text-green-600 border-green-600 hover:bg-green-600 hover:text-white transition-colors"
+              >
                 <Plus className="h-4 w-4" />
                 Thêm khuyến mãi
               </Button>
             </DialogTrigger>
             <DialogContent>
               <DialogHeader>
-                <DialogTitle>Thêm khuyến mãi mới</DialogTitle>
-                <DialogDescription>
+                <DialogTitle className="text-green-600 font-semibold">
+                  Thêm khuyến mãi mới
+                </DialogTitle>
+                <DialogDescription className="text-gray-600 mt-1">
                   Tạo chương trình khuyến mãi mới
                 </DialogDescription>
               </DialogHeader>
               <div className="space-y-4 py-4">
                 <div className="space-y-2">
-                  <Label htmlFor="code">Mã khuyến mãi</Label>
-                  <Input id="code" placeholder="SUMMER2024" />
+                  <Label htmlFor="NgayBatDau">Ngày bắt đầu</Label>
+                  <Input
+                    id="NgayBatDau"
+                    type="date"
+                    placeholder="Nhập ngày bắt đầu"
+                    value={addFormData.NgayBatDau}
+                    onChange={(e) =>
+                      setAddFormData({
+                        ...addFormData,
+                        NgayBatDau: e.target.value,
+                      })
+                    }
+                    className="text-black placeholder:text-gray-600"
+                  />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="startDate">Ngày bắt đầu</Label>
-                  <Input id="startDate" type="date" />
+                  <Label htmlFor="NgayKetThuc">Ngày kết thúc</Label>
+                  <Input
+                    id="NgayKetThuc"
+                    type="date"
+                    placeholder="Nhập ngày kết thúc"
+                    value={addFormData.NgayKetThuc}
+                    onChange={(e) =>
+                      setAddFormData({
+                        ...addFormData,
+                        NgayKetThuc: e.target.value,
+                      })
+                    }
+                    className="text-black placeholder:text-gray-600"
+                  />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="endDate">Ngày kết thúc</Label>
-                  <Input id="endDate" type="date" />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="discount">Tỉ lệ giảm giá (%)</Label>
-                  <Input id="discount" type="number" placeholder="15" />
+                  <Label htmlFor="TiLeGiamGia">Tỉ lệ giảm giá (%)</Label>
+                  <Input
+                    id="TiLeGiamGia"
+                    type="number"
+                    placeholder="Nhập tỉ lệ giảm giá"
+                    value={addFormData.TiLeGiamGia}
+                    onChange={(e) =>
+                      setAddFormData({
+                        ...addFormData,
+                        TiLeGiamGia: e.target.value,
+                      })
+                    }
+                    className="text-black placeholder:text-gray-600"
+                  />
                 </div>
               </div>
               <DialogFooter>
                 <Button
-                  onClick={() => setIsAddDialogOpen(false)}
-                  className="bg-blue-100 text-blue-600 border-blue-600 hover:bg-blue-600 hover:text-white transition-colors"
+                  onClick={handleAdd}
+                  variant="outline"
+                  className="bg-green-100 border-green-600 text-green-600 hover:bg-green-600 hover:text-white transition-colors"
                 >
                   Thêm khuyến mãi
                 </Button>
@@ -148,71 +227,72 @@ export default function PromotionManagement() {
       </CardHeader>
       <CardContent>
         <div className="space-y-3">
-          {promotions.map((promotion) => (
-            <div
-              key={promotion.id}
-              className="flex items-center justify-between p-4 border rounded-lg"
-            >
-              <div>
-                <div className="font-semibold text-lg">{promotion.code}</div>
-                <div className="text-sm text-gray-500">
-                  {promotion.startDate} đến {promotion.endDate}
-                </div>
-                <div className="text-sm font-medium text-green-600">
-                  Giảm {promotion.discount}%
-                </div>
-              </div>
-              <div className="flex gap-2">
-                <Button
-                  variant="outline"
-                  size="icon"
-                  className="text-green-600 hover:bg-green-600 hover:text-white transition-colors"
-                  onClick={() => handleEdit(promotion)}
-                >
-                  <Edit className="h-4 w-4" />
-                </Button>
-                <Button
-                  variant="outline"
-                  size="icon"
-                  className="text-red-600 hover:bg-red-600 hover:text-white transition-colors"
-                  onClick={() => handleDelete(promotion)}
-                >
-                  <Trash2 className="h-4 w-4" />
-                </Button>
-              </div>
+          {promotions.length === 0 ? (
+            <div className="text-center text-gray-500 py-8">
+              Không có khuyến mãi nào
             </div>
-          ))}
+          ) : (
+            promotions.map((promotion) => (
+              <div
+                key={promotion.MaKhuyenMai}
+                className="flex items-center justify-between p-4 border rounded-lg"
+              >
+                <div>
+                  <div className="font-semibold text-green-600">
+                    {promotion.MaKhuyenMai} - Giảm {promotion.TiLeGiamGia}%
+                  </div>
+                  <div className="text-sm text-gray-500">
+                    {promotion.NgayBatDau
+                      ? new Date(promotion.NgayBatDau).toLocaleDateString(
+                          "vi-VN"
+                        )
+                      : ""}{" "}
+                    đến{" "}
+                    {promotion.NgayKetThuc
+                      ? new Date(promotion.NgayKetThuc).toLocaleDateString(
+                          "vi-VN"
+                        )
+                      : ""}
+                  </div>
+                </div>
+                <div className="flex gap-2">
+                  <Button
+                    variant="outline"
+                    size="icon"
+                    className="text-green-600 hover:bg-green-600 hover:text-white transition-colors"
+                    onClick={() => handleEdit(promotion)}
+                  >
+                    <Edit className="h-4 w-4" />
+                  </Button>
+                </div>
+              </div>
+            ))
+          )}
         </div>
 
+        {/* Edit Dialog */}
         <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
           <DialogContent>
             <DialogHeader>
-              <DialogTitle>Chỉnh sửa khuyến mãi</DialogTitle>
+              <DialogTitle className="text-green-600 font-semibold">
+                Chỉnh sửa khuyến mãi
+              </DialogTitle>
               <DialogDescription>
-                Cập nhật thông tin khuyến mãi {selectedPromotion?.code}
+                Cập nhật thông tin khuyến mãi{" "}
+                <strong>{selectedPromotion?.MaKhuyenMai}</strong>
               </DialogDescription>
             </DialogHeader>
             <div className="space-y-4 py-4">
-              <div className="space-y-2">
-                <Label htmlFor="edit-code">Mã khuyến mãi</Label>
-                <Input
-                  id="edit-code"
-                  value={editFormData.code}
-                  onChange={(e) =>
-                    setEditFormData({ ...editFormData, code: e.target.value })
-                  }
-                />
-              </div>
               <div className="space-y-2">
                 <Label htmlFor="edit-startDate">Ngày bắt đầu</Label>
                 <Input
                   id="edit-startDate"
                   type="date"
-                  value={editFormData.startDate}
+                  value={editFormData.NgayBatDau}
                   onChange={(e) =>
                     setEditFormData({
                       ...editFormData,
-                      startDate: e.target.value,
+                      NgayBatDau: e.target.value,
                     })
                   }
                 />
@@ -222,11 +302,11 @@ export default function PromotionManagement() {
                 <Input
                   id="edit-endDate"
                   type="date"
-                  value={editFormData.endDate}
+                  value={editFormData.NgayKetThuc}
                   onChange={(e) =>
                     setEditFormData({
                       ...editFormData,
-                      endDate: e.target.value,
+                      NgayKetThuc: e.target.value,
                     })
                   }
                 />
@@ -236,11 +316,11 @@ export default function PromotionManagement() {
                 <Input
                   id="edit-discount"
                   type="number"
-                  value={editFormData.discount}
+                  value={editFormData.TiLeGiamGia}
                   onChange={(e) =>
                     setEditFormData({
                       ...editFormData,
-                      discount: parseInt(e.target.value),
+                      TiLeGiamGia: parseInt(e.target.value),
                     })
                   }
                 />
@@ -249,29 +329,10 @@ export default function PromotionManagement() {
             <DialogFooter>
               <Button
                 onClick={saveEdit}
-                className="bg-green-100 text-green-600 border-green-600 hover:bg-green-600 hover:text-white transition-colors"
+                variant="outline"
+                className="bg-green-100 border-green-600 text-green-600 hover:bg-green-600 hover:text-white transition-colors"
               >
                 Lưu thay đổi
-              </Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
-
-        <Dialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
-          <DialogContent className="gap-0">
-            <DialogHeader className="pb-4">
-              <DialogTitle>Xác nhận xóa khuyến mãi</DialogTitle>
-              <DialogDescription>
-                Bạn có chắc chắn muốn xóa khuyến mãi{" "}
-                <strong>{selectedPromotion?.code}</strong> khỏi hệ thống?
-              </DialogDescription>
-            </DialogHeader>
-            <DialogFooter className="pt-4">
-              <Button
-                onClick={confirmDelete}
-                className="bg-red-100 text-red-600 border-red-600 hover:bg-red-600 hover:text-white transition-colors"
-              >
-                Xác nhận
               </Button>
             </DialogFooter>
           </DialogContent>

@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from "react";
+// Import UI components (giữ nguyên đường dẫn tương đối đã sửa)
 import { Button } from "../../../../components/ui/button";
+import { employeeAPI, branchAPI } from "../../../../api/services";
 import {
   Card,
   CardContent,
@@ -18,11 +20,12 @@ import {
   DialogTrigger,
   DialogFooter,
 } from "../../../../components/ui/dialog";
+// Import Icons
 import { Plus, Edit, Trash2 } from "lucide-react";
-import { employeeAPI } from "../../../../api/services";
 
 export default function EmployeeManagement() {
   const [employees, setEmployees] = useState([]);
+  const [branches, setBranches] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
@@ -60,19 +63,7 @@ export default function EmployeeManagement() {
     "Quản lý chi nhánh",
   ];
 
-  const BRANCH_OPTIONS = [
-    "PetCare Hà Nội",
-    "PetCare TP.HCM",
-    "PetCare Đà Nẵng",
-    "PetCare Hải Phòng",
-    "PetCare Cần Thơ",
-    "PetCare Biên Hòa",
-    "PetCare Bình Dương",
-    "PetCare Nha Trang",
-    "PetCare Vũng Tàu",
-    "PetCare Huế",
-  ];
-
+  // Fetch employees and branches on mount
   useEffect(() => {
     fetchData();
   }, []);
@@ -80,8 +71,23 @@ export default function EmployeeManagement() {
   const fetchData = async () => {
     try {
       setLoading(true);
-      const employeesRes = await employeeAPI.getAll();
-      setEmployees(employeesRes.data.data || []);
+      const results = await Promise.allSettled([
+        employeeAPI.getAll(),
+        branchAPI.getAll(),
+      ]);
+
+      const employeesRes =
+        results[0]?.status === "fulfilled" ? results[0].value : null;
+      const branchesRes =
+        results[1]?.status === "fulfilled" ? results[1].value : null;
+
+      // Support response shapes: { data: [...] } or { data: { data: [...] } }
+      const employeesData =
+        employeesRes?.data?.data ?? employeesRes?.data ?? [];
+      const branchesData = branchesRes?.data?.data ?? branchesRes?.data ?? [];
+
+      setEmployees(Array.isArray(employeesData) ? employeesData : []);
+      setBranches(Array.isArray(branchesData) ? branchesData : []);
       setError(null);
     } catch (err) {
       console.error("Error fetching data:", err);
@@ -114,6 +120,7 @@ export default function EmployeeManagement() {
 
   const handleEdit = (employee) => {
     setSelectedEmployee(employee);
+
     setEditFormData({
       HoTen: employee.HoTen || "",
       GioiTinh: employee.GioiTinh || "",
@@ -185,8 +192,10 @@ export default function EmployeeManagement() {
       <CardHeader>
         <div className="flex items-center justify-between">
           <div>
-            <CardTitle>Danh sách nhân viên</CardTitle>
-            <CardDescription>
+            <CardTitle className="text-blue-700 font-semibold text-xl">
+              Danh sách nhân viên
+            </CardTitle>
+            <CardDescription className="text-gray-600">
               Quản lý nhân viên trên toàn công ty (10 chi nhánh)
             </CardDescription>
           </div>
@@ -195,7 +204,7 @@ export default function EmployeeManagement() {
               <DialogTrigger asChild>
                 <Button
                   variant="outline"
-                  className="gap-2 w-full bg-blue-100 hover:bg-blue-600 hover:text-white transition-colors"
+                  className="gap-2 bg-blue-100 border-blue-600 text-blue-600 hover:bg-blue-600 hover:text-white transition-colors"
                 >
                   <Plus className="h-4 w-4" />
                   Thêm nhân viên
@@ -203,9 +212,12 @@ export default function EmployeeManagement() {
               </DialogTrigger>
               <DialogContent>
                 <DialogHeader>
-                  <DialogTitle>Thêm nhân viên mới</DialogTitle>
+                  <DialogTitle className="text-blue-600 font-semibold">
+                    Thêm nhân viên mới
+                  </DialogTitle>
                   <DialogDescription>
                     <p className="text-gray-600 mt-1">
+                      {" "}
                       Điền thông tin nhân viên mới vào form bên dưới
                     </p>
                   </DialogDescription>
@@ -332,9 +344,9 @@ export default function EmployeeManagement() {
                       className="w-full border rounded-lg p-2 flex h-10 border-input bg-background text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                     >
                       <option value="">Chọn chi nhánh</option>
-                      {BRANCH_OPTIONS.map((b) => (
-                        <option key={b} value={b}>
-                          {b}
+                      {branches.map((b) => (
+                        <option key={b.MaChiNhanh} value={b.TenChiNhanh}>
+                          {b.TenChiNhanh}
                         </option>
                       ))}
                     </select>
@@ -343,7 +355,8 @@ export default function EmployeeManagement() {
                 <DialogFooter>
                   <Button
                     onClick={handleAdd}
-                    className="bg-blue-100 text-blue-600 border-blue-600 hover:bg-blue-600 hover:text-white transition-colors"
+                    variant="outline"
+                    className="bg-blue-100 border-blue-600 text-blue-600 hover:bg-blue-600 hover:text-white transition-colors"
                   >
                     Thêm nhân viên
                   </Button>
@@ -366,7 +379,7 @@ export default function EmployeeManagement() {
                 className="flex items-center justify-between p-4 border rounded-lg"
               >
                 <div>
-                  <div className="font-semibold">
+                  <div className="font-semibold text-blue-600">
                     {employee.MaNhanVien} - {employee.HoTen}
                   </div>
                   <div className="text-sm text-gray-500">
@@ -395,12 +408,17 @@ export default function EmployeeManagement() {
             ))
           )}
         </div>
+        {/* Edit Dialog */}
         <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
           <DialogContent>
             <DialogHeader>
-              <DialogTitle>Chỉnh sửa thông tin nhân viên</DialogTitle>
+              <DialogTitle className="text-green-600 font-semibold">
+                {" "}
+                Chỉnh sửa thông tin nhân viên
+              </DialogTitle>
               <DialogDescription>
-                Cập nhật thông tin nhân viên {selectedEmployee?.HoTen}
+                Cập nhật thông tin nhân viên{" "}
+                <strong>{selectedEmployee?.HoTen}</strong>
               </DialogDescription>
             </DialogHeader>
             <div className="space-y-4 py-4">
@@ -517,9 +535,9 @@ export default function EmployeeManagement() {
                   className="w-full border rounded-lg p-2 flex h-10 border-input bg-background text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                 >
                   <option value="">Chọn chi nhánh</option>
-                  {BRANCH_OPTIONS.map((b) => (
-                    <option key={b} value={b}>
-                      {b}
+                  {branches.map((b) => (
+                    <option key={b.MaChiNhanh} value={b.TenChiNhanh}>
+                      {b.TenChiNhanh}
                     </option>
                   ))}
                 </select>
@@ -528,6 +546,7 @@ export default function EmployeeManagement() {
             <DialogFooter>
               <Button
                 onClick={saveEdit}
+                variant="outline"
                 className="bg-green-100 text-green-600 border-green-600 hover:bg-green-600 hover:text-white transition-colors"
               >
                 Lưu thay đổi
@@ -535,18 +554,22 @@ export default function EmployeeManagement() {
             </DialogFooter>
           </DialogContent>
         </Dialog>
+        {/* Delete Confirmation Dialog */}
         <Dialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
           <DialogContent className="gap-0">
-            <DialogHeader className="pb-4">
-              <DialogTitle>Xác nhận xóa nhân viên</DialogTitle>
+            <DialogHeader className="pb-3">
+              <DialogTitle className="text-red-600 font-semibold">
+                Xác nhận xóa nhân viên
+              </DialogTitle>
               <DialogDescription>
                 Bạn có chắc chắn muốn xóa nhân viên{" "}
                 <strong>{selectedEmployee?.HoTen}</strong> khỏi hệ thống?
               </DialogDescription>
             </DialogHeader>
-            <DialogFooter className="pt-4">
+            <DialogFooter className="pt-3">
               <Button
                 onClick={confirmDelete}
+                variant="outline"
                 className="bg-red-100 text-red-600 border-red-600 hover:bg-red-600 hover:text-white transition-colors"
               >
                 Xác nhận

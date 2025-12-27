@@ -14,7 +14,7 @@ class EmployeesService {
         FROM NhanVien nv
         JOIN ChiNhanh cn ON nv.MaChiNhanh = cn.MaChiNhanh
         Where nv.TrangThai = 0
-        ORDER BY nv.MaNhanVien, cn.MaChiNhanh
+        ORDER BY cn.MaChiNhanh, nv.MaNhanVien
       `;
 
       const result = await pool.request().query(query);
@@ -231,16 +231,19 @@ class EmployeesService {
         return null;
       }
 
-      const query = `
-        UPDATE NhanVien
-        SET TrangThai = 1
-        WHERE MaNhanVien = @maNhanVien
-      `;
+      // Nếu nhân viên đang là quản lý chi nhánh, set QuanLy = null
+      await pool.request().input("maNhanVien", sql.NVarChar, maNhanVien).query(`
+          UPDATE ChiNhanh
+          SET QuanLy = NULL
+          WHERE QuanLy = @maNhanVien
+        `);
 
-      await pool
-        .request()
-        .input("maNhanVien", sql.NVarChar, maNhanVien)
-        .query(query);
+      // Sau đó mới xóa nhân viên (soft delete)
+      await pool.request().input("maNhanVien", sql.NVarChar, maNhanVien).query(`
+          UPDATE NhanVien
+          SET TrangThai = 1
+          WHERE MaNhanVien = @maNhanVien
+        `);
 
       return true;
     } catch (error) {
