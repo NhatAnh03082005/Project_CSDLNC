@@ -1,4 +1,4 @@
-import { Button } from "../../../components/ui/button";
+import { useState, useEffect } from "react";
 import {
   Card,
   CardContent,
@@ -6,156 +6,263 @@ import {
   CardHeader,
   CardTitle,
 } from "../../../components/ui/card";
-import { Link } from "react-router-dom";
 import {
-  BarChart3,
   Users,
   Building2,
-  Package,
-  FileText,
-  TrendingUp,
-  DollarSign,
-  Calendar,
-  UserCog,
-  ClipboardList,
+  UserCheck,
+  Stethoscope,
   ShoppingCart,
-  Activity,
-  LogOut,
+  Headset,
+  Package,
+  Syringe,
 } from "lucide-react";
 import AdminHeader from "../components/AdminHeader";
+import api from "../../../api/axios";
 
 export default function AdminDemo() {
+  const [loading, setLoading] = useState(true);
+  const [dashboardData, setDashboardData] = useState({
+    totalCustomers: 0,
+    totalBranches: 0,
+    totalReceptionists: 0,
+    totalSalesStaff: 0,
+    totalDoctors: 0,
+    totalProducts: 0,
+    totalVaccines: 0,
+  });
+
+  // Fetch all dashboard data
+  const fetchDashboardData = async () => {
+    try {
+      setLoading(true);
+      const [branchesRes, employeesRes, productsRes, vaccinesRes] =
+        await Promise.all([
+          api.get("/branches"),
+          api.get("/employees"),
+          api.get("/products"),
+          api.get("/vaccinations"),
+        ]);
+
+      const branchesData = branchesRes.data?.data || [];
+      const employeesData = employeesRes.data?.data || [];
+      const productsData = productsRes.data?.data || [];
+      const vaccinesData = vaccinesRes.data?.data || [];
+
+      // Count by position
+      const doctors = employeesData.filter(
+        (emp) => emp.ViTri && emp.ViTri.includes("Bác sĩ thú y")
+      );
+      const receptionists = employeesData.filter(
+        (emp) => emp.ViTri && emp.ViTri.includes("Nhân viên tiếp tân")
+      );
+      const salesStaff = employeesData.filter(
+        (emp) => emp.ViTri && emp.ViTri.includes("Nhân viên bán hàng")
+      );
+
+      setDashboardData({
+        totalBranches: branchesData.length || 0,
+        totalReceptionists: receptionists.length || 0,
+        totalSalesStaff: salesStaff.length || 0,
+        totalDoctors: doctors.length || 0,
+        totalProducts: productsData.length || 0,
+        totalVaccines: vaccinesData.length || 0,
+      });
+    } catch (error) {
+      console.error("Error fetching dashboard data:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchDashboardData();
+  }, []);
+
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gradient-to-br from-cyan-50 via-blue-50 to-teal-50">
       <AdminHeader />
 
-      <div className="flex">
-        {/* Sidebar */}
-        <aside className="w-64 border-r bg-white min-h-[calc(100vh-4rem)] sticky top-16">
-          <nav className="p-4 space-y-1">
-            <Link to="/admin/demo">
-              <Button variant="default" className="w-full justify-start gap-3">
-                <BarChart3 className="h-4 w-4" />
-                Dashboard
-              </Button>
-            </Link>
-            <Link to="/admin/statistics">
-              <Button variant="ghost" className="w-full justify-start gap-3">
-                <Activity className="h-4 w-4" />
-                Thống kê
-              </Button>
-            </Link>
-            <Link to="/admin/management">
-              <Button variant="ghost" className="w-full justify-start gap-3">
-                <Users className="h-4 w-4" />
-                Quản lý
-              </Button>
-            </Link>
-
-            <div className="pt-4 border-t mt-4">
-              <Button
-                variant="ghost"
-                className="w-full justify-start gap-3 text-red-600 hover:text-red-700 hover:bg-red-50"
-              >
-                <LogOut className="h-4 w-4" />
-                Đăng xuất
-              </Button>
-            </div>
-          </nav>
-        </aside>
-
-        {/* Main Content */}
-        <main className="flex-1 p-6">
-          <div className="max-w-7xl mx-auto space-y-6">
-            {/* Page Header */}
-            <div className="flex items-center justify-between">
+      {/* Main Content */}
+      <main className="w-full">
+        <div className="max-w-[1920px] mx-auto px-6 py-8 space-y-6">
+          {/* Page Header */}
+          <div className="flex items-center justify-between bg-white rounded-xl shadow-md p-6 border border-blue-100">
+            <div className="flex items-center gap-4">
+              <img
+                src="/logo.png"
+                alt="PetCare Logo"
+                className="h-16 w-16 object-contain"
+              />
               <div>
-                <h1 className="text-3xl font-bold text-gray-900">
+                <h1 className="text-3xl font-bold bg-gradient-to-r from-blue-600 to-teal-600 bg-clip-text text-transparent">
                   Dashboard Quản trị
                 </h1>
-                <p className="text-gray-500 mt-1">
+                <p className="text-gray-600 mt-1">
                   Tổng quan hệ thống và quản lý toàn bộ chi nhánh
                 </p>
               </div>
-              <Button className="gap-2">
-                <FileText className="h-4 w-4" />
-                Xuất báo cáo
-              </Button>
-            </div>
-
-            {/* KPI Cards */}
-            <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-4">
-              <Card className="border-l-4 border-l-blue-500">
-                <CardHeader className="pb-3">
-                  <CardDescription className="flex items-center justify-between">
-                    <span>Tổng doanh thu</span>
-                    <DollarSign className="h-4 w-4 text-blue-500" />
-                  </CardDescription>
-                  <CardTitle className="text-3xl">2.4 tỷ</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="flex items-center text-sm">
-                    <TrendingUp className="h-4 w-4 text-green-600 mr-1" />
-                    <span className="text-green-600 font-medium">+12.5%</span>
-                    <span className="text-gray-500 ml-2">
-                      so với tháng trước
-                    </span>
-                  </div>
-                </CardContent>
-              </Card>
-
-              <Card className="border-l-4 border-l-green-500">
-                <CardHeader className="pb-3">
-                  <CardDescription className="flex items-center justify-between">
-                    <span>Khách hàng</span>
-                    <Users className="h-4 w-4 text-green-500" />
-                  </CardDescription>
-                  <CardTitle className="text-3xl">10,234</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="flex items-center text-sm">
-                    <TrendingUp className="h-4 w-4 text-green-600 mr-1" />
-                    <span className="text-green-600 font-medium">+8.2%</span>
-                    <span className="text-gray-500 ml-2">khách hàng mới</span>
-                  </div>
-                </CardContent>
-              </Card>
-
-              <Card className="border-l-4 border-l-orange-500">
-                <CardHeader className="pb-3">
-                  <CardDescription className="flex items-center justify-between">
-                    <span>Lượt khám</span>
-                    <Calendar className="h-4 w-4 text-orange-500" />
-                  </CardDescription>
-                  <CardTitle className="text-3xl">8,456</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="flex items-center text-sm">
-                    <TrendingUp className="h-4 w-4 text-green-600 mr-1" />
-                    <span className="text-green-600 font-medium">+15.3%</span>
-                    <span className="text-gray-500 ml-2">tháng này</span>
-                  </div>
-                </CardContent>
-              </Card>
-
-              <Card className="border-l-4 border-l-purple-500">
-                <CardHeader className="pb-3">
-                  <CardDescription className="flex items-center justify-between">
-                    <span>Nhân viên</span>
-                    <UserCog className="h-4 w-4 text-purple-500" />
-                  </CardDescription>
-                  <CardTitle className="text-3xl">142</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="flex items-center text-sm">
-                    <span className="text-gray-600">10 chi nhánh</span>
-                  </div>
-                </CardContent>
-              </Card>
             </div>
           </div>
-        </main>
-      </div>
+
+          {/* KPI Cards */}
+          {loading ? (
+            <div className="space-y-6">
+              {[...Array(3)].map((_, rowIndex) => (
+                <div
+                  key={rowIndex}
+                  className="grid grid-cols-1 md:grid-cols-3 gap-6"
+                >
+                  {[...Array(3)].map((_, colIndex) => (
+                    <Card key={colIndex} className="animate-pulse">
+                      <CardHeader className="pb-3">
+                        <div className="h-4 bg-gray-200 rounded w-24"></div>
+                        <div className="h-8 bg-gray-200 rounded w-32 mt-2"></div>
+                      </CardHeader>
+                      <CardContent>
+                        <div className="h-4 bg-gray-200 rounded w-full"></div>
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="space-y-6">
+              {/* Row 1: Chi nhánh, Sản phẩm, Vaccine */}
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <Card className="border-t-4 border-t-blue-500 shadow-xl hover:shadow-2xl transition-all hover:-translate-y-2 bg-gradient-to-br from-white to-blue-50">
+                  <CardHeader className="pb-3">
+                    <CardDescription className="flex items-center justify-between">
+                      <span className="font-semibold text-base">Chi nhánh</span>
+                      <div className="p-3 bg-blue-100 rounded-full">
+                        <Building2 className="h-6 w-6 text-blue-600" />
+                      </div>
+                    </CardDescription>
+                    <CardTitle className="text-4xl font-bold bg-gradient-to-r from-blue-600 to-blue-800 bg-clip-text text-transparent">
+                      {dashboardData.totalBranches}
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="flex items-center text-sm">
+                      <span className="text-gray-600 font-medium">
+                        Tổng số chi nhánh
+                      </span>
+                    </div>
+                  </CardContent>
+                </Card>
+
+                <Card className="border-t-4 border-t-indigo-500 shadow-xl hover:shadow-2xl transition-all hover:-translate-y-2 bg-gradient-to-br from-white to-indigo-50">
+                  <CardHeader className="pb-3">
+                    <CardDescription className="flex items-center justify-between">
+                      <span className="font-semibold text-base">Sản phẩm</span>
+                      <div className="p-3 bg-indigo-100 rounded-full">
+                        <Package className="h-6 w-6 text-indigo-600" />
+                      </div>
+                    </CardDescription>
+                    <CardTitle className="text-4xl font-bold bg-gradient-to-r from-indigo-600 to-indigo-800 bg-clip-text text-transparent">
+                      {dashboardData.totalProducts.toLocaleString()}
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="flex items-center text-sm">
+                      <span className="text-gray-600 font-medium">
+                        Tổng số sản phẩm
+                      </span>
+                    </div>
+                  </CardContent>
+                </Card>
+
+                <Card className="border-t-4 border-t-rose-500 shadow-xl hover:shadow-2xl transition-all hover:-translate-y-2 bg-gradient-to-br from-white to-rose-50">
+                  <CardHeader className="pb-3">
+                    <CardDescription className="flex items-center justify-between">
+                      <span className="font-semibold text-base">Vaccine</span>
+                      <div className="p-3 bg-rose-100 rounded-full">
+                        <Syringe className="h-6 w-6 text-rose-600" />
+                      </div>
+                    </CardDescription>
+                    <CardTitle className="text-4xl font-bold bg-gradient-to-r from-rose-600 to-rose-800 bg-clip-text text-transparent">
+                      {dashboardData.totalVaccines.toLocaleString()}
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="flex items-center text-sm">
+                      <span className="text-gray-600 font-medium">
+                        Tổng số vaccine
+                      </span>
+                    </div>
+                  </CardContent>
+                </Card>
+              </div>
+
+              {/* Row 2: 3 loại nhân viên */}
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <Card className="border-t-4 border-t-green-500 shadow-xl hover:shadow-2xl transition-all hover:-translate-y-2 bg-gradient-to-br from-white to-green-50">
+                  <CardHeader className="pb-3">
+                    <CardDescription className="flex items-center justify-between">
+                      <span className="font-semibold text-base">Tiếp tân</span>
+                      <div className="p-3 bg-green-100 rounded-full">
+                        <Headset className="h-6 w-6 text-green-600" />
+                      </div>
+                    </CardDescription>
+                    <CardTitle className="text-4xl font-bold bg-gradient-to-r from-green-600 to-green-800 bg-clip-text text-transparent">
+                      {dashboardData.totalReceptionists.toLocaleString()}
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="flex items-center text-sm">
+                      <span className="text-gray-600 font-medium">
+                        Nhân viên tiếp tân
+                      </span>
+                    </div>
+                  </CardContent>
+                </Card>
+
+                <Card className="border-t-4 border-t-amber-500 shadow-xl hover:shadow-2xl transition-all hover:-translate-y-2 bg-gradient-to-br from-white to-amber-50">
+                  <CardHeader className="pb-3">
+                    <CardDescription className="flex items-center justify-between">
+                      <span className="font-semibold text-base">Bán hàng</span>
+                      <div className="p-3 bg-amber-100 rounded-full">
+                        <ShoppingCart className="h-6 w-6 text-amber-600" />
+                      </div>
+                    </CardDescription>
+                    <CardTitle className="text-4xl font-bold bg-gradient-to-r from-amber-600 to-amber-800 bg-clip-text text-transparent">
+                      {dashboardData.totalSalesStaff.toLocaleString()}
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="flex items-center text-sm">
+                      <span className="text-gray-600 font-medium">
+                        Nhân viên bán hàng
+                      </span>
+                    </div>
+                  </CardContent>
+                </Card>
+
+                <Card className="border-t-4 border-t-purple-500 shadow-xl hover:shadow-2xl transition-all hover:-translate-y-2 bg-gradient-to-br from-white to-purple-50">
+                  <CardHeader className="pb-3">
+                    <CardDescription className="flex items-center justify-between">
+                      <span className="font-semibold text-base">Bác sĩ</span>
+                      <div className="p-3 bg-purple-100 rounded-full">
+                        <Stethoscope className="h-6 w-6 text-purple-600" />
+                      </div>
+                    </CardDescription>
+                    <CardTitle className="text-4xl font-bold bg-gradient-to-r from-purple-600 to-purple-800 bg-clip-text text-transparent">
+                      {dashboardData.totalDoctors.toLocaleString()}
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="flex items-center text-sm">
+                      <span className="text-gray-600 font-medium">
+                        Tổng số bác sĩ
+                      </span>
+                    </div>
+                  </CardContent>
+                </Card>
+              </div>
+            </div>
+          )}
+        </div>
+      </main>
     </div>
   );
 }

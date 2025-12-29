@@ -79,11 +79,11 @@ export const employeeAPI = {
 
 export const reportAPI = {
   getRevenue: (params) => api.get("/reports/revenue", { params }),
-  getCustomers: (params) => api.get("/reports/customers", { params }),
-  getVaccinations: (params) => api.get("/reports/vaccinations", { params }),
-  getEmployeePerformance: (params) =>
-    api.get("/reports/employees/performance", { params }),
-  getDashboard: () => api.get("/reports/dashboard"),
+  getProducts: (params) => api.get("/reports/products", { params }),
+  getVaccines: (params) => api.get("/reports/vaccines", { params }),
+  getServices: (params) => api.get("/reports/services", { params }),
+  getCustomers: () => api.get("/reports/customers"),
+  getPerformance: () => api.get("/reports/performance"),
 };
 
 export const promotionAPI = {

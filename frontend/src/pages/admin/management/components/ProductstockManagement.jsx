@@ -1,3 +1,4 @@
+import React, { useState, useEffect, useMemo } from "react";
 // Import UI components (giữ nguyên đường dẫn tương đối đã sửa)
 import { Button } from "../../../../components/ui/button";
 import { branchAPI, productAPI } from "../../../../api/services";
