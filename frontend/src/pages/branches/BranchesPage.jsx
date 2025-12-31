@@ -1,8 +1,14 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import { Link } from "react-router-dom"; 
+import { Link } from "react-router-dom";
 import { Button } from "../../components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../../components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "../../components/ui/card";
 import { Badge } from "../../components/ui/badge";
 import {
   Dialog,
@@ -14,7 +20,17 @@ import {
 } from "../../components/ui/dialog";
 import { Label } from "../../components/ui/label";
 import { Input } from "../../components/ui/input";
-import { Heart, MapPin, Phone, Clock, ArrowLeft, Calendar, Syringe, ShoppingBag, Loader2 } from "lucide-react";
+import {
+  Heart,
+  MapPin,
+  Phone,
+  Clock,
+  ArrowLeft,
+  Calendar,
+  Syringe,
+  ShoppingBag,
+  Loader2,
+} from "lucide-react";
 import { branchAPI, appointmentAPI } from "../../api/services";
 import { Pagination } from "../../components/ui/pagination";
 
@@ -42,7 +58,7 @@ const serviceInfo = {
 export default function BranchesPage() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
-  
+
   const service = searchParams.get("service") || "exam";
   const currentService = serviceInfo[service] || serviceInfo.exam;
 
@@ -56,7 +72,7 @@ export default function BranchesPage() {
     totalPages: 0,
   });
   const [isDialogOpen, setIsDialogOpen] = useState(false);
-  const [selectedBranch, setSelectedBranch] = useState(null); 
+  const [selectedBranch, setSelectedBranch] = useState(null);
   const [appointmentDate, setAppointmentDate] = useState("");
   const [appointmentTime, setAppointmentTime] = useState("");
   const [availableDoctors, setAvailableDoctors] = useState([]);
@@ -81,7 +97,10 @@ export default function BranchesPage() {
       }
     } catch (error) {
       console.error("Lỗi khi tải danh sách chi nhánh:", error);
-      setError(error.response?.data?.message || "Đã xảy ra lỗi khi tải danh sách chi nhánh");
+      setError(
+        error.response?.data?.message ||
+          "Đã xảy ra lỗi khi tải danh sách chi nhánh"
+      );
     } finally {
       setLoading(false);
     }
@@ -119,7 +138,7 @@ export default function BranchesPage() {
     try {
       setLoadingDoctors(true);
       const loaiDichVu = service === "exam" ? "Khám bệnh" : "Tiêm phòng";
-      
+
       const response = await appointmentAPI.getAvailableDoctors({
         MaChiNhanh: selectedBranch.MaChiNhanh,
         ThoiGianHen: date,
@@ -156,7 +175,7 @@ export default function BranchesPage() {
     if (appointmentDate && selectedBranch && selectedDoctor) {
       try {
         const loaiDichVu = service === "exam" ? "Khám bệnh" : "Tiêm phòng";
-        
+
         const response = await appointmentAPI.create({
           MaChiNhanh: selectedBranch.MaChiNhanh,
           LoaiDichVu: loaiDichVu,
@@ -176,7 +195,10 @@ export default function BranchesPage() {
         }
       } catch (error) {
         console.error("Lỗi khi đặt lịch:", error);
-        alert(error.response?.data?.message || "Đặt lịch thất bại. Vui lòng thử lại!");
+        alert(
+          error.response?.data?.message ||
+            "Đặt lịch thất bại. Vui lòng thử lại!"
+        );
       }
     }
   };
@@ -201,13 +223,26 @@ export default function BranchesPage() {
             </Button>
           </Link>
           <div className="flex items-center gap-3 mb-2">
-            <div className={`h-12 w-12 rounded-full ${currentService?.bgColor || "bg-blue-100"} flex items-center justify-center`}>
-              {ServiceIcon && <ServiceIcon className={`h-6 w-6 ${currentService?.textColor || "text-blue-600"}`} />}
+            <div
+              className={`h-12 w-12 rounded-full ${
+                currentService?.bgColor || "bg-blue-100"
+              } flex items-center justify-center`}
+            >
+              {ServiceIcon && (
+                <ServiceIcon
+                  className={`h-6 w-6 ${
+                    currentService?.textColor || "text-blue-600"
+                  }`}
+                />
+              )}
             </div>
-            <h1 className="text-3xl font-bold text-blue-900">{currentService?.title || "Đặt lịch"}</h1>
+            <h1 className="text-3xl font-bold text-blue-900">
+              {currentService?.title || "Đặt lịch"}
+            </h1>
           </div>
           <p className="text-gray-600 text-pretty">
-            Chọn chi nhánh phù hợp để {service === "products" ? "xem sản phẩm" : "đặt lịch hẹn"}
+            Chọn chi nhánh phù hợp để{" "}
+            {service === "products" ? "xem sản phẩm" : "đặt lịch hẹn"}
           </p>
         </div>
 
@@ -222,64 +257,86 @@ export default function BranchesPage() {
           </div>
         ) : filteredBranches.length > 0 ? (
           <>
-          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {filteredBranches.map((branch) => (
-                <Card key={branch.MaChiNhanh} className="hover:shadow-lg transition-all hover:scale-105">
-                <CardHeader>
-                  <CardTitle className="flex items-start justify-between">
+            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {filteredBranches.map((branch) => (
+                <Card
+                  key={branch.MaChiNhanh}
+                  className="hover:shadow-lg transition-all hover:scale-105"
+                >
+                  <CardHeader>
+                    <CardTitle className="flex items-start justify-between">
                       <span className="text-balance">{branch.TenChiNhanh}</span>
-                      <Badge 
-                        variant="secondary" 
-                        className={branch.DangMoCua ? "bg-green-100 text-green-700" : "bg-gray-100 text-gray-700"}
+                      <Badge
+                        variant="secondary"
+                        className={
+                          branch.DangMoCua
+                            ? "bg-green-100 text-green-700"
+                            : "bg-gray-100 text-gray-700"
+                        }
                       >
                         {branch.DangMoCua ? "Mở cửa" : "Đóng cửa"}
-                    </Badge>
-                  </CardTitle>
-                  <CardDescription className="space-y-2 mt-4">
-                    <div className="flex items-start gap-2">
-                      <MapPin className="h-4 w-4 mt-0.5 flex-shrink-0" />
-                        <span className="text-sm text-pretty">{branch.DiaChi}</span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <Phone className="h-4 w-4" />
+                      </Badge>
+                    </CardTitle>
+                    <CardDescription className="space-y-2 mt-4">
+                      <div className="flex items-start gap-2">
+                        <MapPin className="h-4 w-4 mt-0.5 flex-shrink-0" />
+                        <span className="text-sm text-pretty">
+                          {branch.DiaChi}
+                        </span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <Phone className="h-4 w-4" />
                         <span className="text-sm">{branch.SDT}</span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <Clock className="h-4 w-4" />
-                      <span className="text-sm">
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <Clock className="h-4 w-4" />
+                        <span className="text-sm">
                           {(() => {
                             const formatTime = (time) => {
-                              if (!time) return '';
-                              if (typeof time === 'string') {
+                              if (!time) return "";
+                              if (typeof time === "string") {
                                 return time.substring(0, 5);
                               }
                               if (time instanceof Date) {
                                 return time.toTimeString().substring(0, 5);
                               }
                               if (time.hours !== undefined) {
-                                return `${String(time.hours).padStart(2, '0')}:${String(time.minutes || 0).padStart(2, '0')}`;
+                                return `${String(time.hours).padStart(
+                                  2,
+                                  "0"
+                                )}:${String(time.minutes || 0).padStart(
+                                  2,
+                                  "0"
+                                )}`;
                               }
                               return time.toString().substring(0, 5);
                             };
-                            
+
                             const openTime = formatTime(branch.TGMoCua);
                             const closeTime = formatTime(branch.TGDongCua);
-                            
-                            return openTime && closeTime ? `${openTime} - ${closeTime}` : '-';
+
+                            return openTime && closeTime
+                              ? `${openTime} - ${closeTime}`
+                              : "-";
                           })()}
-                      </span>
-                    </div>
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                    <Button className="w-full" onClick={() => handleBranchSelect(branch)}>
-                    {service === "products" ? "Xem sản phẩm" : "Chọn chi nhánh này"}
-                  </Button>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-            
+                        </span>
+                      </div>
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <Button
+                      className="w-full bg-black text-white hover:bg-blue-800"
+                      onClick={() => handleBranchSelect(branch)}
+                    >
+                      {service === "products"
+                        ? "Xem sản phẩm"
+                        : "Chọn chi nhánh này"}
+                    </Button>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+
             {pagination.totalPages > 1 && (
               <Pagination
                 currentPage={pagination.page}
@@ -290,7 +347,9 @@ export default function BranchesPage() {
           </>
         ) : (
           <Card className="p-12 text-center">
-            <p className="text-gray-600 text-lg">Không có chi nhánh nào cung cấp dịch vụ này hiện tại.</p>
+            <p className="text-gray-600 text-lg">
+              Không có chi nhánh nào cung cấp dịch vụ này hiện tại.
+            </p>
             <Link to="/customer">
               <Button className="mt-4">Quay về trang chủ</Button>
             </Link>
@@ -309,7 +368,9 @@ export default function BranchesPage() {
           <div className="space-y-4 py-4">
             {selectedBranch && (
               <div className="p-3 bg-blue-50 rounded-lg">
-                <p className="font-semibold text-blue-900">{selectedBranch.TenChiNhanh}</p>
+                <p className="font-semibold text-blue-900">
+                  {selectedBranch.TenChiNhanh}
+                </p>
                 <p className="text-sm text-gray-600">{selectedBranch.DiaChi}</p>
               </div>
             )}
@@ -326,7 +387,7 @@ export default function BranchesPage() {
             </div>
 
             {appointmentDate && (
-            <div className="space-y-2">
+              <div className="space-y-2">
                 <Label>Chọn bác sĩ *</Label>
                 {loadingDoctors ? (
                   <div className="flex justify-center py-8">
@@ -336,54 +397,73 @@ export default function BranchesPage() {
                   <div className="space-y-2 max-h-64 overflow-y-auto">
                     {availableDoctors.map((doctor) => {
                       const isAvailable = doctor.TrangThai === "Rảnh";
-                      const hasSchedule = doctor.CoLichLamViec || doctor.GioLamViec !== null;
-                      
+                      const hasSchedule =
+                        doctor.CoLichLamViec || doctor.GioLamViec !== null;
+
                       const formatTime = (time) => {
-                        if (!time) return '';
-                        
-                        if (typeof time === 'string') {
-                          if (time.includes('T') && time.includes('Z')) {
+                        if (!time) return "";
+
+                        if (typeof time === "string") {
+                          if (time.includes("T") && time.includes("Z")) {
                             const date = new Date(time);
                             const hours = date.getUTCHours();
                             const minutes = date.getUTCMinutes();
-                            return `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}`;
+                            return `${String(hours).padStart(2, "0")}:${String(
+                              minutes
+                            ).padStart(2, "0")}`;
                           }
                           return time;
                         }
-                        
+
                         if (time instanceof Date) {
                           const hours = time.getUTCHours();
                           const minutes = time.getUTCMinutes();
-                          return `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}`;
+                          return `${String(hours).padStart(2, "0")}:${String(
+                            minutes
+                          ).padStart(2, "0")}`;
                         }
-                        
-                        if (time && typeof time === 'object' && 'hours' in time) {
-                          return `${String(time.hours).padStart(2, '0')}:${String(time.minutes || 0).padStart(2, '0')}`;
+
+                        if (
+                          time &&
+                          typeof time === "object" &&
+                          "hours" in time
+                        ) {
+                          return `${String(time.hours).padStart(
+                            2,
+                            "0"
+                          )}:${String(time.minutes || 0).padStart(2, "0")}`;
                         }
-                        
+
                         return String(time);
                       };
 
                       return (
                         <div
                           key={doctor.MaNhanVien}
-                          onClick={() => isAvailable && setSelectedDoctor(doctor)}
+                          onClick={() =>
+                            isAvailable && setSelectedDoctor(doctor)
+                          }
                           className={`
                             p-3 border rounded-lg cursor-pointer transition-all
-                            ${selectedDoctor?.MaNhanVien === doctor.MaNhanVien
-                              ? "border-blue-500 bg-blue-50"
-                              : isAvailable
-                              ? "border-gray-200 hover:border-blue-300 hover:bg-blue-50"
-                              : "border-gray-200 bg-gray-50 opacity-60 cursor-not-allowed"
+                            ${
+                              selectedDoctor?.MaNhanVien === doctor.MaNhanVien
+                                ? "border-blue-500 bg-blue-50"
+                                : isAvailable
+                                ? "border-gray-200 hover:border-blue-300 hover:bg-blue-50"
+                                : "border-gray-200 bg-gray-50 opacity-60 cursor-not-allowed"
                             }
                           `}
                         >
                           <div className="flex items-center justify-between">
                             <div className="flex-1">
-                              <p className="font-semibold text-gray-900">{doctor.HoTen}</p>
+                              <p className="font-semibold text-gray-900">
+                                {doctor.HoTen}
+                              </p>
                               {doctor.GioLamViec && (
                                 <p className="text-sm text-gray-600">
-                                  Giờ làm việc: {formatTime(doctor.GioLamViec.BatDau)} - {formatTime(doctor.GioLamViec.KetThuc)}
+                                  Giờ làm việc:{" "}
+                                  {formatTime(doctor.GioLamViec.BatDau)} -{" "}
+                                  {formatTime(doctor.GioLamViec.KetThuc)}
                                 </p>
                               )}
                               {!doctor.GioLamViec && (
@@ -393,19 +473,25 @@ export default function BranchesPage() {
                               )}
                               {!isAvailable && hasSchedule && (
                                 <p className="text-xs text-orange-600 mt-1">
-                                  {doctor.TrangThai === "Đã đầy" ? "Đã đầy lịch" : "Không thể đặt lịch"}
+                                  {doctor.TrangThai === "Đã đầy"
+                                    ? "Đã đầy lịch"
+                                    : "Không thể đặt lịch"}
                                 </p>
                               )}
                             </div>
                             <div className="ml-4">
-                              {selectedDoctor?.MaNhanVien === doctor.MaNhanVien ? (
+                              {selectedDoctor?.MaNhanVien ===
+                              doctor.MaNhanVien ? (
                                 <div className="h-5 w-5 rounded-full bg-blue-600 flex items-center justify-center">
                                   <span className="text-white text-xs">✓</span>
                                 </div>
                               ) : isAvailable ? (
                                 <div className="h-5 w-5 rounded-full border-2 border-gray-300"></div>
                               ) : (
-                                <Badge variant="secondary" className="bg-gray-200 text-gray-600">
+                                <Badge
+                                  variant="secondary"
+                                  className="bg-gray-200 text-gray-600"
+                                >
                                   {doctor.TrangThai}
                                 </Badge>
                               )}
@@ -421,21 +507,24 @@ export default function BranchesPage() {
                     <p className="text-sm mt-1">Vui lòng chọn ngày khác</p>
                   </div>
                 )}
-            </div>
+              </div>
             )}
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => {
-              setIsDialogOpen(false);
-              setAppointmentDate("");
-              setAppointmentTime("");
-              setSelectedDoctor(null);
-              setAvailableDoctors([]);
-            }}>
+            <Button
+              variant="outline"
+              onClick={() => {
+                setIsDialogOpen(false);
+                setAppointmentDate("");
+                setAppointmentTime("");
+                setSelectedDoctor(null);
+                setAvailableDoctors([]);
+              }}
+            >
               Hủy
             </Button>
-            <Button 
-              onClick={handleCreateAppointment} 
+            <Button
+              onClick={handleCreateAppointment}
               disabled={!appointmentDate || !selectedDoctor || loadingDoctors}
             >
               Xác nhận đặt lịch

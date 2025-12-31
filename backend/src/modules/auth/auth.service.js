@@ -9,15 +9,7 @@ class AuthService {
    * @param {object} userData
    */
   async register(userData) {
-    const {
-      HoTen,
-      GioiTinh,
-      SDT,
-      CCCD,
-      Email,
-      MatKhau,
-      NgaySinh,
-    } = userData;
+    const { HoTen, GioiTinh, SDT, CCCD, Email, MatKhau, NgaySinh } = userData;
 
     // Kiểm tra các trường bắt buộc
     if (!HoTen || !GioiTinh || !SDT || !CCCD || !Email || !MatKhau) {
@@ -31,7 +23,7 @@ class AuthService {
     try {
       const pool = await poolPromise;
 
-      // Check trùng Email / SDT / CCCD 
+      // Check trùng Email / SDT / CCCD
       const dup = await pool
         .request()
         .input("Email", sql.VarChar(50), Email)
@@ -130,7 +122,8 @@ class AuthService {
   async login(email, password) {
     try {
       const pool = await poolPromise;
-      const result = await pool.request()
+      const result = await pool
+        .request()
         .input("Email", sql.VarChar(50), email)
         .query("SELECT * FROM dbo.KhachHang WHERE Email = @Email");
 
@@ -140,13 +133,17 @@ class AuthService {
         return { success: false, status: 401, message: "Email không tồn tại" };
       }
 
-      const isMatch = (password === user.MatKhau);
+      const isMatch = password === user.MatKhau;
       if (!isMatch) {
-        return { success: false, status: 401, message: "Mật khẩu không chính xác" };
+        return {
+          success: false,
+          status: 401,
+          message: "Mật khẩu không chính xác",
+        };
       }
 
       const token = jwt.sign(
-        { maKhachHang: user.MaKhachHang, role: 'KHACH_HANG' },
+        { maKhachHang: user.MaKhachHang, role: "KHACH_HANG" },
         process.env.JWT_SECRET || "your_secret_key",
         { expiresIn: "1d" }
       );
@@ -159,15 +156,74 @@ class AuthService {
         data: {
           HoTen: user.HoTen,
           Email: user.Email,
-          Role: 'customer'
-        }
+          Role: "customer",
+        },
       };
     } catch (error) {
-      return { success: false, status: 500, message: "Lỗi hệ thống", error: error.message };
+      return {
+        success: false,
+        status: 500,
+        message: "Lỗi hệ thống",
+        error: error.message,
+      };
     }
   }
 
+  async loginStaff(staffCode) {
+    try {
+      const pool = await poolPromise;
+      // Truy vấn thông tin nhân viên từ bảng NhanVien dựa vào MaNhanVien
+      const result = await pool
+        .request()
+        .input("MaNhanVien", sql.VarChar(20), staffCode)
+        .query(
+          "SELECT MaNhanVien, HoTen, ViTri, MaChiNhanh FROM dbo.NhanVien WHERE MaNhanVien = @MaNhanVien"
+        );
+
+      const staff = result.recordset[0];
+
+      if (!staff) {
+        return {
+          success: false,
+          status: 401,
+          message: "Mã nhân viên không tồn tại",
+        };
+      }
+
+      // Phân loại Role dựa trên ViTri
+      let role = "staff";
+      if (staff.ViTri === "Quản lý chi nhánh") {
+        role = "admin";
+      }
+
+      // Tạo JWT token cho nhân viên
+      const token = jwt.sign(
+        { maNhanVien: staff.MaNhanVien, role: role, viTri: staff.ViTri },
+        process.env.JWT_SECRET || "your_secret_key",
+        { expiresIn: "1d" }
+      );
+
+      return {
+        success: true,
+        status: 200,
+        message: "Đăng nhập nhân viên thành công",
+        token,
+        data: {
+          HoTen: staff.HoTen,
+          MaNhanVien: staff.MaNhanVien,
+          ViTri: staff.ViTri,
+          Role: role, // Trả về role để frontend điều hướng
+        },
+      };
+    } catch (error) {
+      return {
+        success: false,
+        status: 500,
+        message: "Lỗi hệ thống",
+        error: error.message,
+      };
+    }
+  }
 }
 
 module.exports = new AuthService();
-
