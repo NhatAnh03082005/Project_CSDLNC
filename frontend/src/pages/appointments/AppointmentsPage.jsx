@@ -1,9 +1,6 @@
-import React, { useState } from "react";
-// Giữ lại các hooks của React Router DOM (đã chuyển đổi trước đó)
+import React, { useState, useEffect } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import { Link } from "react-router-dom"; 
-
-// 1. Chuyển đổi import alias (@/) sang đường dẫn tương đối (../../...)
+import { Link } from "react-router-dom";
 import { Button } from "../../components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../../components/ui/card";
 import { Badge } from "../../components/ui/badge";
@@ -17,118 +14,88 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "../../components/ui/alert-dialog";
-import { Heart, ArrowLeft, Calendar, Clock, MapPin, User, X } from "lucide-react";
-
-// Mock data (Giữ nguyên)
-const branches = [
-  { id: 1, name: "PetCare Quận 1", address: "123 Nguyễn Huệ, Quận 1, TP.HCM" },
-  { id: 2, name: "PetCare Quận 3", address: "456 Võ Văn Tần, Quận 3, TP.HCM" },
-  { id: 3, name: "PetCare Bình Thạnh", address: "789 Xô Viết Nghệ Tĩnh, Bình Thạnh, TP.HCM" },
-];
-
-const mockAppointments = [
-  {
-    id: 1,
-    branchId: 1,
-    service: "exam",
-    date: "2025-12-15",
-    time: "09:00",
-    petName: "Milo",
-    status: "pending",
-    createdAt: "2025-12-10",
-  },
-  {
-    id: 2,
-    branchId: 2,
-    service: "vaccination",
-    date: "2025-12-18",
-    time: "14:30",
-    petName: "Luna",
-    status: "confirmed",
-    createdAt: "2025-12-09",
-  },
-  {
-    id: 3,
-    branchId: 1,
-    service: "exam",
-    date: "2025-12-20",
-    time: "10:00",
-    petName: "Max",
-    status: "pending",
-    createdAt: "2025-12-11",
-  },
-];
+import { Heart, ArrowLeft, Calendar, Clock, MapPin, User, X, Loader2, CheckCircle2 } from "lucide-react";
+import { appointmentAPI } from "../../api/services";
+import { Pagination } from "../../components/ui/pagination";
 
 const serviceNames = {
-  exam: "Khám bệnh",
-  vaccination: "Tiêm phòng",
-  products: "Mua sản phẩm",
+  "Khám bệnh": "Khám bệnh",
+  "Tiêm phòng": "Tiêm phòng",
 };
 
 const statusNames = {
-  pending: "Đang chờ xử lý",
-  confirmed: "Đã xác nhận",
-  cancelled: "Đã hủy",
+  "Đã lên lịch": "Đã lên lịch",
+  "Đã xác nhận": "Đã xác nhận",
+  "Đã hủy": "Đã hủy",
+  "Hoàn thành": "Hoàn thành",
 };
 
-// 2. Component logic chính (Đổi tên thành AppointmentsPage)
 export default function AppointmentsPage() {
-  // Lấy giá trị từ URL Query (ví dụ: ?branch=1&service=exam&date=...)
-  // Không cần useNavigate ở đây nếu nó không được sử dụng
+  const navigate = useNavigate();
   const [searchParams] = useSearchParams();
-  const branchId = searchParams.get("branch");
-  const service = searchParams.get("service");
-  const date = searchParams.get("date");
-  const time = searchParams.get("time");
+  const showSuccess = searchParams.get("success") === "true";
 
-  const [appointments, setAppointments] = useState(mockAppointments);
-  // Loại bỏ khai báo kiểu TypeScript: useState<number | null>(null)
+  const [appointments, setAppointments] = useState([]);
+  const [loading, setLoading] = useState(true);
   const [cancellingId, setCancellingId] = useState(null);
-  const [showSuccessMessage, setShowSuccessMessage] = useState(!!date && !!time);
+  const [cancellingAppointment, setCancellingAppointment] = useState(null);
+  const [pagination, setPagination] = useState({
+    page: 1,
+    limit: 10,
+    total: 0,
+    totalPages: 0,
+  });
 
-  const getBranchName = (id) => {
-    return branches.find((b) => b.id === id)?.name || "Không xác định";
-  };
+  const fetchAppointments = async (page = 1) => {
+    try {
+      setLoading(true);
+      const response = await appointmentAPI.getAll({
+        page,
+        limit: 10,
+      });
 
-  const getBranchAddress = (id) => {
-    return branches.find((b) => b.id === id)?.address || "";
-  };
-
-  const handleCancelAppointment = (id) => {
-    setAppointments(appointments.filter((apt) => apt.id !== id));
-    setCancellingId(null);
-  };
-
-  // Logic thêm Appointment mới (chạy khi component render và có query params)
-  // Logic này cần được chuyển vào useEffect HOẶC dùng cờ trạng thái (state flag) để tránh side effects
-  // Tuy nhiên, vì code gốc đã dùng cờ trạng thái `showSuccessMessage` trong thân component, chúng ta giữ nguyên logic để tránh thay đổi lớn.
-  if (showSuccessMessage && date && time && branchId) {
-    const newAppointment = {
-      id: Date.now(),
-      branchId: Number.parseInt(branchId),
-      service: service || "exam",
-      date,
-      time,
-      petName: "Thú cưng của bạn",
-      status: "pending", // Loại bỏ as const
-      createdAt: new Date().toISOString().split("T")[0],
-    };
-
-    // Kiểm tra trùng lặp
-    const exists = appointments.some(
-      (apt) => apt.branchId === newAppointment.branchId && apt.date === date && apt.time === time,
-    );
-
-    if (!exists) {
-      setAppointments([newAppointment, ...appointments]);
+      if (response.data.success) {
+        setAppointments(response.data.data.appointments || []);
+        setPagination(response.data.data.pagination || {});
+      }
+    } catch (error) {
+      console.error("Lỗi khi tải danh sách lịch hẹn:", error);
+    } finally {
+      setLoading(false);
     }
-    // Đặt lại cờ để tránh lặp vô hạn
-    setShowSuccessMessage(false);
-  }
+  };
+
+  useEffect(() => {
+    fetchAppointments(1);
+  }, []);
+
+  const handlePageChange = (newPage) => {
+    fetchAppointments(newPage);
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  };
+
+  const handleCancelAppointment = async () => {
+    if (!cancellingId) return;
+
+    try {
+      const response = await appointmentAPI.cancel(cancellingId);
+      if (response.data.success) {
+        alert(response.data.message || "Hủy lịch hẹn thành công");
+        fetchAppointments(pagination.page);
+        setCancellingId(null);
+        setCancellingAppointment(null);
+      } else {
+        alert(response.data.message || "Hủy lịch hẹn thất bại");
+      }
+    } catch (error) {
+      console.error("Lỗi khi hủy lịch hẹn:", error);
+      const errorMessage = error.response?.data?.message || error.message || "Hủy lịch hẹn thất bại. Vui lòng thử lại!";
+      alert(errorMessage);
+    }
+  };
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-blue-50 to-white">
-      {/* Header */}
       <header className="sticky top-0 z-50 w-full border-b bg-white/95 backdrop-blur supports-[backdrop-filter]:bg-white/60">
         <div className="container mx-auto flex h-16 items-center justify-between px-4">
           <div className="flex items-center gap-2">
@@ -136,7 +103,7 @@ export default function AppointmentsPage() {
             <span className="text-xl font-bold text-blue-900">PetCare</span>
           </div>
           <nav className="flex items-center gap-6">
-            <Link to="/" className="text-sm font-medium hover:text-blue-600 transition-colors">
+            <Link to="/customer" className="text-sm font-medium hover:text-blue-600 transition-colors">
               Trang chủ
             </Link>
             <Link to="/services" className="text-sm font-medium hover:text-blue-600 transition-colors">
@@ -152,10 +119,9 @@ export default function AppointmentsPage() {
         </div>
       </header>
 
-      {/* Main Content */}
       <div className="container mx-auto px-4 py-12 max-w-4xl">
         <div className="mb-8">
-          <Link to="/">
+          <Link to="/customer">
             <Button variant="ghost" className="gap-2 mb-4">
               <ArrowLeft className="h-4 w-4" />
               Quay lại
@@ -165,96 +131,139 @@ export default function AppointmentsPage() {
           <p className="text-gray-600">Quản lý các lịch hẹn khám bệnh và tiêm phòng</p>
         </div>
 
-        {/* Success Message */}
-        {date && time && (
+        {showSuccess && (
           <Card className="mb-6 border-green-200 bg-green-50">
             <CardContent className="pt-6">
-              <div className="flex items-center gap-3">
-                <div className="h-10 w-10 rounded-full bg-green-100 flex items-center justify-center">
-                  <Calendar className="h-5 w-5 text-green-600" />
+              <div className="flex items-center justify-between gap-3">
+                <div className="flex items-center gap-3 flex-1">
+                  <div className="h-10 w-10 rounded-full bg-green-100 flex items-center justify-center flex-shrink-0">
+                    <CheckCircle2 className="h-5 w-5 text-green-600" />
+                  </div>
+                  <div className="flex-1">
+                    <p className="font-semibold text-green-900">Đặt lịch thành công!</p>
+                    <p className="text-sm text-green-700">
+                      Lịch hẹn của bạn đã được tạo và đang chờ xác nhận từ chi nhánh.
+                    </p>
+                  </div>
                 </div>
-                <div>
-                  <p className="font-semibold text-green-900">Đặt lịch thành công!</p>
-                  <p className="text-sm text-green-700">
-                    Lịch hẹn của bạn đã được tạo và đang chờ xác nhận từ chi nhánh.
-                  </p>
-                </div>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-8 w-8 text-green-700 hover:text-green-900 hover:bg-green-100 flex-shrink-0"
+                  onClick={() => {
+                    const newSearchParams = new URLSearchParams(searchParams);
+                    newSearchParams.delete("success");
+                    navigate(`/appointments?${newSearchParams.toString()}`, { replace: true });
+                  }}
+                >
+                  <X className="h-4 w-4" />
+                </Button>
               </div>
             </CardContent>
           </Card>
         )}
 
-        {/* Appointments List */}
         <div className="space-y-4">
-          {appointments.length > 0 ? (
-            appointments.map((appointment) => {
-              const isConfirmed = appointment.status === "confirmed";
-              const isPending = appointment.status === "pending";
+          {loading ? (
+            <div className="flex justify-center py-20">
+              <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
+            </div>
+          ) : appointments.length > 0 ? (
+            <>
+              {appointments.map((appointment) => {
+                const isCompleted = appointment.TrangThai === "Hoàn thành";
+                const isPending = appointment.TrangThai === "Đã lên lịch";
+                const canCancel = isPending;
 
-              return (
-                <Card key={appointment.id} className="hover:shadow-md transition-shadow">
-                  <CardHeader>
-                    <div className="flex items-start justify-between">
-                      <div className="space-y-1">
-                        <CardTitle className="text-xl flex items-center gap-2">
-                          {/* Loại bỏ khai báo kiểu TypeScript: as keyof typeof serviceNames */}
-                          {serviceNames[appointment.service]} 
-                          <Badge
-                            variant={isConfirmed ? "default" : "secondary"}
-                            className={isConfirmed ? "bg-green-600" : ""}
+                return (
+                  <Card key={appointment.MaLichHen} className="hover:shadow-md transition-shadow">
+                    <CardHeader>
+                      <div className="flex items-start justify-between">
+                        <div className="space-y-1">
+                          <CardTitle className="text-xl flex items-center gap-2">
+                            {serviceNames[appointment.LoaiDichVu] || appointment.LoaiDichVu}
+                            <Badge
+                              variant={isCompleted ? "default" : "secondary"}
+                              className={isCompleted ? "bg-green-600" : ""}
+                            >
+                              {statusNames[appointment.TrangThai] || appointment.TrangThai}
+                            </Badge>
+                          </CardTitle>
+                          <CardDescription>{appointment.TenChiNhanh}</CardDescription>
+                        </div>
+                      </div>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="grid md:grid-cols-2 gap-4">
+                        <div className="space-y-3">
+                          <div className="flex items-center gap-2 text-sm">
+                            <Calendar className="h-4 w-4 text-gray-500" />
+                            <span className="text-gray-700">
+                              {(() => {
+                                const dateStr = appointment.ThoiGianHen;
+                                let date;
+                                if (typeof dateStr === 'string' && dateStr.includes('T')) {
+                                  const dateOnly = dateStr.split('T')[0];
+                                  const [year, month, day] = dateOnly.split('-');
+                                  date = new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
+                                } else if (typeof dateStr === 'string') {
+                                  const [year, month, day] = dateStr.split('-');
+                                  date = new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
+                                } else {
+                                  date = new Date(dateStr);
+                                }
+                                return date.toLocaleDateString("vi-VN", {
+                                  weekday: "long",
+                                  year: "numeric",
+                                  month: "long",
+                                  day: "numeric",
+                                });
+                              })()}
+                            </span>
+                          </div>
+                          {appointment.TenBacSiPhuTrach && (
+                            <div className="flex items-center gap-2 text-sm">
+                              <User className="h-4 w-4 text-gray-500" />
+                              <span className="text-gray-700">BS: {appointment.TenBacSiPhuTrach}</span>
+                            </div>
+                          )}
+                        </div>
+                        <div className="space-y-3">
+                          <div className="flex items-center gap-2 text-sm">
+                            <MapPin className="h-4 w-4 text-gray-500" />
+                            <span className="text-gray-700 text-pretty">{appointment.DiaChiChiNhanh}</span>
+                          </div>
+                          <div className="flex items-center gap-2 text-sm">
+                            <Clock className="h-4 w-4 text-gray-500" />
+                            <span className="text-gray-700">{appointment.SDTChiNhanh}</span>
+                          </div>
+                        </div>
+                      </div>
+                        {canCancel && appointment.TrangThai !== "Hoàn thành" && appointment.TrangThai !== "Đã hủy" && (
+                        <div className="mt-6 pt-4 border-t border-gray-200">
+                          <Button
+                            variant="outline"
+                            className="w-full text-red-600 border-red-300 hover:bg-red-50 hover:border-red-400 hover:text-red-700 transition-all duration-200 font-medium shadow-sm hover:shadow-md"
+                            onClick={() => setCancellingId(appointment.MaLichHen)}
                           >
-                            {/* Loại bỏ khai báo kiểu TypeScript: as keyof typeof statusNames */}
-                            {statusNames[appointment.status]} 
-                          </Badge>
-                        </CardTitle>
-                        <CardDescription>{getBranchName(appointment.branchId)}</CardDescription>
-                      </div>
-                      {isPending && (
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className="text-red-600 hover:text-red-700 hover:bg-red-50"
-                          onClick={() => setCancellingId(appointment.id)}
-                        >
-                          <X className="h-5 w-5" />
-                        </Button>
+                            <X className="h-4 w-4 mr-2" />
+                            Hủy lịch hẹn
+                          </Button>
+                        </div>
                       )}
-                    </div>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="grid md:grid-cols-2 gap-4">
-                      <div className="space-y-3">
-                        <div className="flex items-center gap-2 text-sm">
-                          <Calendar className="h-4 w-4 text-gray-500" />
-                          <span className="text-gray-700">
-                            {new Date(appointment.date).toLocaleDateString("vi-VN", {
-                              weekday: "long",
-                              year: "numeric",
-                              month: "long",
-                              day: "numeric",
-                            })}
-                          </span>
-                        </div>
-                        <div className="flex items-center gap-2 text-sm">
-                          <Clock className="h-4 w-4 text-gray-500" />
-                          <span className="text-gray-700">{appointment.time}</span>
-                        </div>
-                      </div>
-                      <div className="space-y-3">
-                        <div className="flex items-center gap-2 text-sm">
-                          <MapPin className="h-4 w-4 text-gray-500" />
-                          <span className="text-gray-700 text-pretty">{getBranchAddress(appointment.branchId)}</span>
-                        </div>
-                        <div className="flex items-center gap-2 text-sm">
-                          <User className="h-4 w-4 text-gray-500" />
-                          <span className="text-gray-700">{appointment.petName}</span>
-                        </div>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              );
-            })
+                    </CardContent>
+                  </Card>
+                );
+              })}
+              
+              {pagination.totalPages > 1 && (
+                <Pagination
+                  currentPage={pagination.page}
+                  totalPages={pagination.totalPages}
+                  onPageChange={handlePageChange}
+                />
+              )}
+            </>
           ) : (
             <Card className="p-12 text-center">
               <div className="flex flex-col items-center gap-4">
@@ -265,7 +274,7 @@ export default function AppointmentsPage() {
                   <p className="text-lg font-semibold text-gray-900 mb-1">Chưa có lịch hẹn nào</p>
                   <p className="text-gray-600">Đặt lịch hẹn ngay để chăm sóc thú cưng của bạn</p>
                 </div>
-                <Link to="/">
+                <Link to="/customer">
                   <Button className="mt-2">Đặt lịch ngay</Button>
                 </Link>
               </div>
@@ -274,20 +283,24 @@ export default function AppointmentsPage() {
         </div>
       </div>
 
-      {/* Cancel Confirmation Dialog */}
-      <AlertDialog open={!!cancellingId} onOpenChange={() => setCancellingId(null)}>
-        <AlertDialogContent>
+      <AlertDialog open={!!cancellingId} onOpenChange={() => {
+        setCancellingId(null);
+        setCancellingAppointment(null);
+      }}>
+        <AlertDialogContent className="bg-white border-gray-300 shadow-xl">
           <AlertDialogHeader>
-            <AlertDialogTitle>Xác nhận hủy lịch hẹn</AlertDialogTitle>
-            <AlertDialogDescription>
+            <AlertDialogTitle className="text-gray-900">Xác nhận hủy lịch hẹn</AlertDialogTitle>
+            <AlertDialogDescription className="text-gray-600">
               Bạn có chắc chắn muốn hủy lịch hẹn này? Hành động này không thể hoàn tác.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Không</AlertDialogCancel>
+            <AlertDialogCancel className="border-gray-900 text-gray-900 hover:bg-gray-100 hover:border-gray-900 transition-colors">
+              Không
+            </AlertDialogCancel>
             <AlertDialogAction
-              className="bg-red-600 hover:bg-red-700"
-              onClick={() => cancellingId && handleCancelAppointment(cancellingId)}
+              className="border border-red-600 bg-white text-red-600 hover:bg-red-50 hover:border-red-700 transition-colors shadow-sm"
+              onClick={handleCancelAppointment}
             >
               Hủy lịch hẹn
             </AlertDialogAction>

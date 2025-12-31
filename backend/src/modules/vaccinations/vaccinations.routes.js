@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const { authenticate, authorize } = require('../../middlewares/auth');
 const { ROLES } = require('../../config/constants');
+const vaccinationsService = require('./vaccinations.service');
 
 /**
  * @route   POST /api/vaccinations/records
@@ -26,17 +27,9 @@ router.get('/records/:petId', authenticate, (req, res) => {
  * @desc    Danh sách gói tiêm phòng
  * @access  Public
  */
-router.get('/packages', (req, res) => {
-  res.json({ message: 'Get vaccination packages' });
-});
-
-/**
- * @route   GET /api/vaccinations/packages/:id
- * @desc    Chi tiết gói tiêm
- * @access  Public
- */
-router.get('/packages/:id', (req, res) => {
-  res.json({ message: 'Get package details' });
+router.get('/packages', async (req, res) => {
+  const response = await vaccinationsService.getVaccinationPackages();
+  return res.status(response.status || 200).json(response);
 });
 
 /**
@@ -71,17 +64,64 @@ router.delete('/packages/:id', authenticate, authorize(ROLES.ADMIN), (req, res) 
  * @desc    Đăng ký gói tiêm cho thú cưng
  * @access  Private - KHACH_HANG
  */
-router.post('/packages/subscribe', authenticate, authorize(ROLES.CUSTOMER), (req, res) => {
-  res.json({ message: 'Subscribe to vaccination package' });
+router.post('/packages/subscribe', authenticate, authorize(ROLES.CUSTOMER), async (req, res) => {
+  const customerId = req.user.maKhachHang;
+
+  if (!customerId) {
+    return res.status(400).json({
+      success: false,
+      message: 'Không tìm thấy mã khách hàng trong token',
+    });
+  }
+
+  const response = await vaccinationsService.subscribeToPackage(customerId, req.body);
+  return res.status(response.status || 200).json(response);
 });
 
 /**
- * @route   GET /api/vaccinations/subscriptions/:petId
- * @desc    Gói tiêm đang đăng ký của thú cưng
+ * @route   GET /api/vaccinations/subscriptions
+ * @desc    Danh sách gói tiêm đang đăng ký của khách hàng
  * @access  Private - KHACH_HANG
  */
-router.get('/subscriptions/:petId', authenticate, authorize(ROLES.CUSTOMER), (req, res) => {
-  res.json({ message: 'Get pet vaccination subscriptions' });
+router.get('/subscriptions', authenticate, authorize(ROLES.CUSTOMER), async (req, res) => {
+  const customerId = req.user.maKhachHang;
+
+  if (!customerId) {
+    return res.status(400).json({
+      success: false,
+      message: 'Không tìm thấy mã khách hàng trong token',
+    });
+  }
+
+  const response = await vaccinationsService.getCustomerSubscriptions(customerId);
+  return res.status(response.status || 200).json(response);
+});
+
+/**
+ * @route   GET /api/vaccinations/subscriptions/:maGoiDK
+ * @desc    Chi tiết gói tiêm đã đăng ký của khách hàng (bao gồm danh sách vaccine)
+ * @access  Private - KHACH_HANG
+ */
+router.get('/subscriptions/:maGoiDK', authenticate, authorize(ROLES.CUSTOMER), async (req, res) => {
+  const customerId = req.user.maKhachHang;
+  const { maGoiDK } = req.params;
+
+  if (!customerId) {
+    return res.status(400).json({
+      success: false,
+      message: 'Không tìm thấy mã khách hàng trong token',
+    });
+  }
+
+  if (!maGoiDK) {
+    return res.status(400).json({
+      success: false,
+      message: 'Thiếu mã gói đăng ký',
+    });
+  }
+
+  const response = await vaccinationsService.getSubscriptionDetails(customerId, maGoiDK);
+  return res.status(response.status || 200).json(response);
 });
 
 module.exports = router;

@@ -8,10 +8,9 @@ const api = axios.create({
   },
 });
 
-// Request interceptor - Thêm token vào header
 api.interceptors.request.use(
   (config) => {
-    const token = useAuthStore.getState().token;
+    const token = localStorage.getItem("token");
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }
@@ -22,14 +21,30 @@ api.interceptors.request.use(
   }
 );
 
-// Response interceptor - Xử lý lỗi
+let redirecting = false;
+
 api.interceptors.response.use(
   (response) => response,
   (error) => {
     if (error.response?.status === 401) {
-      // Token hết hạn hoặc không hợp lệ
-      useAuthStore.getState().logout();
-      window.location.href = '/login';
+      const path = window.location.pathname;
+      const publicPaths = ['/login', '/register', '/'];
+      
+      if (!publicPaths.includes(path) && !redirecting) {
+        const token = localStorage.getItem("token");
+        if (token) {
+          redirecting = true;
+          useAuthStore.getState().logout();
+          localStorage.removeItem("token");
+          
+          setTimeout(() => {
+            if (window.location.pathname === path && !publicPaths.includes(window.location.pathname)) {
+              window.location.href = '/login';
+            }
+            redirecting = false;
+          }, 50);
+        }
+      }
     }
     return Promise.reject(error);
   }

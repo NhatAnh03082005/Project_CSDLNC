@@ -2,14 +2,34 @@ const express = require('express');
 const router = express.Router();
 const { authenticate, authorize } = require('../../middlewares/auth');
 const { ROLES } = require('../../config/constants');
+const branchesService = require('./branches.service');
 
 /**
  * @route   GET /api/branches
- * @desc    Danh sách chi nhánh (có filter)
+ * @desc    Danh sách chi nhánh (có filter và phân trang)
  * @access  Public
+ * @query   page, limit, search, service
  */
-router.get('/', (req, res) => {
-  res.json({ message: 'Get branches list' });
+router.get('/', async (req, res) => {
+  const { page, limit, search, service } = req.query;
+  
+  let serviceFilter = null;
+  if (service === 'exam') {
+    serviceFilter = 'Khám bệnh';
+  } else if (service === 'vaccination') {
+    serviceFilter = 'Tiêm phòng';
+  } else if (service) {
+    serviceFilter = service;
+  }
+
+  const response = await branchesService.getBranches({
+    page: parseInt(page) || 1,
+    limit: parseInt(limit) || 6,
+    search,
+    service: serviceFilter,
+  });
+  
+  return res.status(response.status || 200).json(response);
 });
 
 /**
@@ -17,8 +37,10 @@ router.get('/', (req, res) => {
  * @desc    Chi tiết chi nhánh
  * @access  Public
  */
-router.get('/:id', (req, res) => {
-  res.json({ message: 'Get branch details' });
+router.get('/:id', async (req, res) => {
+  const { id } = req.params;
+  const response = await branchesService.getBranchById(id);
+  return res.status(response.status || 200).json(response);
 });
 
 /**

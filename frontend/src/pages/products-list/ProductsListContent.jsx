@@ -173,8 +173,6 @@ function ProductsListContent() {
   };
 
   const handleAddToCart = () => {
-    // Here you would normally add to cart
-    console.log("[v0] Adding to cart:", { product: selectedProduct, quantity });
     setIsDialogOpen(false);
     alert("Đã thêm sản phẩm vào giỏ hàng!");
   };

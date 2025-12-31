@@ -2,7 +2,6 @@ import * as React from "react";
 
 import { cn } from "../../lib/utils";
 
-// Loại bỏ khai báo kiểu TypeScript: React.ComponentProps<"div">
 function Card({ className, ...props }) {
   return (
     <div
@@ -16,7 +15,6 @@ function Card({ className, ...props }) {
   );
 }
 
-// Loại bỏ khai báo kiểu TypeScript: React.ComponentProps<"div">
 function CardHeader({ className, ...props }) {
   return (
     <div
@@ -30,7 +28,6 @@ function CardHeader({ className, ...props }) {
   );
 }
 
-// Loại bỏ khai báo kiểu TypeScript: React.ComponentProps<"div">
 function CardTitle({ className, ...props }) {
   return (
     <div
@@ -41,7 +38,6 @@ function CardTitle({ className, ...props }) {
   );
 }
 
-// Loại bỏ khai báo kiểu TypeScript: React.ComponentProps<"div">
 function CardDescription({ className, ...props }) {
   return (
     <div
@@ -52,7 +48,6 @@ function CardDescription({ className, ...props }) {
   );
 }
 
-// Loại bỏ khai báo kiểu TypeScript: React.ComponentProps<"div">
 function CardAction({ className, ...props }) {
   return (
     <div
@@ -66,7 +61,6 @@ function CardAction({ className, ...props }) {
   );
 }
 
-// Loại bỏ khai báo kiểu TypeScript: React.ComponentProps<"div">
 function CardContent({ className, ...props }) {
   return (
     <div
@@ -77,7 +71,6 @@ function CardContent({ className, ...props }) {
   );
 }
 
-// Loại bỏ khai báo kiểu TypeScript: React.ComponentProps<"div">
 function CardFooter({ className, ...props }) {
   return (
     <div

@@ -1,43 +1,63 @@
 import React, { useState } from "react";
-// 1. Thay thế Next.js hooks bằng React Router DOM hooks
-import { useNavigate } from "react-router-dom";
-// 2. Thay thế Next.js Link bằng React Router DOM Link
-import { Link } from "react-router-dom"; 
-
-// 3. Chuyển đổi imports alias (@/) sang đường dẫn tương đối (../...)
+import { useNavigate, Link } from "react-router-dom"; 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../../components/ui/card";
 import { Label } from "../../components/ui/label";
 import { Input } from "../../components/ui/input";
 import { Button } from "../../components/ui/button";
-import { Heart, User, Briefcase } from "lucide-react";
-
-// Xóa bỏ "use client" và import type React
-
+import { Heart, User, Briefcase, Hash } from "lucide-react";
+import axios from "axios";
+import { useAuth } from "../../context/AuthContext";
 export default function LoginPage() {
-  // Thay thế useRouter() bằng useNavigate()
   const navigate = useNavigate(); 
   
-  // 4. Loại bỏ khai báo kiểu TypeScript: useState<"customer" | "staff" | null>(null)
   const [selectedRole, setSelectedRole] = useState(null);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [staffCode, setStaffCode] = useState("");
+  const {setUser, setIsAuthenticated} = useAuth();
 
-  // 5. Loại bỏ khai báo kiểu TypeScript cho sự kiện: (e: React.FormEvent)
-  const handleLogin = (e) => {
-    e.preventDefault();
+  const handleLogin = async (e) => {
+  e.preventDefault();
 
-    // Thay thế router.push bằng navigate()
+  try {
+    let response;
+    
     if (selectedRole === "customer") {
-      navigate("/"); // Chuyển hướng đến trang chủ khách hàng
+      response = await axios.post("http://localhost:3000/api/auth/login", {
+        email,
+        password,
+        role: "customer"
+      });
+      setUser(response.data.data);
+      setIsAuthenticated(true);
+      
     } else if (selectedRole === "staff") {
-      navigate("/staff/demo"); // Chuyển hướng đến khu vực nhân viên
+      response = await axios.post("http://localhost:3000/api/auth/login", {
+        staffCode,
+        role: "staff"
+      });
     }
-  };
+
+    if (response.data.status === 200) {
+      localStorage.setItem("token", response.data.token);
+      
+      alert("Đăng nhập thành công!");
+
+      if (selectedRole === "customer") {
+        navigate("/customer"); 
+      } else {
+        navigate("/staff/demo");
+      }
+    }
+  } catch (error) {
+    console.error("Lỗi đăng nhập:", error);
+    alert(error.response?.data?.message || "Đăng nhập thất bại. Vui lòng thử lại!");
+  }
+};
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 via-white to-green-50 p-4">
       <div className="w-full max-w-md">
-        {/* Logo */}
         <div className="flex items-center justify-center gap-2 mb-8">
           <Heart className="h-10 w-10 text-blue-600 fill-blue-600" />
           <h1 className="text-3xl font-bold text-gray-900">PetCare</h1>
@@ -60,11 +80,7 @@ export default function LoginPage() {
                     selectedRole === "customer" ? "border-blue-600 bg-blue-50" : "border-gray-200 hover:border-gray-300"
                   }`}
                 >
-                  <User
-                    className={`h-8 w-8 mx-auto mb-2 ${
-                      selectedRole === "customer" ? "text-blue-600" : "text-gray-400"
-                    }`}
-                  />
+                  <User className={`h-8 w-8 mx-auto mb-2 ${selectedRole === "customer" ? "text-blue-600" : "text-gray-400"}`} />
                   <div className="text-sm font-medium text-center">Khách hàng</div>
                 </button>
 
@@ -75,50 +91,61 @@ export default function LoginPage() {
                     selectedRole === "staff" ? "border-blue-600 bg-blue-50" : "border-gray-200 hover:border-gray-300"
                   }`}
                 >
-                  <Briefcase
-                    className={`h-8 w-8 mx-auto mb-2 ${selectedRole === "staff" ? "text-blue-600" : "text-gray-400"}`}
-                  />
+                  <Briefcase className={`h-8 w-8 mx-auto mb-2 ${selectedRole === "staff" ? "text-blue-600" : "text-gray-400"}`} />
                   <div className="text-sm font-medium text-center">Nhân viên</div>
                 </button>
               </div>
             </div>
 
             <form onSubmit={handleLogin} className="space-y-4">
-              {/* Email */}
-              <div className="space-y-2">
-                <Label htmlFor="email">Email</Label>
-                <Input
-                  id="email"
-                  type="email"
-                  placeholder="example@petcare.vn"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  required
-                />
-              </div>
+              {selectedRole === "staff" ? (
+                <div className="space-y-2 animate-in fade-in duration-300">
+                  <Label htmlFor="staffCode">Mã số nhân viên</Label>
+                  <div className="relative">
+                    <Hash className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
+                    <Input
+                      id="staffCode"
+                      type="text"
+                      placeholder="Nhập mã nhân viên (VD: NV001)"
+                      className="pl-10"
+                      value={staffCode}
+                      onChange={(e) => setStaffCode(e.target.value)}
+                      required
+                    />
+                  </div>
+                </div>
+              ) : (
+                <div className="space-y-4 animate-in fade-in duration-300">
+                  <div className="space-y-2">
+                    <Label htmlFor="email">Email</Label>
+                    <Input
+                      id="email"
+                      type="email"
+                      placeholder="example@petcare.vn"
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
+                      required
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="password">Mật khẩu</Label>
+                    <Input
+                      id="password"
+                      type="password"
+                      placeholder="••••••••"
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                      required
+                    />
+                  </div>
+                  <div className="flex justify-end">
+                    <Link to="#" className="text-sm text-blue-600 hover:underline">
+                      Quên mật khẩu?
+                    </Link>
+                  </div>
+                </div>
+              )}
 
-              {/* Password */}
-              <div className="space-y-2">
-                <Label htmlFor="password">Mật khẩu</Label>
-                <Input
-                  id="password"
-                  type="password"
-                  placeholder="••••••••"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  required
-                />
-              </div>
-
-              {/* Forgot Password */}
-              <div className="flex justify-end">
-                {/* Sửa Link href -> to */}
-                <Link to="#" className="text-sm text-blue-600 hover:underline">
-                  Quên mật khẩu?
-                </Link>
-              </div>
-
-              {/* Login Button */}
               <Button
                 type="submit"
                 className="w-full bg-blue-600 hover:bg-blue-700 text-white"
@@ -128,10 +155,8 @@ export default function LoginPage() {
               </Button>
             </form>
 
-            {/* Register Link */}
             <div className="text-center text-sm">
               Chưa có tài khoản?{" "}
-              {/* Sửa Link href -> to */}
               <Link to="/auth/register" className="text-blue-600 font-medium hover:underline">
                 Đăng ký ngay
               </Link>
@@ -139,10 +164,8 @@ export default function LoginPage() {
           </CardContent>
         </Card>
 
-        {/* Footer */}
         <p className="text-center text-sm text-gray-500 mt-6">
           Bằng việc đăng nhập, bạn đồng ý với{" "}
-          {/* Sửa Link href -> to */}
           <Link to="#" className="text-blue-600 hover:underline">
             Điều khoản dịch vụ
           </Link>{" "}

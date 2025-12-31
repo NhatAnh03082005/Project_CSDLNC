@@ -20,7 +20,6 @@ const errorHandler = (err, req, res, next) => {
       message: 'Token không hợp lệ'
     });
   }
-
   // Database errors
   if (err.code === 'ER_DUP_ENTRY') {
     return res.status(409).json({

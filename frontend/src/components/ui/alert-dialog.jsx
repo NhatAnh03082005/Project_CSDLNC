@@ -1,30 +1,25 @@
 import * as React from "react";
 import * as AlertDialogPrimitive from "@radix-ui/react-alert-dialog";
 
-// Chuyển đổi imports alias sang đường dẫn tương đối (giả định cn và buttonVariants ở cùng cấp)
 import { cn } from "../../lib/utils";
 import { buttonVariants } from "./button";
 
-// Loại bỏ khai báo kiểu TypeScript: React.ComponentProps<typeof AlertDialogPrimitive.Root>
 function AlertDialog(props) {
   return <AlertDialogPrimitive.Root data-slot="alert-dialog" {...props} />;
 }
 
-// Loại bỏ khai báo kiểu TypeScript: React.ComponentProps<typeof AlertDialogPrimitive.Trigger>
 function AlertDialogTrigger(props) {
   return (
     <AlertDialogPrimitive.Trigger data-slot="alert-dialog-trigger" {...props} />
   );
 }
 
-// Loại bỏ khai báo kiểu TypeScript: React.ComponentProps<typeof AlertDialogPrimitive.Portal>
 function AlertDialogPortal(props) {
   return (
     <AlertDialogPrimitive.Portal data-slot="alert-dialog-portal" {...props} />
   );
 }
 
-// Loại bỏ khai báo kiểu TypeScript: React.ComponentProps<typeof AlertDialogPrimitive.Overlay>
 function AlertDialogOverlay({ className, ...props }) {
   return (
     <AlertDialogPrimitive.Overlay
@@ -38,7 +33,6 @@ function AlertDialogOverlay({ className, ...props }) {
   );
 }
 
-// Loại bỏ khai báo kiểu TypeScript: React.ComponentProps<typeof AlertDialogPrimitive.Content>
 function AlertDialogContent({ className, ...props }) {
   return (
     <AlertDialogPortal>
@@ -55,7 +49,6 @@ function AlertDialogContent({ className, ...props }) {
   );
 }
 
-// Loại bỏ khai báo kiểu TypeScript: React.ComponentProps<"div">
 function AlertDialogHeader({ className, ...props }) {
   return (
     <div
@@ -66,7 +59,6 @@ function AlertDialogHeader({ className, ...props }) {
   );
 }
 
-// Loại bỏ khai báo kiểu TypeScript: React.ComponentProps<"div">
 function AlertDialogFooter({ className, ...props }) {
   return (
     <div
@@ -80,7 +72,6 @@ function AlertDialogFooter({ className, ...props }) {
   );
 }
 
-// Loại bỏ khai báo kiểu TypeScript: React.ComponentProps<typeof AlertDialogPrimitive.Title>
 function AlertDialogTitle({ className, ...props }) {
   return (
     <AlertDialogPrimitive.Title
@@ -91,7 +82,6 @@ function AlertDialogTitle({ className, ...props }) {
   );
 }
 
-// Loại bỏ khai báo kiểu TypeScript: React.ComponentProps<typeof AlertDialogPrimitive.Description>
 function AlertDialogDescription({ className, ...props }) {
   return (
     <AlertDialogPrimitive.Description
@@ -102,7 +92,6 @@ function AlertDialogDescription({ className, ...props }) {
   );
 }
 
-// Loại bỏ khai báo kiểu TypeScript: React.ComponentProps<typeof AlertDialogPrimitive.Action>
 function AlertDialogAction({ className, ...props }) {
   return (
     <AlertDialogPrimitive.Action
@@ -112,7 +101,6 @@ function AlertDialogAction({ className, ...props }) {
   );
 }
 
-// Loại bỏ khai báo kiểu TypeScript: React.ComponentProps<typeof AlertDialogPrimitive.Cancel>
 function AlertDialogCancel({ className, ...props }) {
   return (
     <AlertDialogPrimitive.Cancel
