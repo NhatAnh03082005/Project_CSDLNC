@@ -2,7 +2,7 @@ const express = require('express');
 const router = express.Router();
 const { authenticate, authorize } = require('../../middlewares/auth');
 const { ROLES } = require('../../config/constants');
-const appointmentsService = require('./appointments.service');
+const appointmentsController = require('./appointments.controller');
 
 /**
  * @route   GET /api/appointments
@@ -10,44 +10,24 @@ const appointmentsService = require('./appointments.service');
  * @access  Private - KHACH_HANG
  * @query   page, limit, status?
  */
-router.get('/', authenticate, authorize(ROLES.CUSTOMER), async (req, res) => {
-  const customerId = req.user.maKhachHang;
-
-  if (!customerId) {
-    return res.status(400).json({
-      success: false,
-      message: 'Không tìm thấy mã khách hàng trong token',
-    });
-  }
-
-  const { page, limit, status } = req.query;
-  const response = await appointmentsService.getCustomerAppointments(customerId, {
-    page: parseInt(page) || 1,
-    limit: parseInt(limit) || 10,
-    status,
-  });
-  
-  return res.status(response.status || 200).json(response);
-});
+router.get(
+  '/',
+  authenticate,
+  authorize(ROLES.CUSTOMER),
+  appointmentsController.getCustomerAppointments
+);
 
 /**
  * @route   POST /api/appointments
  * @desc    Đặt lịch hẹn mới (khám bệnh hoặc tiêm phòng)
  * @access  Private - KHACH_HANG
  */
-router.post('/', authenticate, authorize(ROLES.CUSTOMER), async (req, res) => {
-  const customerId = req.user.maKhachHang;
-
-  if (!customerId) {
-    return res.status(400).json({
-      success: false,
-      message: 'Không tìm thấy mã khách hàng trong token',
-    });
-  }
-
-  const response = await appointmentsService.createAppointment(customerId, req.body);
-  return res.status(response.status || 200).json(response);
-});
+router.post(
+  '/',
+  authenticate,
+  authorize(ROLES.CUSTOMER),
+  appointmentsController.createAppointment
+);
 
 /**
  * @route   GET /api/appointments/available-slots
@@ -55,10 +35,12 @@ router.post('/', authenticate, authorize(ROLES.CUSTOMER), async (req, res) => {
  * @access  Private - KHACH_HANG
  * @query   MaChiNhanh, LoaiDichVu, ThoiGianHen, BacSiPhuTrach? (optional)
  */
-router.get('/available-slots', authenticate, authorize(ROLES.CUSTOMER), async (req, res) => {
-  const response = await appointmentsService.getAvailableSlots(req.query);
-  return res.status(response.status || 200).json(response);
-});
+router.get(
+  '/available-slots',
+  authenticate,
+  authorize(ROLES.CUSTOMER),
+  appointmentsController.getAvailableSlots
+);
 
 /**
  * @route   GET /api/appointments/available-doctors
@@ -66,10 +48,12 @@ router.get('/available-slots', authenticate, authorize(ROLES.CUSTOMER), async (r
  * @access  Private - KHACH_HANG
  * @query   MaChiNhanh, ThoiGianHen, LoaiDichVu? (optional)
  */
-router.get('/available-doctors', authenticate, authorize(ROLES.CUSTOMER), async (req, res) => {
-  const response = await appointmentsService.getAvailableDoctors(req.query);
-  return res.status(response.status || 200).json(response);
-});
+router.get(
+  '/available-doctors',
+  authenticate,
+  authorize(ROLES.CUSTOMER),
+  appointmentsController.getAvailableDoctors
+);
 
 /**
  * @route   GET /api/appointments/schedule
@@ -103,27 +87,12 @@ router.put('/:id', authenticate, (req, res) => {
  * @desc    Hủy lịch hẹn
  * @access  Private - KHACH_HANG
  */
-router.put('/:id/cancel', authenticate, authorize(ROLES.CUSTOMER), async (req, res) => {
-  const customerId = req.user.maKhachHang;
-  const { id: maLichHen } = req.params;
-
-  if (!customerId) {
-    return res.status(400).json({
-      success: false,
-      message: 'Không tìm thấy mã khách hàng trong token',
-    });
-  }
-
-  if (!maLichHen) {
-    return res.status(400).json({
-      success: false,
-      message: 'Thiếu mã lịch hẹn',
-    });
-  }
-
-  const response = await appointmentsService.cancelAppointment(customerId, maLichHen);
-  return res.status(response.status || 200).json(response);
-});
+router.put(
+  '/:id/cancel',
+  authenticate,
+  authorize(ROLES.CUSTOMER),
+  appointmentsController.cancelAppointment
+);
 
 /**
  * @route   PUT /api/appointments/:id/confirm
@@ -144,3 +113,4 @@ router.put('/:id/complete', authenticate, authorize(ROLES.EMPLOYEE, ROLES.ADMIN)
 });
 
 module.exports = router;
+

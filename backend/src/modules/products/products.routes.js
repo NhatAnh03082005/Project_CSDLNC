@@ -2,29 +2,21 @@ const express = require('express');
 const router = express.Router();
 const { authenticate, authorize } = require('../../middlewares/auth');
 const { ROLES } = require('../../config/constants');
-const productsService = require('./products.service');
+const productsController = require('./products.controller');
 
 /**
  * @route   GET /api/products/branch/:maChiNhanh
  * @desc    Danh sách sản phẩm theo chi nhánh
  * @access  Public
  */
-router.get('/branch/:maChiNhanh', async (req, res) => {
-  const { maChiNhanh } = req.params;
-  const response = await productsService.getProductsByBranch(maChiNhanh);
-  return res.status(response.status || 200).json(response);
-});
+router.get('/branch/:maChiNhanh', productsController.getProductsByBranch);
 
 /**
  * @route   GET /api/products/:maSanPham/branch/:maChiNhanh
  * @desc    Chi tiết sản phẩm theo chi nhánh
  * @access  Public
  */
-router.get('/:maSanPham/branch/:maChiNhanh', async (req, res) => {
-  const { maSanPham, maChiNhanh } = req.params;
-  const response = await productsService.getProductById(maSanPham, maChiNhanh);
-  return res.status(response.status || 200).json(response);
-});
+router.get('/:maSanPham/branch/:maChiNhanh', productsController.getProductById);
 
 /**
  * @route   GET /api/products
@@ -99,3 +91,4 @@ router.get('/categories', (req, res) => {
 });
 
 module.exports = router;
+

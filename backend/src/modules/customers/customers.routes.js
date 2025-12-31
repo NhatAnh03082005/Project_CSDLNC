@@ -2,7 +2,7 @@ const express = require('express');
 const router = express.Router();
 const { authenticate, authorize } = require('../../middlewares/auth');
 const { ROLES } = require('../../config/constants');
-const customersService = require('./customers.service');
+const customersController = require('./customers.controller');
 
 /**
  * @route   GET /api/customers/profile
@@ -13,19 +13,7 @@ router.get(
   '/profile',
   authenticate,
   authorize(ROLES.CUSTOMER),
-  async (req, res) => {
-    const customerId = req.user.maKhachHang;
-
-    if (!customerId) {
-      return res.status(400).json({
-        success: false,
-        message: 'Không tìm thấy mã khách hàng trong token',
-      });
-    }
-
-    const response = await customersService.getProfile(customerId);
-    return res.status(response.status || 200).json(response);
-  }
+  customersController.getProfile
 );
 
 /**
@@ -37,19 +25,7 @@ router.put(
   '/profile',
   authenticate,
   authorize(ROLES.CUSTOMER),
-  async (req, res) => {
-    const customerId = req.user.maKhachHang;
-
-    if (!customerId) {
-      return res.status(400).json({
-        success: false,
-        message: 'Không tìm thấy mã khách hàng trong token',
-      });
-    }
-
-    const response = await customersService.updateProfile(customerId, req.body);
-    return res.status(response.status || 200).json(response);
-  }
+  customersController.updateProfile
 );
 
 /**
@@ -70,19 +46,7 @@ router.get(
   '/appointments',
   authenticate,
   authorize(ROLES.CUSTOMER),
-  async (req, res) => {
-    const customerId = req.user.maKhachHang;
-
-    if (!customerId) {
-      return res.status(400).json({
-        success: false,
-        message: 'Không tìm thấy mã khách hàng trong token',
-      });
-    }
-
-    const response = await customersService.getAppointments(customerId);
-    return res.status(response.status || 200).json(response);
-  }
+  customersController.getAppointments
 );
 
 /**
@@ -94,19 +58,7 @@ router.get(
   '/invoices',
   authenticate,
   authorize(ROLES.CUSTOMER),
-  async (req, res) => {
-    const customerId = req.user.maKhachHang;
-
-    if (!customerId) {
-      return res.status(400).json({
-        success: false,
-        message: 'Không tìm thấy mã khách hàng trong token',
-      });
-    }
-
-    const response = await customersService.getInvoices(customerId);
-    return res.status(response.status || 200).json(response);
-  }
+  customersController.getInvoices
 );
 
 /**
@@ -118,23 +70,7 @@ router.get(
   '/invoices/:maHoaDon',
   authenticate,
   authorize(ROLES.CUSTOMER),
-  async (req, res) => {
-    const customerId = req.user.maKhachHang;
-    const { maHoaDon } = req.params;
-
-    if (!customerId) {
-      return res.status(400).json({
-        success: false,
-        message: 'Không tìm thấy mã khách hàng trong token',
-      });
-    }
-
-    const response = await customersService.getInvoiceDetails(
-      customerId,
-      maHoaDon
-    );
-    return res.status(response.status || 200).json(response);
-  }
+  customersController.getInvoiceDetails
 );
 
 /**
@@ -146,19 +82,7 @@ router.post(
   '/orders',
   authenticate,
   authorize(ROLES.CUSTOMER),
-  async (req, res) => {
-    const customerId = req.user.maKhachHang;
-
-    if (!customerId) {
-      return res.status(400).json({
-        success: false,
-        message: 'Không tìm thấy mã khách hàng trong token',
-      });
-    }
-
-    const response = await customersService.createOrder(customerId, req.body);
-    return res.status(response.status || 200).json(response);
-  }
+  customersController.createOrder
 );
 
 module.exports = router;
