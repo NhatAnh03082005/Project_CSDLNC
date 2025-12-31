@@ -74,8 +74,12 @@ export default function LoginPage() {
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 via-white to-green-50 p-4">
       <div className="w-full max-w-md">
         <div className="flex items-center justify-center gap-2 mb-8">
-          <Heart className="h-10 w-10 text-blue-600 fill-blue-600" />
-          <h1 className="text-3xl font-bold text-gray-900">PetCare</h1>
+          <img
+            src="Logo.png"
+            alt="PetCareX Logo"
+            className="h-11 w-11 object-contain"
+          />
+          <h1 className="text-3xl font-bold text-gray-900">PetCareX</h1>
         </div>
 
         <Card className="shadow-xl border-0">
@@ -214,7 +218,7 @@ export default function LoginPage() {
           <Link to="#" className="text-blue-600 hover:underline">
             Điều khoản dịch vụ
           </Link>{" "}
-          của PetCare
+          của PetCareX
         </p>
       </div>
     </div>
