@@ -2,6 +2,21 @@ const express = require('express');
 const router = express.Router();
 const { authenticate, authorize } = require('../../middlewares/auth');
 const { ROLES } = require('../../config/constants');
+const productsController = require('./products.controller');
+
+/**
+ * @route   GET /api/products/branch/:maChiNhanh
+ * @desc    Danh sách sản phẩm theo chi nhánh
+ * @access  Public
+ */
+router.get('/branch/:maChiNhanh', productsController.getProductsByBranch);
+
+/**
+ * @route   GET /api/products/:maSanPham/branch/:maChiNhanh
+ * @desc    Chi tiết sản phẩm theo chi nhánh
+ * @access  Public
+ */
+router.get('/:maSanPham/branch/:maChiNhanh', productsController.getProductById);
 
 /**
  * @route   GET /api/products
@@ -76,3 +91,4 @@ router.get('/categories', (req, res) => {
 });
 
 module.exports = router;
+

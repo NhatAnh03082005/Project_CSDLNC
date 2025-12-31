@@ -1,17 +1,27 @@
-import React from "react";
-// 1. Thay thế Link của 'next/link' bằng Link của 'react-router-dom'
-import { Link } from "react-router-dom"; 
-
-// 2. Chuyển đổi imports alias (@/) sang đường dẫn tương đối (../../...)
+import React, { useState, useEffect } from "react";
+import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { Button } from "../../components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../../components/ui/card";
 import { RadioGroup, RadioGroupItem } from "../../components/ui/radio-group";
 import { Label } from "../../components/ui/label";
 import { Separator } from "../../components/ui/separator";
 import { Badge } from "../../components/ui/badge";
-import { Heart, ArrowLeft, CreditCard, Banknote, Tag, Calendar } from "lucide-react";
+import { Heart, ArrowLeft, CreditCard, Banknote, Tag, Calendar, Loader2, CheckCircle2 } from "lucide-react";
+import { useCartStore } from "../../store/cartStore";
+import { orderAPI } from "../../api/services";
 
 export default function CheckoutPage() {
+  const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const cartItems = useCartStore((state) => state.items);
+  const clearCart = useCartStore((state) => state.clearCart);
+  const [paymentMethod, setPaymentMethod] = useState("cod");
+  const [submitting, setSubmitting] = useState(false);
+  const [orderSuccess, setOrderSuccess] = useState(false);
+  
+  const maChiNhanh = cartItems.length > 0 && cartItems[0]?.maChiNhanh 
+    ? cartItems[0].maChiNhanh 
+    : searchParams.get("branch") || "0001";
   const promotions = [
     {
       id: 1,
@@ -57,38 +67,62 @@ export default function CheckoutPage() {
     0,
   );
 
-  const cartItems = [
-    {
-      id: 1,
-      name: "Royal Canin Mini Adult",
-      type: "Thức ăn",
-      price: 450000,
-      quantity: 2,
-    },
-    {
-      id: 2,
-      name: "Nexgard Spectra",
-      type: "Thuốc",
-      price: 165000,
-      quantity: 1,
-    },
-    {
-      id: 3,
-      name: "Vòng cổ chống bọ chét",
-      type: "Phụ kiện",
-      price: 120000,
-      quantity: 1,
-    },
-  ];
+  useEffect(() => {
+    if (cartItems.length === 0 && !orderSuccess) {
+      navigate("/branches?service=products");
+    }
+  }, [cartItems, orderSuccess, navigate]);
 
   const subtotal = cartItems.reduce(
-    (sum, item) => sum + item.price * item.quantity,
+    (sum, item) => sum + (item.donGia || item.price || 0) * item.soLuong,
     0,
   );
   const shippingFee = 30000;
 
   const discountAmount = Math.floor((subtotal * totalDiscountPercent) / 100);
   const total = subtotal + shippingFee - discountAmount;
+
+  const handlePlaceOrder = async () => {
+    if (cartItems.length === 0) {
+      alert("Giỏ hàng trống!");
+      return;
+    }
+
+    if (!paymentMethod) {
+      alert("Vui lòng chọn phương thức thanh toán!");
+      return;
+    }
+
+    try {
+      setSubmitting(true);
+      
+      const orderData = {
+        items: cartItems.map(item => ({
+          maSanPham: item.maSanPham,
+          soLuong: item.soLuong,
+        })),
+        paymentMethod: paymentMethod === "cod" ? "TienMat" : "ChuyenKhoan",
+        maChiNhanh: maChiNhanh,
+      };
+
+      const response = await orderAPI.create(orderData);
+
+      if (response.data.success) {
+        setOrderSuccess(true);
+        clearCart();
+        setTimeout(() => {
+          navigate("/customer");
+        }, 2000);
+      } else {
+        alert(response.data.message || "Đặt hàng thất bại!");
+      }
+    } catch (error) {
+      console.error("Error placing order:", error);
+      alert(error.response?.data?.message || "Đặt hàng thất bại. Vui lòng thử lại!");
+    } finally {
+      setSubmitting(false);
+    }
+  };
 
   // Loại bỏ khai báo kiểu TypeScript: (price: number)
   const formatPrice = (price) => {
@@ -143,24 +177,24 @@ export default function CheckoutPage() {
               </CardHeader>
               <CardContent>
                 <div className="space-y-4">
-                  {cartItems.map((item) => (
+                  {cartItems.map((item, index) => (
                     <div
-                      key={item.id}
+                      key={item.maSanPham || index}
                       className="flex items-start justify-between py-3 border-b last:border-0"
                     >
                       <div className="flex-1">
-                        <p className="font-medium">{item.name}</p>
-                        <p className="text-sm text-gray-600">{item.type}</p>
+                        <p className="font-medium">{item.tenSanPham || item.name}</p>
+                        <p className="text-sm text-gray-600">{item.loaiSanPham || item.type}</p>
                         <p className="text-sm text-gray-600 mt-1">
-                          Số lượng: {item.quantity}
+                          Số lượng: {item.soLuong || item.quantity}
                         </p>
                       </div>
                       <div className="text-right">
                         <p className="font-semibold">
-                          {formatPrice(item.price * item.quantity)}
+                          {formatPrice((item.donGia || item.price || 0) * (item.soLuong || item.quantity))}
                         </p>
                         <p className="text-sm text-gray-600">
-                          {formatPrice(item.price)}/sp
+                          {formatPrice(item.donGia || item.price || 0)}/sp
                         </p>
                       </div>
                     </div>
@@ -233,7 +267,7 @@ export default function CheckoutPage() {
                 <CardDescription>Chọn cách thức thanh toán phù hợp</CardDescription>
               </CardHeader>
               <CardContent>
-                <RadioGroup defaultValue="cod" className="space-y-4">
+                <RadioGroup value={paymentMethod} onValueChange={setPaymentMethod} className="space-y-4">
                   <div className="flex items-start space-x-3 p-4 border rounded-lg hover:bg-gray-50 cursor-pointer">
                     <RadioGroupItem value="online" id="online" className="mt-1" />
                     <Label htmlFor="online" className="flex-1 cursor-pointer">
@@ -301,9 +335,28 @@ export default function CheckoutPage() {
                   )}
                 </div>
 
-                <Button className="w-full" size="lg">
-                  Xác nhận đặt hàng
-                </Button>
+                {orderSuccess ? (
+                  <div className="w-full p-4 bg-green-50 border border-green-200 rounded-lg flex items-center gap-2">
+                    <CheckCircle2 className="h-5 w-5 text-green-600" />
+                    <span className="text-green-700 font-medium">Đặt hàng thành công!</span>
+                  </div>
+                ) : (
+                  <Button 
+                    className="w-full" 
+                    size="lg" 
+                    onClick={handlePlaceOrder}
+                    disabled={submitting || cartItems.length === 0}
+                  >
+                    {submitting ? (
+                      <>
+                        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                        Đang xử lý...
+                      </>
+                    ) : (
+                      "Xác nhận đặt hàng"
+                    )}
+                  </Button>
+                )}
 
                 <div className="text-xs text-gray-600 text-center pt-2">
                   Bằng việc đặt hàng, bạn đồng ý với{" "}

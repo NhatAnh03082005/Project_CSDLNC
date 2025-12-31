@@ -8,6 +8,7 @@ import ProductsPage from './pages/products/ProductsPage.jsx';
 import AboutPage from './pages/about/AboutPage.jsx';
 import BranchesPage from './pages/branches/BranchesPage.jsx';
 import ProductsListContent from './pages/products-list/ProductsListContent.jsx';
+import ProductDetailPage from './pages/product-detail/ProductDetailPage.jsx';
 import CheckoutPage from './pages/checkout/CheckoutPage.jsx';
 import AppointmentsPage from './pages/appointments/AppointmentsPage.jsx';
 import PetsPage from './pages/pets/PetsPage.jsx';
@@ -51,6 +52,7 @@ function App() {
         
         <Route path="/branches" element={<BranchesPage />} />
         <Route path="/products-list" element={<ProductsListContent />} />
+        <Route path="/product-detail" element={<ProductDetailPage />} />
         <Route path="/checkout" element={<CheckoutPage />} />
         <Route path="/appointments" element={<AppointmentsPage />} />
         

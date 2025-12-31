@@ -27,10 +27,15 @@ import {
 import { useAuth } from "../../context/AuthContext";
 import { authAPI } from "../../api/services";
 import { useAuthStore } from "../../store/authStore";
+import { useCartStore } from "../../store/cartStore";
 
 export default function Header() {
   const { user, setUser, setIsAuthenticated, isAuthenticated } = useAuth();
   const navigate = useNavigate();
+  const cartItems = useCartStore((state) => state.items);
+  const removeItem = useCartStore((state) => state.removeItem);
+  const getTotal = useCartStore((state) => state.getTotal);
+  const getItemCount = useCartStore((state) => state.getItemCount);
 
   const handleLogout = async () => {
     try {
@@ -105,47 +110,84 @@ export default function Header() {
             <DropdownMenuTrigger asChild>
               <Button variant="ghost" size="icon" className="relative">
                 <ShoppingCart className="h-5 w-5" />
-                <Badge className="absolute -top-1 -right-1 h-5 w-5 flex items-center justify-center p-0 text-xs bg-blue-600">
-                  3
-                </Badge>
+                {getItemCount() > 0 && (
+                  <Badge className="absolute -top-1 -right-1 h-5 w-5 flex items-center justify-center p-0 text-xs bg-blue-600">
+                    {getItemCount()}
+                  </Badge>
+                )}
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent className="w-80 md:w-96" align="end">
               <DropdownMenuLabel>Giỏ hàng của bạn</DropdownMenuLabel>
               <DropdownMenuSeparator />
               <div className="max-h-80 overflow-y-auto">
-                <div className="flex items-start gap-3 p-3 hover:bg-gray-50 rounded-lg transition-colors">
-                  <div className="flex-1">
-                    <p className="font-medium text-sm">
-                      Royal Canin Mini Adult
-                    </p>
-                    <p className="text-xs text-gray-500">Thức ăn • SL: 2</p>
-                    <p className="text-sm font-semibold text-blue-600 mt-1">
-                      900.000₫
-                    </p>
+                {cartItems.length > 0 ? (
+                  cartItems.map((item) => {
+                    const formatPrice = (price) => {
+                      return new Intl.NumberFormat("vi-VN", {
+                        style: "currency",
+                        currency: "VND",
+                      }).format(price);
+                    };
+                    const total =
+                      (item.donGia || item.price || 0) *
+                      (item.soLuong || item.quantity);
+                    return (
+                      <div
+                        key={item.maSanPham}
+                        className="flex items-start gap-3 p-3 hover:bg-gray-50 rounded-lg transition-colors"
+                      >
+                        <div className="flex-1">
+                          <p className="font-medium text-sm">
+                            {item.tenSanPham || item.name}
+                          </p>
+                          <p className="text-xs text-gray-500">
+                            {item.loaiSanPham || item.type} • SL:{" "}
+                            {item.soLuong || item.quantity}
+                          </p>
+                          <p className="text-sm font-semibold text-blue-600 mt-1">
+                            {formatPrice(total)}
+                          </p>
+                        </div>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="text-gray-400 hover:text-red-600"
+                          onClick={() => removeItem(item.maSanPham)}
+                        >
+                          ×
+                        </Button>
+                      </div>
+                    );
+                  })
+                ) : (
+                  <div className="p-8 text-center text-gray-500">
+                    <p>Giỏ hàng trống</p>
                   </div>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="text-gray-400 hover:text-red-600"
-                  >
-                    ×
-                  </Button>
-                </div>
+                )}
               </div>
-              <DropdownMenuSeparator />
-              <div className="p-4 space-y-3">
-                <div className="flex justify-between items-center font-bold text-gray-900">
-                  <span>Tổng cộng:</span>
-                  <span className="text-lg text-blue-600">1.185.000₫</span>
-                </div>
-                <Button
-                  asChild
-                  className="w-full bg-blue-600 hover:bg-blue-700"
-                >
-                  <Link to="/checkout">Thanh toán ngay</Link>
-                </Button>
-              </div>
+              {cartItems.length > 0 && (
+                <>
+                  <DropdownMenuSeparator />
+                  <div className="p-4 space-y-3">
+                    <div className="flex justify-between items-center font-bold text-gray-900">
+                      <span>Tổng cộng:</span>
+                      <span className="text-lg text-blue-600">
+                        {new Intl.NumberFormat("vi-VN", {
+                          style: "currency",
+                          currency: "VND",
+                        }).format(getTotal())}
+                      </span>
+                    </div>
+                    <Button
+                      asChild
+                      className="w-full bg-blue-600 hover:bg-blue-700"
+                    >
+                      <Link to="/checkout">Thanh toán ngay</Link>
+                    </Button>
+                  </div>
+                </>
+              )}
             </DropdownMenuContent>
           </DropdownMenu>
 

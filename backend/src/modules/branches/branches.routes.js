@@ -2,7 +2,7 @@ const express = require('express');
 const router = express.Router();
 const { authenticate, authorize } = require('../../middlewares/auth');
 const { ROLES } = require('../../config/constants');
-const branchesService = require('./branches.service');
+const branchesController = require('./branches.controller');
 
 /**
  * @route   GET /api/branches
@@ -10,38 +10,14 @@ const branchesService = require('./branches.service');
  * @access  Public
  * @query   page, limit, search, service
  */
-router.get('/', async (req, res) => {
-  const { page, limit, search, service } = req.query;
-  
-  let serviceFilter = null;
-  if (service === 'exam') {
-    serviceFilter = 'Khám bệnh';
-  } else if (service === 'vaccination') {
-    serviceFilter = 'Tiêm phòng';
-  } else if (service) {
-    serviceFilter = service;
-  }
-
-  const response = await branchesService.getBranches({
-    page: parseInt(page) || 1,
-    limit: parseInt(limit) || 6,
-    search,
-    service: serviceFilter,
-  });
-  
-  return res.status(response.status || 200).json(response);
-});
+router.get('/', branchesController.getBranches);
 
 /**
  * @route   GET /api/branches/:id
  * @desc    Chi tiết chi nhánh
  * @access  Public
  */
-router.get('/:id', async (req, res) => {
-  const { id } = req.params;
-  const response = await branchesService.getBranchById(id);
-  return res.status(response.status || 200).json(response);
-});
+router.get('/:id', branchesController.getBranchById);
 
 /**
  * @route   POST /api/branches
@@ -89,3 +65,4 @@ router.get('/:id/employees', authenticate, authorize(ROLES.EMPLOYEE, ROLES.ADMIN
 });
 
 module.exports = router;
+

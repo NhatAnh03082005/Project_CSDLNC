@@ -45,6 +45,8 @@ export const branchAPI = {
 export const productAPI = {
   getAll: (params) => api.get('/products', { params }),
   getById: (id) => api.get(`/products/${id}`),
+  getByBranch: (maChiNhanh) => api.get(`/products/branch/${maChiNhanh}`),
+  getProductDetail: (maSanPham, maChiNhanh) => api.get(`/products/${maSanPham}/branch/${maChiNhanh}`),
   create: (data) => api.post('/products', data),
   update: (id, data) => api.put(`/products/${id}`, data),
   delete: (id) => api.delete(`/products/${id}`),
@@ -76,4 +78,8 @@ export const ratingAPI = {
   createOrUpdate: (data) => api.post('/ratings', data),
   update: (maHoaDon, stt, data) => api.put(`/ratings/${maHoaDon}/${stt}`, data),
   delete: (maHoaDon, stt) => api.delete(`/ratings/${maHoaDon}/${stt}`),
+};
+
+export const orderAPI = {
+  create: (data) => api.post('/customers/orders', data),
 };
