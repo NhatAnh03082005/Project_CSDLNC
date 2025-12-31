@@ -18,6 +18,8 @@ router.get('/', async (req, res) => {
     serviceFilter = 'Khám bệnh';
   } else if (service === 'vaccination') {
     serviceFilter = 'Tiêm phòng';
+  } else if (service === 'products') {
+    serviceFilter = 'Mua hàng';
   } else if (service) {
     serviceFilter = service;
   }

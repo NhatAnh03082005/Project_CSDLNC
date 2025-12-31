@@ -137,4 +137,28 @@ router.get(
   }
 );
 
+/**
+ * @route   POST /api/customers/orders
+ * @desc    Đặt mua sản phẩm (tạo hóa đơn mua hàng)
+ * @access  Private - KHACH_HANG
+ */
+router.post(
+  '/orders',
+  authenticate,
+  authorize(ROLES.CUSTOMER),
+  async (req, res) => {
+    const customerId = req.user.maKhachHang;
+
+    if (!customerId) {
+      return res.status(400).json({
+        success: false,
+        message: 'Không tìm thấy mã khách hàng trong token',
+      });
+    }
+
+    const response = await customersService.createOrder(customerId, req.body);
+    return res.status(response.status || 200).json(response);
+  }
+);
+
 module.exports = router;

@@ -469,6 +469,287 @@ class CustomersService {
       };
     }
   }
+
+  async createOrder(customerId, orderData) {
+    const { items, paymentMethod, maChiNhanh } = orderData;
+
+    if (!items || !Array.isArray(items) || items.length === 0) {
+      return {
+        success: false,
+        status: 400,
+        message: "Danh sách sản phẩm không được để trống",
+      };
+    }
+
+    if (!paymentMethod) {
+      return {
+        success: false,
+        status: 400,
+        message: "Phương thức thanh toán không được để trống",
+      };
+    }
+
+    if (!maChiNhanh) {
+      return {
+        success: false,
+        status: 400,
+        message: "Mã chi nhánh không được để trống",
+      };
+    }
+
+    try {
+      const pool = await poolPromise;
+
+      const customerCheck = await pool
+        .request()
+        .input("MaKhachHang", sql.Char(7), customerId)
+        .query(
+          `
+          SELECT TOP 1 MaKhachHang, HoTen, CapHoiVien
+          FROM dbo.KhachHang
+          WHERE MaKhachHang = @MaKhachHang
+        `
+        );
+
+      if (customerCheck.recordset.length === 0) {
+        return {
+          success: false,
+          status: 404,
+          message: "Không tìm thấy khách hàng",
+        };
+      }
+
+      const branchCheck = await pool
+        .request()
+        .input("MaChiNhanh", sql.Char(4), maChiNhanh)
+        .query(
+          `
+          SELECT TOP 1 MaChiNhanh, TenChiNhanh
+          FROM dbo.ChiNhanh
+          WHERE MaChiNhanh = @MaChiNhanh
+        `
+        );
+
+      if (branchCheck.recordset.length === 0) {
+        return {
+          success: false,
+          status: 404,
+          message: "Không tìm thấy chi nhánh",
+        };
+      }
+
+      for (const item of items) {
+        if (!item.maSanPham || !item.soLuong || item.soLuong <= 0) {
+          return {
+            success: false,
+            status: 400,
+            message: `Sản phẩm ${item.maSanPham || "N/A"} có thông tin không hợp lệ`,
+          };
+        }
+
+        const productCheck = await pool
+          .request()
+          .input("MaSanPham", sql.Char(5), item.maSanPham)
+          .input("MaChiNhanh", sql.Char(4), maChiNhanh)
+          .query(
+            `
+            SELECT TOP 1 
+              sp.MaSanPham, 
+              sp.TenSanPham, 
+              sp.DonGia,
+              tk.SoLuongTon AS TonKho
+            FROM dbo.SanPham sp
+            LEFT JOIN dbo.SanPham_TonKho tk 
+              ON sp.MaSanPham = tk.MaSanPham AND tk.MaChiNhanh = @MaChiNhanh
+            WHERE sp.MaSanPham = @MaSanPham
+          `
+          );
+
+        if (productCheck.recordset.length === 0) {
+          return {
+            success: false,
+            status: 404,
+            message: `Không tìm thấy sản phẩm ${item.maSanPham}`,
+          };
+        }
+
+        const product = productCheck.recordset[0];
+        const tonKho = product.TonKho || 0;
+
+        if (tonKho < item.soLuong) {
+          return {
+            success: false,
+            status: 400,
+            message: `Sản phẩm ${product.TenSanPham} không đủ tồn kho. Tồn kho: ${tonKho}, Yêu cầu: ${item.soLuong}`,
+          };
+        }
+      }
+
+      const today = new Date();
+      const year = today.getFullYear();
+      const month = String(today.getMonth() + 1).padStart(2, '0');
+      const day = String(today.getDate()).padStart(2, '0');
+      const ngayLapStr = `${year}-${month}-${day}`;
+
+      const customer = customerCheck.recordset[0];
+      const capHoiVien = customer.CapHoiVien || "CoBan";
+      const { TIER_DISCOUNTS, POINTS_PER_VND } = require("../../config/constants");
+      const discountPercent = TIER_DISCOUNTS[capHoiVien] || 0;
+
+      let tongTien = 0;
+      let stt = 1;
+      let maHoaDon = null;
+
+      const transaction = new sql.Transaction(pool);
+      await transaction.begin();
+
+      try {
+        const request = new sql.Request(transaction);
+
+        const itemsData = [];
+        for (const item of items) {
+          const productResult = await request
+            .input("MaSanPham", sql.Char(5), item.maSanPham)
+            .input("MaChiNhanh", sql.Char(4), maChiNhanh)
+            .query(
+              `
+              SELECT TOP 1 
+                sp.MaSanPham, 
+                sp.TenSanPham, 
+                sp.DonGia,
+                tk.SoLuongTon AS TonKho
+              FROM dbo.SanPham sp
+              LEFT JOIN dbo.SanPham_TonKho tk 
+                ON sp.MaSanPham = tk.MaSanPham AND tk.MaChiNhanh = @MaChiNhanh
+              WHERE sp.MaSanPham = @MaSanPham
+            `
+            );
+
+          const product = productResult.recordset[0];
+          const donGia = product.DonGia;
+          const thanhTien = donGia * item.soLuong;
+          const thanhTienSauGiam = thanhTien * (1 - discountPercent / 100);
+          tongTien += thanhTienSauGiam;
+
+          itemsData.push({
+            ...item,
+            thanhTienSauGiam,
+          });
+        }
+
+        const phuThu = 0;
+        const tongTienFinal = tongTien + phuThu;
+        const diemLoyalty = Math.floor(tongTienFinal / POINTS_PER_VND);
+
+        const hoaDonResult = await request
+          .input("NgayLap", sql.NVarChar(10), ngayLapStr)
+          .input("MaKhachHang", sql.Char(7), customerId)
+          .input("MaChiNhanh", sql.Char(4), maChiNhanh)
+          .input("NhanVienLap", sql.Char(5), null)
+          .input("TongTien", sql.Money, tongTienFinal)
+          .input("PhuThu", sql.Money, phuThu)
+          .input("PhuongThucThanhToan", sql.NVarChar(20), paymentMethod)
+          .input("DiemLoyalty", sql.Int, diemLoyalty)
+          .query(
+            `
+            INSERT INTO dbo.HoaDon (
+              NgayLap, MaKhachHang, MaChiNhanh, 
+              NhanVienLap, TongTien, PhuThu, PhuongThucThanhToan, DiemLoyalty
+            )
+            OUTPUT INSERTED.MaHoaDon
+            VALUES (
+              @NgayLap, @MaKhachHang, @MaChiNhanh,
+              @NhanVienLap, @TongTien, @PhuThu, @PhuongThucThanhToan, @DiemLoyalty
+            )
+          `
+          );
+
+        maHoaDon = hoaDonResult.recordset[0].MaHoaDon;
+
+        for (const itemData of itemsData) {
+          await request
+            .input("MaHoaDon", sql.Char(8), maHoaDon)
+            .input("STT", sql.Int, stt)
+            .input("LoaiDichVu", sql.NVarChar(20), "Mua hàng")
+            .input("ThanhTien", sql.Money, itemData.thanhTienSauGiam)
+            .query(
+              `
+              INSERT INTO dbo.CTHD (MaHoaDon, STT, LoaiDichVu, ThanhTien)
+              VALUES (@MaHoaDon, @STT, @LoaiDichVu, @ThanhTien)
+            `
+            );
+
+          await request
+            .input("MaHoaDon", sql.Char(8), maHoaDon)
+            .input("STT", sql.Int, stt)
+            .input("MaSanPham", sql.Char(5), itemData.maSanPham)
+            .input("SoLuong", sql.Int, itemData.soLuong)
+            .query(
+              `
+              INSERT INTO dbo.CTHD_MuaHang (MaHoaDon, STT, MaSanPham, SoLuong)
+              VALUES (@MaHoaDon, @STT, @MaSanPham, @SoLuong)
+            `
+            );
+
+          await request
+            .input("MaSanPham", sql.Char(5), itemData.maSanPham)
+            .input("MaChiNhanh", sql.Char(4), maChiNhanh)
+            .input("SoLuong", sql.Int, itemData.soLuong)
+            .query(
+              `
+              UPDATE dbo.SanPham_TonKho
+              SET SoLuongTon = SoLuongTon - @SoLuong
+              WHERE MaSanPham = @MaSanPham AND MaChiNhanh = @MaChiNhanh
+              
+              IF @@ROWCOUNT = 0
+              BEGIN
+                INSERT INTO dbo.SanPham_TonKho (MaSanPham, MaChiNhanh, SoLuongTon)
+                VALUES (@MaSanPham, @MaChiNhanh, -@SoLuong)
+              END
+            `
+            );
+
+          stt++;
+        }
+
+        await request
+          .input("MaKhachHang", sql.Char(7), customerId)
+          .input("DiemLoyalty", sql.Int, diemLoyalty)
+          .query(
+            `
+            UPDATE dbo.KhachHang
+            SET DiemLoyalty = DiemLoyalty + @DiemLoyalty
+            WHERE MaKhachHang = @MaKhachHang
+          `
+          );
+
+        await transaction.commit();
+
+        return {
+          success: true,
+          status: 201,
+          message: "Đặt hàng thành công",
+          data: {
+            maHoaDon,
+            ngayLap: ngayLapStr,
+            tongTien: tongTienFinal,
+            diemLoyalty,
+          },
+        };
+      } catch (error) {
+        await transaction.rollback();
+        throw error;
+      }
+    } catch (error) {
+      console.error("Error creating order:", error);
+      return {
+        success: false,
+        status: 500,
+        message: "Lỗi khi tạo đơn hàng",
+        error: error.message,
+      };
+    }
+  }
 }
 
 module.exports = new CustomersService();
