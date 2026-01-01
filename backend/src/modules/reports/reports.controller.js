@@ -64,10 +64,10 @@ class ReportsController {
       });
     }
   }
-
   async getCustomerStats(req, res) {
     try {
-      const data = await reportsService.getCustomerStats();
+      const { timeUnit, timeValue } = req.query;
+      const data = await reportsService.getCustomerStats(timeUnit, timeValue);
       res.json({
         success: true,
         data: data,
@@ -82,7 +82,11 @@ class ReportsController {
 
   async getPerformanceStats(req, res) {
     try {
-      const data = await reportsService.getPerformanceStats();
+      const { timeUnit, timeValue } = req.query;
+      const data = await reportsService.getPerformanceStats(
+        timeUnit,
+        timeValue
+      );
       res.json({
         success: true,
         data: data,

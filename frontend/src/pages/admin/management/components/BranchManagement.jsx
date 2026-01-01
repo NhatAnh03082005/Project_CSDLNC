@@ -1,14 +1,10 @@
 import React, { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
+import { ArrowLeft } from "lucide-react";
 // Import UI components (giữ nguyên đường dẫn tương đối đã sửa)
 import { Button } from "../../../../components/ui/button";
 import { employeeAPI, branchAPI } from "../../../../api/services";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "../../../../components/ui/card";
+import { Card, CardContent } from "../../../../components/ui/card";
 import { Input } from "../../../../components/ui/input";
 import { Label } from "../../../../components/ui/label";
 import {
@@ -23,9 +19,15 @@ import {
 // Import time format utilities
 import { formatTimeFromSQL, inputHHMMToServerTime } from "../utils/timeFormat";
 // Import Icons
-import { Plus, Edit } from "lucide-react";
+import { Plus, Edit, MapPin, Phone, Clock, User, Edit2 } from "lucide-react";
+// Import AdminHeader
+import AdminHeader from "../../components/AdminHeader";
 
 export default function BranchManagement() {
+  const navigate = useNavigate();
+  const onBack = () => {
+    navigate("/admin/management");
+  };
   const [branches, setBranches] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -180,412 +182,478 @@ export default function BranchManagement() {
   }
 
   return (
-    <Card>
-      <CardHeader>
-        <div className="flex items-center justify-between">
-          <div>
-            <CardTitle className="text-indigo-600 font-semibold text-xl">
-              Danh sách chi nhánh
-            </CardTitle>
-            <CardDescription className="text-gray-600">
-              Quản lý tất cả chi nhánh trên hệ thống
-            </CardDescription>
-          </div>
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-sky-50 to-teal-50">
+      <AdminHeader />
 
-          {/* ADD DIALOG */}
-          <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
-            <DialogTrigger asChild>
+      <main className="w-full">
+        <div className="max-w-[1920px] mx-auto px-6 py-8 space-y-6">
+          {/* Page Header */}
+          <div className="flex items-center justify-between bg-white rounded-xl shadow-md p-6 border border-blue-100">
+            <div className="flex items-center gap-4">
               <Button
                 variant="outline"
-                className="gap-2 bg-indigo-100 text-indigo-600 border-indigo-600 hover:bg-indigo-600 hover:text-white transition-colors"
+                size="icon"
+                className="bg-blue-50 text-blue-600 border-blue-200 hover:bg-blue-600 hover:text-white transition-colors"
+                onClick={onBack}
               >
-                <Plus className="h-4 w-4" />
-                Thêm chi nhánh
+                <ArrowLeft className="h-4 w-4" />
               </Button>
-            </DialogTrigger>
+              <div>
+                <h1 className="text-3xl font-bold bg-gradient-to-r from-blue-600 to-teal-600 bg-clip-text text-transparent">
+                  Quản lý chi nhánh
+                </h1>
+                <p className="text-gray-600 mt-1">
+                  Quản lý tất cả chi nhánh trên hệ thống
+                </p>
+              </div>
+            </div>
 
-            <DialogContent>
+            {/* ADD DIALOG */}
+            <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
+              <DialogTrigger asChild>
+                <Button className="h-10 gap-2 bg-blue-600 text-white hover:bg-blue-700 transition-colors shadow-md">
+                  <Plus className="h-4 w-4" />
+                  Thêm chi nhánh
+                </Button>
+              </DialogTrigger>
+
+              {/* 1. Mở rộng chiều ngang Modal */}
+              <DialogContent className="sm:max-w-[700px]">
+                <DialogHeader>
+                  {/* 2. Đổi màu tiêu đề sang Blue */}
+                  <DialogTitle className="text-2xl font-bold text-blue-600">
+                    Thêm chi nhánh mới
+                  </DialogTitle>
+                  <DialogDescription className="text-gray-500 mt-2">
+                    Điền đầy đủ thông tin để tạo một chi nhánh mới vào hệ thống.
+                  </DialogDescription>
+                </DialogHeader>
+
+                <div className="space-y-4 py-4">
+                  {/* Hàng 1: Tên chi nhánh & SĐT */}
+                  <div className="grid grid-cols-2 gap-6">
+                    <div className="space-y-2">
+                      <Label htmlFor="TenChiNhanh">Tên chi nhánh</Label>
+                      <Input
+                        id="TenChiNhanh"
+                        placeholder="Nhập tên chi nhánh"
+                        value={addFormData.TenChiNhanh}
+                        onChange={(e) =>
+                          setAddFormData({
+                            ...addFormData,
+                            TenChiNhanh: e.target.value,
+                          })
+                        }
+                        className="h-10 text-black placeholder:text-gray-600"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="SDT">SĐT</Label>
+                      <Input
+                        id="SDT"
+                        placeholder="Nhập số điện thoại"
+                        value={addFormData.SDT}
+                        onChange={(e) =>
+                          setAddFormData({
+                            ...addFormData,
+                            SDT: e.target.value,
+                          })
+                        }
+                        className="h-10 text-black placeholder:text-gray-600"
+                      />
+                    </div>
+                  </div>
+
+                  {/* Hàng 2: Số nhà & Tên đường */}
+                  <div className="grid grid-cols-2 gap-6">
+                    <div className="space-y-2">
+                      <Label htmlFor="SoNha">Số nhà</Label>
+                      <Input
+                        id="SoNha"
+                        type="number"
+                        placeholder="Nhập số nhà"
+                        value={addFormData.SoNha}
+                        onChange={(e) =>
+                          setAddFormData({
+                            ...addFormData,
+                            SoNha: e.target.value,
+                          })
+                        }
+                        className="h-10 text-black placeholder:text-gray-600"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="TenDuong">Tên đường</Label>
+                      <Input
+                        id="TenDuong"
+                        placeholder="Nhập tên đường"
+                        value={addFormData.TenDuong}
+                        onChange={(e) =>
+                          setAddFormData({
+                            ...addFormData,
+                            TenDuong: e.target.value,
+                          })
+                        }
+                        className="h-10 text-black placeholder:text-gray-600"
+                      />
+                    </div>
+                  </div>
+
+                  {/* Hàng 3: Xã/Phường & Tỉnh/Thành */}
+                  <div className="grid grid-cols-2 gap-6">
+                    <div className="space-y-2">
+                      <Label htmlFor="Phuong">Xã/Phường</Label>
+                      <Input
+                        id="Phuong"
+                        placeholder="Nhập tên phường"
+                        value={addFormData.Phuong}
+                        onChange={(e) =>
+                          setAddFormData({
+                            ...addFormData,
+                            Phuong: e.target.value,
+                          })
+                        }
+                        className="h-10 text-black placeholder:text-gray-600"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="ThanhPho">Tỉnh/Thành phố</Label>
+                      <Input
+                        id="ThanhPho"
+                        placeholder="Nhập tỉnh/thành phố"
+                        value={addFormData.ThanhPho}
+                        onChange={(e) =>
+                          setAddFormData({
+                            ...addFormData,
+                            ThanhPho: e.target.value,
+                          })
+                        }
+                        className="h-10 text-black placeholder:text-gray-600"
+                      />
+                    </div>
+                  </div>
+
+                  {/* Hàng 4: Giờ mở cửa & Giờ đóng cửa */}
+                  <div className="grid grid-cols-2 gap-6">
+                    <div className="space-y-2">
+                      <Label htmlFor="TGMoCua">Giờ mở cửa</Label>
+                      <Input
+                        id="TGMoCua"
+                        type="time"
+                        value={addFormData.TGMoCua}
+                        onChange={(e) =>
+                          setAddFormData({
+                            ...addFormData,
+                            TGMoCua: e.target.value,
+                          })
+                        }
+                        className="h-10"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="TGDongCua">Giờ đóng cửa</Label>
+                      <Input
+                        id="TGDongCua"
+                        type="time"
+                        value={addFormData.TGDongCua}
+                        onChange={(e) =>
+                          setAddFormData({
+                            ...addFormData,
+                            TGDongCua: e.target.value,
+                          })
+                        }
+                        className="h-10"
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                <DialogFooter className="gap-2">
+                  {/* Nút Lưu màu Xanh Dương */}
+                  <Button
+                    onClick={handleAdd}
+                    className="h-10 bg-blue-600 text-white hover:bg-blue-700 transition-colors"
+                  >
+                    Thêm chi nhánh
+                  </Button>
+                </DialogFooter>
+              </DialogContent>
+            </Dialog>
+          </div>
+
+          {/* Grid Layout - Branch Cards */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
+            {branches.length === 0 ? (
+              <div className="col-span-full text-center text-gray-500 py-12 bg-gray-50 rounded-xl">
+                Không có chi nhánh nào
+              </div>
+            ) : (
+              branches.map((branch) => (
+                <Card
+                  key={branch.MaChiNhanh}
+                  className="relative bg-white rounded-xl shadow-md hover:shadow-xl transition-all duration-300 hover:-translate-y-1 border border-sky-600"
+                >
+                  {/* Edit Button - Top Right Corner */}
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="absolute top-3 right-3 h-9 w-9 bg-blue-50 text-blue-600 border border-blue-100 hover:bg-blue-600 hover:text-white hover:shadow-md rounded-lg transition-all"
+                    onClick={() => handleEdit(branch)}
+                  >
+                    <Edit2 className="h-5 w-5" />
+                  </Button>
+
+                  <CardContent className="py-4 pr-4 pl-4">
+                    {/* Header */}
+                    <div className="mb-7 pr-8">
+                      <h3 className="text-lg font-bold text-sky-600 mb-2">
+                        {branch.TenChiNhanh}
+                      </h3>
+                      <span className="inline-block px-3 py-1 text-xs font-medium bg-blue-100 text-blue-700 rounded-full">
+                        {branch.MaChiNhanh}
+                      </span>
+                    </div>
+
+                    {/* Body - Information with Icons */}
+                    <div className="space-y-3 mb-3 mt-3">
+                      {/* Address */}
+                      <div className="flex items-start gap-2 text-sm text-gray-600">
+                        <MapPin className="h-4 w-4 mt-0.5 text-gray-400 flex-shrink-0" />
+                        <span>
+                          {branch.SoNha} {branch.TenDuong}, {branch.Phuong},{" "}
+                          {branch.ThanhPho}
+                        </span>
+                      </div>
+
+                      {/* Phone */}
+                      <div className="flex items-center gap-2 text-sm text-gray-600">
+                        <Phone className="h-4 w-4 text-gray-400 flex-shrink-0" />
+                        <span>{branch.SDT}</span>
+                      </div>
+
+                      {/* Working Hours */}
+                      <div className="flex items-center gap-2 text-sm text-gray-600">
+                        <Clock className="h-4 w-4 text-gray-400 flex-shrink-0" />
+                        <span>
+                          {formatTimeFromSQL(branch.TGMoCua)} -{" "}
+                          {formatTimeFromSQL(branch.TGDongCua)}
+                        </span>
+                      </div>
+
+                      {/* Manager */}
+                      <div className="flex items-start gap-2 text-sm text-gray-600">
+                        <User className="h-4 w-4 mt-0.5 text-gray-400 flex-shrink-0" />
+                        <span>
+                          {branch.QuanLy === null ? (
+                            <span className="text-gray-400 italic">
+                              Chưa có quản lý
+                            </span>
+                          ) : (
+                            <>
+                              {employees.find(
+                                (emp) => emp.MaNhanVien === branch.QuanLy
+                              )?.HoTen || "Không tìm thấy thông tin"}
+                            </>
+                          )}
+                        </span>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))
+            )}
+          </div>
+
+          {/* EDIT DIALOG */}
+          <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
+            {/* THAY ĐỔI Ở ĐÂY: Thêm className để tăng độ rộng lên 700px */}
+            <DialogContent className="sm:max-w-[700px]">
               <DialogHeader>
-                <DialogTitle className="text-indigo-600 font-semibold">
-                  Thêm chi nhánh mới
+                <DialogTitle className="text-2xl font-bold text-blue-600">
+                  Chỉnh sửa chi nhánh
                 </DialogTitle>
-                <DialogDescription className="text-gray-600 mt-1">
-                  Thêm chi nhánh mới vào hệ thống
+                <DialogDescription className="text-gray-500 mt-2">
+                  Cập nhật thông tin chi tiết cho chi nhánh{" "}
+                  <strong className="text-blue-600">
+                    {selectedBranch?.MaChiNhanh}
+                  </strong>
                 </DialogDescription>
               </DialogHeader>
 
               <div className="space-y-4 py-4">
-                <div className="space-y-2">
-                  <Label htmlFor="TenChiNhanh">Tên chi nhánh</Label>
-                  <Input
-                    id="TenChiNhanh"
-                    placeholder="Nhập tên chi nhánh"
-                    value={addFormData.TenChiNhanh}
-                    onChange={(e) =>
-                      setAddFormData({
-                        ...addFormData,
-                        TenChiNhanh: e.target.value,
-                      })
-                    }
-                    className="text-black placeholder:text-gray-600"
-                  />
+                {/* Hàng 1: Tên chi nhánh & SĐT */}
+                <div className="grid grid-cols-2 gap-6">
+                  <div className="space-y-2">
+                    <Label htmlFor="edit-TenChiNhanh">Tên chi nhánh</Label>
+                    <Input
+                      id="edit-TenChiNhanh"
+                      value={editFormData.TenChiNhanh}
+                      onChange={(e) =>
+                        setEditFormData({
+                          ...editFormData,
+                          TenChiNhanh: e.target.value,
+                        })
+                      }
+                      className="h-10"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="edit-SDT">Số điện thoại</Label>
+                    <Input
+                      id="edit-SDT"
+                      value={editFormData.SDT}
+                      onChange={(e) =>
+                        setEditFormData({
+                          ...editFormData,
+                          SDT: e.target.value,
+                        })
+                      }
+                      className="h-10"
+                    />
+                  </div>
                 </div>
 
-                <div className="grid grid-cols-2 gap-4">
+                {/* Hàng 2: Số nhà & Tên đường */}
+                <div className="grid grid-cols-2 gap-6">
                   <div className="space-y-2">
-                    <Label htmlFor="SoNha">Số nhà</Label>
+                    <Label htmlFor="edit-SoNha">Số nhà</Label>
                     <Input
-                      id="SoNha"
+                      id="edit-SoNha"
                       type="number"
-                      placeholder="Nhập số nhà"
-                      value={addFormData.SoNha}
+                      value={editFormData.SoNha}
                       onChange={(e) =>
-                        setAddFormData({
-                          ...addFormData,
+                        setEditFormData({
+                          ...editFormData,
                           SoNha: e.target.value,
                         })
                       }
-                      className="text-black placeholder:text-gray-600"
+                      className="h-10"
                     />
                   </div>
-
                   <div className="space-y-2">
-                    <Label htmlFor="TenDuong">Tên đường</Label>
+                    <Label htmlFor="edit-TenDuong">Tên đường</Label>
                     <Input
-                      id="TenDuong"
-                      placeholder="Nhập tên đường"
-                      value={addFormData.TenDuong}
+                      id="edit-TenDuong"
+                      value={editFormData.TenDuong}
                       onChange={(e) =>
-                        setAddFormData({
-                          ...addFormData,
+                        setEditFormData({
+                          ...editFormData,
                           TenDuong: e.target.value,
                         })
                       }
-                      className="text-black placeholder:text-gray-600"
+                      className="h-10"
                     />
                   </div>
                 </div>
 
-                <div className="grid grid-cols-2 gap-4">
+                {/* Hàng 3: Xã/Phường & Tỉnh/Thành */}
+                <div className="grid grid-cols-2 gap-6">
                   <div className="space-y-2">
-                    <Label htmlFor="Phuong">Xã/Phường</Label>
+                    <Label htmlFor="edit-Phuong">Xã/Phường</Label>
                     <Input
-                      id="Phuong"
-                      placeholder="Nhập phường"
-                      value={addFormData.Phuong}
+                      id="edit-Phuong"
+                      value={editFormData.Phuong}
                       onChange={(e) =>
-                        setAddFormData({
-                          ...addFormData,
+                        setEditFormData({
+                          ...editFormData,
                           Phuong: e.target.value,
                         })
                       }
-                      className="text-black placeholder:text-gray-600"
+                      className="h-10"
                     />
                   </div>
-
                   <div className="space-y-2">
-                    <Label htmlFor="ThanhPho">Tỉnh/Thành phố</Label>
+                    <Label htmlFor="edit-ThanhPho">Tỉnh/Thành phố</Label>
                     <Input
-                      id="ThanhPho"
-                      placeholder="Nhập thành phố"
-                      value={addFormData.ThanhPho}
+                      id="edit-ThanhPho"
+                      value={editFormData.ThanhPho}
                       onChange={(e) =>
-                        setAddFormData({
-                          ...addFormData,
+                        setEditFormData({
+                          ...editFormData,
                           ThanhPho: e.target.value,
                         })
                       }
-                      className="text-black placeholder:text-gray-600"
+                      className="h-10"
                     />
                   </div>
                 </div>
-                <div className="space-y-2">
-                  <Label htmlFor="SDT">SĐT</Label>
-                  <Input
-                    id="SDT"
-                    placeholder="Nhập số điện thoại"
-                    value={addFormData.SDT}
-                    onChange={(e) =>
-                      setAddFormData({ ...addFormData, SDT: e.target.value })
-                    }
-                    className="text-black placeholder:text-gray-600"
-                  />
-                </div>
 
-                <div className="grid grid-cols-2 gap-4">
+                {/* Hàng 4: Giờ mở cửa & Giờ đóng cửa */}
+                <div className="grid grid-cols-2 gap-6">
                   <div className="space-y-2">
-                    <Label htmlFor="TGMoCua">Giờ mở cửa</Label>
+                    <Label htmlFor="edit-TGMoCua">Giờ mở cửa</Label>
                     <Input
-                      id="TGMoCua"
+                      id="edit-TGMoCua"
                       type="time"
-                      value={addFormData.TGMoCua}
+                      value={editFormData.TGMoCua}
                       onChange={(e) =>
-                        setAddFormData({
-                          ...addFormData,
+                        setEditFormData({
+                          ...editFormData,
                           TGMoCua: e.target.value,
                         })
                       }
-                      className="text-black placeholder:text-gray-600"
+                      className="h-10"
                     />
                   </div>
-
                   <div className="space-y-2">
-                    <Label htmlFor="TGDongCua">Giờ đóng cửa</Label>
+                    <Label htmlFor="edit-TGDongCua">Giờ đóng cửa</Label>
                     <Input
-                      id="TGDongCua"
+                      id="edit-TGDongCua"
                       type="time"
-                      value={addFormData.TGDongCua}
+                      value={editFormData.TGDongCua}
                       onChange={(e) =>
-                        setAddFormData({
-                          ...addFormData,
+                        setEditFormData({
+                          ...editFormData,
                           TGDongCua: e.target.value,
                         })
                       }
-                      className="text-black placeholder:text-gray-600"
+                      className="h-10"
                     />
                   </div>
                 </div>
+
+                {/* Hàng 5: Quản lý */}
+                <div className="space-y-2">
+                  <Label htmlFor="edit-QuanLy">Quản lý</Label>
+                  <select
+                    id="edit-QuanLy"
+                    value={editFormData.QuanLy}
+                    onChange={(e) =>
+                      setEditFormData({
+                        ...editFormData,
+                        QuanLy: e.target.value,
+                      })
+                    }
+                    className="w-full border rounded-lg p-2 flex h-10 border-input bg-background text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                  >
+                    <option value="">Chọn quản lý</option>
+                    {employees
+                      .filter(
+                        (emp) =>
+                          emp.ViTri === "Quản lý chi nhánh" &&
+                          emp.TenChiNhanh === selectedBranch?.TenChiNhanh
+                      )
+                      .map((emp) => (
+                        <option key={emp.MaNhanVien} value={emp.MaNhanVien}>
+                          {emp.MaNhanVien} - {emp.HoTen}
+                        </option>
+                      ))}
+                  </select>
+                </div>
               </div>
 
-              <DialogFooter>
+              <DialogFooter className="gap-2">
                 <Button
-                  onClick={handleAdd}
-                  variant="outline"
-                  className="bg-indigo-100 text-indigo-600 border-indigo-600 hover:bg-indigo-600 hover:text-white transition-colors"
+                  onClick={saveEdit}
+                  className="h-10 bg-blue-600 text-white hover:bg-blue-700 transition-colors"
                 >
-                  Thêm chi nhánh
+                  Lưu thay đổi
                 </Button>
               </DialogFooter>
             </DialogContent>
           </Dialog>
         </div>
-      </CardHeader>
-
-      {/* LIST */}
-      <CardContent>
-        <div className="space-y-3">
-          {branches.length === 0 ? (
-            <div className="text-center text-gray-500 py-8">
-              Không có chi nhánh nào
-            </div>
-          ) : (
-            branches.map((branch) => (
-              <div
-                key={branch.MaChiNhanh}
-                className="flex items-center justify-between p-4 border rounded-lg"
-              >
-                <div>
-                  <div className="font-semibold text-indigo-600">
-                    {branch.MaChiNhanh} - {branch.TenChiNhanh}
-                  </div>
-                  <div className="text-sm text-gray-500">
-                    {branch.SoNha} {branch.TenDuong}, {branch.Phuong},{" "}
-                    {branch.ThanhPho} • SĐT: {branch.SDT}
-                  </div>
-                  <div className="text-sm text-gray-500">
-                    Giờ mở cửa: {formatTimeFromSQL(branch.TGMoCua)} - Giờ đóng
-                    cửa: {formatTimeFromSQL(branch.TGDongCua)}
-                  </div>
-                  <div className="text-sm text-gray-500">
-                    Quản lý:{" "}
-                    {branch.QuanLy === null ? (
-                      "Chi nhánh chưa có quản lý"
-                    ) : (
-                      <>
-                        {branch.QuanLy} -{" "}
-                        {employees.find(
-                          (emp) => emp.MaNhanVien === branch.QuanLy
-                        )?.HoTen || "Không tìm thấy thông tin"}
-                      </>
-                    )}
-                  </div>
-                </div>
-
-                <div className="flex gap-2">
-                  <Button
-                    variant="outline"
-                    size="icon"
-                    className="text-green-600 hover:bg-green-600 hover:text-white transition-colors"
-                    onClick={() => handleEdit(branch)}
-                  >
-                    <Edit className="h-4 w-4" />
-                  </Button>
-                </div>
-              </div>
-            ))
-          )}
-        </div>
-
-        {/* EDIT DIALOG */}
-        <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle className="text-green-600 font-semibold">
-                Chỉnh sửa chi nhánh
-              </DialogTitle>
-              <DialogDescription>
-                Cập nhật thông tin chi nhánh{" "}
-                <strong>{selectedBranch?.MaChiNhanh}</strong>
-              </DialogDescription>
-            </DialogHeader>
-
-            <div className="space-y-4 py-4">
-              <div className="space-y-2">
-                <Label htmlFor="edit-TenChiNhanh">Tên chi nhánh</Label>
-                <Input
-                  id="edit-TenChiNhanh"
-                  value={editFormData.TenChiNhanh}
-                  onChange={(e) =>
-                    setEditFormData({
-                      ...editFormData,
-                      TenChiNhanh: e.target.value,
-                    })
-                  }
-                />
-              </div>
-
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="edit-SoNha">Số nhà</Label>
-                  <Input
-                    id="edit-SoNha"
-                    type="number"
-                    value={editFormData.SoNha}
-                    onChange={(e) =>
-                      setEditFormData({
-                        ...editFormData,
-                        SoNha: e.target.value,
-                      })
-                    }
-                  />
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="edit-TenDuong">Tên đường</Label>
-                  <Input
-                    id="edit-TenDuong"
-                    value={editFormData.TenDuong}
-                    onChange={(e) =>
-                      setEditFormData({
-                        ...editFormData,
-                        TenDuong: e.target.value,
-                      })
-                    }
-                  />
-                </div>
-              </div>
-
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="edit-Phuong">Xã/Phường</Label>
-                  <Input
-                    id="edit-Phuong"
-                    value={editFormData.Phuong}
-                    onChange={(e) =>
-                      setEditFormData({
-                        ...editFormData,
-                        Phuong: e.target.value,
-                      })
-                    }
-                  />
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="edit-ThanhPho">Tỉnh/Thành phố</Label>
-                  <Input
-                    id="edit-ThanhPho"
-                    value={editFormData.ThanhPho}
-                    onChange={(e) =>
-                      setEditFormData({
-                        ...editFormData,
-                        ThanhPho: e.target.value,
-                      })
-                    }
-                  />
-                </div>
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="edit-STD">SĐT</Label>
-                <Input
-                  id="edit-SDT"
-                  value={editFormData.SDT}
-                  onChange={(e) =>
-                    setEditFormData({ ...editFormData, SDT: e.target.value })
-                  }
-                />
-              </div>
-
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="edit-TGMoCua">Giờ mở cửa</Label>
-                  <Input
-                    id="edit-TGMoCua"
-                    type="time"
-                    value={editFormData.TGMoCua}
-                    onChange={(e) =>
-                      setEditFormData({
-                        ...editFormData,
-                        TGMoCua: e.target.value,
-                      })
-                    }
-                  />
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="edit-TGDongCua">Giờ đóng cửa</Label>
-                  <Input
-                    id="edit-TGDongCua"
-                    type="time"
-                    value={editFormData.TGDongCua}
-                    onChange={(e) =>
-                      setEditFormData({
-                        ...editFormData,
-                        TGDongCua: e.target.value,
-                      })
-                    }
-                  />
-                </div>
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="edit-QuanLy">Quản lý</Label>
-                <select
-                  id="edit-QuanLy"
-                  value={editFormData.QuanLy}
-                  onChange={(e) =>
-                    setEditFormData({ ...editFormData, QuanLy: e.target.value })
-                  }
-                  className="w-full border rounded-lg p-2 flex h-10 border-input bg-background text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-                >
-                  <option value="">Chọn quản lý</option>
-                  {employees
-                    .filter(
-                      (emp) =>
-                        emp.ViTri === "Quản lý chi nhánh" &&
-                        emp.TenChiNhanh === selectedBranch?.TenChiNhanh
-                    )
-                    .map((emp) => (
-                      <option key={emp.MaNhanVien} value={emp.MaNhanVien}>
-                        {emp.MaNhanVien} - {emp.HoTen}
-                      </option>
-                    ))}
-                </select>
-              </div>
-            </div>
-
-            <DialogFooter>
-              <Button
-                onClick={saveEdit}
-                variant="outline"
-                className="bg-green-100 text-green-600 border-green-600 hover:bg-green-600 hover:text-white transition-colors"
-              >
-                Lưu thay đổi
-              </Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
-      </CardContent>
-    </Card>
+      </main>
+    </div>
   );
 }

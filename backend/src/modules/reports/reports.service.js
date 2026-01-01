@@ -281,16 +281,18 @@ class ReportsService {
         SELECT
           bs.MaNhanVien,
           bs.HoTen,
+          cn.TenChiNhanh,
           ISNULL(SUM(CASE WHEN ct.LoaiDichVuSK = N'Khám bệnh' THEN 1 ELSE 0 END), 0) AS SoLuotKham,
           ISNULL(SUM(CASE WHEN ct.LoaiDichVuSK = N'Tiêm phòng' THEN 1 ELSE 0 END), 0) AS SoLuotTiem,
           ISNULL(COUNT(ct.MaHoaDon), 0) AS TongSoLuotLamViec,
           CAST(ISNULL(AVG(CAST(dg.DiemTongThe AS FLOAT)), 0) AS DECIMAL(5,2)) AS DiemTongTheTB
         FROM NhanVien bs
+        JOIN ChiNhanh cn ON bs.MaChiNhanh = cn.MaChiNhanh
         LEFT JOIN CTHD_DVSucKhoe ct ON ct.BacSi = bs.MaNhanVien
         LEFT JOIN DanhGia dg ON dg.MaHoaDon = ct.MaHoaDon 
                                 AND dg.STT = ct.STT
         WHERE bs.ViTri = N'Bác sĩ thú y'
-        GROUP BY bs.MaNhanVien, bs.HoTen
+        GROUP BY bs.MaNhanVien, bs.HoTen, cn.TenChiNhanh
         ORDER BY TongSoLuotLamViec DESC, DiemTongTheTB DESC, bs.MaNhanVien;
       `);
 

@@ -1,14 +1,11 @@
-// Import UI components (giữ nguyên đường dẫn tương đối đã sửa)
 import React, { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
+import { ArrowLeft, Plus, Edit2, Syringe, Wallet } from "lucide-react";
+
 import { Button } from "../../../../components/ui/button";
+import AdminHeader from "../../components/AdminHeader";
 import { vaccinationAPI } from "../../../../api/services";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "../../../../components/ui/card";
+import { Card, CardContent } from "../../../../components/ui/card";
 import { Input } from "../../../../components/ui/input";
 import { Label } from "../../../../components/ui/label";
 import {
@@ -20,10 +17,11 @@ import {
   DialogTrigger,
   DialogFooter,
 } from "../../../../components/ui/dialog";
-// Import Icons
-import { Plus, Edit } from "lucide-react";
 
 export default function VaccineManagement() {
+  const navigate = useNavigate();
+  const onBack = () => navigate("/admin/management");
+
   const [vaccines, setVaccines] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -68,13 +66,17 @@ export default function VaccineManagement() {
 
   const handleAdd = async () => {
     try {
-      await vaccinationAPI.create(addFormData);
+      const payload = {
+        ...addFormData,
+        GiaTien: addFormData.GiaTien === "" ? "" : Number(addFormData.GiaTien),
+      };
+
+      await vaccinationAPI.create(payload);
       await fetchData();
+
       setIsAddDialogOpen(false);
-      setAddFormData({
-        TenVacXin: "",
-        GiaTien: "",
-      });
+      setAddFormData({ TenVacXin: "", GiaTien: "" });
+
       alert("Thêm vắc-xin thành công!");
     } catch (err) {
       console.error("Error adding vaccine:", err);
@@ -86,17 +88,25 @@ export default function VaccineManagement() {
     setSelectedVaccine(vaccine);
     setEditFormData({
       TenVacXin: vaccine.TenVacXin || "",
-      GiaTien: vaccine.GiaTien || "",
+      GiaTien: vaccine.GiaTien ?? "",
     });
     setIsEditDialogOpen(true);
   };
 
   const saveEdit = async () => {
     try {
-      await vaccinationAPI.update(selectedVaccine.MaVacXin, editFormData);
+      const payload = {
+        ...editFormData,
+        GiaTien:
+          editFormData.GiaTien === "" ? "" : Number(editFormData.GiaTien),
+      };
+
+      await vaccinationAPI.update(selectedVaccine.MaVacXin, payload);
       await fetchData();
+
       setIsEditDialogOpen(false);
       setSelectedVaccine(null);
+
       alert("Cập nhật vắc-xin thành công!");
     } catch (err) {
       console.error("Error updating vaccine:", err);
@@ -128,169 +138,216 @@ export default function VaccineManagement() {
   }
 
   return (
-    <Card>
-      <CardHeader>
-        <div className="flex items-center justify-between">
-          <div>
-            <CardTitle className="text-pink-600 font-semibold text-xl">
-              Danh sách vắc-xin
-            </CardTitle>
-            <CardDescription className="text-gray-600">
-              Quản lý tất cả vắc-xin trong hệ thống
-            </CardDescription>
-          </div>
-          <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
-            <DialogTrigger asChild>
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-sky-50 to-teal-50">
+      <AdminHeader />
+
+      <main className="w-full">
+        <div className="max-w-[1920px] mx-auto px-6 py-8 space-y-6">
+          {/* Page Header */}
+          <div className="flex items-center justify-between bg-white rounded-xl shadow-md p-6 border border-blue-100">
+            <div className="flex items-center gap-4">
               <Button
                 variant="outline"
-                className="gap-2 bg-pink-100 border-pink-600 text-pink-600 hover:bg-pink-600 hover:text-white transition-colors"
+                size="icon"
+                className="bg-blue-50 text-blue-600 border-blue-200 hover:bg-blue-600 hover:text-white transition-colors"
+                onClick={onBack}
               >
-                <Plus className="h-4 w-4" />
-                Thêm vắc-xin
+                <ArrowLeft className="h-4 w-4" />
               </Button>
-            </DialogTrigger>
-            <DialogContent>
+
+              <div>
+                <h1 className="text-3xl font-bold bg-gradient-to-r from-blue-600 to-teal-600 bg-clip-text text-transparent">
+                  Quản lý vắc-xin
+                </h1>
+                <p className="text-gray-600 mt-1">
+                  Quản lý tất cả vắc-xin trong hệ thống
+                </p>
+              </div>
+            </div>
+
+            {/* ADD DIALOG */}
+            <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
+              <DialogTrigger asChild>
+                <Button className="h-10 gap-2 bg-blue-600 text-white hover:bg-blue-700 transition-colors shadow-md">
+                  <Plus className="h-4 w-4" />
+                  Thêm vắc-xin
+                </Button>
+              </DialogTrigger>
+
+              <DialogContent className="sm:max-w-[700px]">
+                <DialogHeader>
+                  <DialogTitle className="text-2xl font-bold bg-gradient-to-r from-blue-600 to-blue-400 bg-clip-text text-transparent">
+                    Thêm vắc-xin mới
+                  </DialogTitle>
+                  <DialogDescription className="text-gray-500 mt-2">
+                    Điền đầy đủ thông tin để tạo một vắc-xin mới vào hệ thống.
+                  </DialogDescription>
+                </DialogHeader>
+
+                <div className="space-y-4 py-4">
+                  <div className="grid grid-cols-2 gap-6">
+                    <div className="space-y-2">
+                      <Label htmlFor="TenVacXin">Tên vắc-xin</Label>
+                      <Input
+                        id="TenVacXin"
+                        placeholder="Nhập tên vắc-xin"
+                        value={addFormData.TenVacXin}
+                        onChange={(e) =>
+                          setAddFormData({
+                            ...addFormData,
+                            TenVacXin: e.target.value,
+                          })
+                        }
+                        className="h-10 text-black placeholder:text-gray-600"
+                      />
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label htmlFor="GiaTien">Giá tiền (VNĐ)</Label>
+                      <Input
+                        id="GiaTien"
+                        type="number"
+                        placeholder="Nhập giá tiền"
+                        value={addFormData.GiaTien}
+                        onChange={(e) =>
+                          setAddFormData({
+                            ...addFormData,
+                            GiaTien: e.target.value,
+                          })
+                        }
+                        className="h-10 text-black placeholder:text-gray-600"
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                <DialogFooter className="gap-2">
+                  <Button
+                    onClick={handleAdd}
+                    className="h-10 bg-blue-600 text-white hover:bg-blue-700 transition-colors"
+                  >
+                    Thêm vắc-xin
+                  </Button>
+                </DialogFooter>
+              </DialogContent>
+            </Dialog>
+          </div>
+
+          {/* Grid Layout - Vaccine Cards (5 / row) */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
+            {vaccines.length === 0 ? (
+              <div className="col-span-full text-center text-gray-500 py-12 bg-gray-50 rounded-xl">
+                Không có vắc-xin nào
+              </div>
+            ) : (
+              vaccines.map((vaccine) => (
+                <Card
+                  key={vaccine.MaVacXin}
+                  className="relative bg-white rounded-xl shadow-md hover:shadow-xl transition-all duration-300 hover:-translate-y-1 border border-sky-600"
+                >
+                  {/* Edit Button - Top Right */}
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="absolute top-3 right-3 h-9 w-9 bg-blue-50 text-blue-600 border border-blue-100 hover:bg-blue-600 hover:text-white hover:shadow-md rounded-lg transition-all"
+                    onClick={() => handleEdit(vaccine)}
+                  >
+                    <Edit2 className="h-5 w-5" />
+                  </Button>
+
+                  <CardContent className="pr-4 pl-4">
+                    {/* Header */}
+                    <div className="mb-6 pr-8">
+                      <h3 className="text-lg font-bold text-sky-600 mb-2 line-clamp-2">
+                        {vaccine.TenVacXin}
+                      </h3>
+                      <span className="inline-block px-3 py-1 text-xs font-medium bg-blue-100 text-blue-700 rounded-full">
+                        {vaccine.MaVacXin}
+                      </span>
+                    </div>
+
+                    {/* Body */}
+                    <div className="space-y-3 text-sm text-gray-600">
+                      <div className="flex items-center gap-2">
+                        <Syringe className="h-4 w-4 text-gray-400 flex-shrink-0" />
+                        <span>Vắc-xin</span>
+                      </div>
+
+                      <div className="flex items-center gap-2">
+                        <Wallet className="h-4 w-4 text-gray-400 flex-shrink-0" />
+                        <span>
+                          {Number(vaccine.GiaTien || 0).toLocaleString()} VNĐ
+                        </span>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))
+            )}
+          </div>
+
+          {/* EDIT DIALOG */}
+          <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
+            <DialogContent className="sm:max-w-[700px]">
               <DialogHeader>
-                <DialogTitle className="text-pink-600 font-semibold">
-                  Thêm vắc-xin mới
+                <DialogTitle className="text-2xl font-bold bg-gradient-to-r from-blue-600 to-blue-400 bg-clip-text text-transparent">
+                  Chỉnh sửa vắc-xin
                 </DialogTitle>
-                <DialogDescription className="text-gray-600 mt-1">
-                  Thêm vắc-xin mới vào danh mục
+                <DialogDescription className="text-gray-500 mt-2">
+                  Cập nhật thông tin cho vắc-xin{" "}
+                  <strong className="text-blue-600">
+                    {selectedVaccine?.MaVacXin}
+                  </strong>
                 </DialogDescription>
               </DialogHeader>
+
               <div className="space-y-4 py-4">
-                <div className="space-y-2">
-                  <Label htmlFor="TenVacXin">Tên vắc-xin</Label>
-                  <Input
-                    id="TenVacXin"
-                    placeholder="Nhập tên vắc-xin"
-                    value={addFormData.TenVacXin}
-                    onChange={(e) =>
-                      setAddFormData({
-                        ...addFormData,
-                        TenVacXin: e.target.value,
-                      })
-                    }
-                    className="text-black placeholder:text-gray-600"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="GiaTien">Giá tiền (VNĐ)</Label>
-                  <Input
-                    id="GiaTien"
-                    type="number"
-                    placeholder="Nhập giá tiền"
-                    value={addFormData.GiaTien}
-                    onChange={(e) =>
-                      setAddFormData({
-                        ...addFormData,
-                        GiaTien: e.target.value,
-                      })
-                    }
-                    className="text-black placeholder:text-gray-600"
-                  />
+                <div className="grid grid-cols-2 gap-6">
+                  <div className="space-y-2">
+                    <Label htmlFor="edit-TenVacXin">Tên vắc-xin</Label>
+                    <Input
+                      id="edit-TenVacXin"
+                      value={editFormData.TenVacXin}
+                      onChange={(e) =>
+                        setEditFormData({
+                          ...editFormData,
+                          TenVacXin: e.target.value,
+                        })
+                      }
+                      className="h-10"
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="edit-GiaTien">Giá tiền (VNĐ)</Label>
+                    <Input
+                      id="edit-GiaTien"
+                      type="number"
+                      value={editFormData.GiaTien}
+                      onChange={(e) =>
+                        setEditFormData({
+                          ...editFormData,
+                          GiaTien: e.target.value,
+                        })
+                      }
+                      className="h-10"
+                    />
+                  </div>
                 </div>
               </div>
-              <DialogFooter>
+
+              <DialogFooter className="gap-2">
                 <Button
-                  onClick={handleAdd}
-                  variant="outline"
-                  className="bg-pink-100 border-pink-600 text-pink-600 hover:bg-pink-600 hover:text-white transition-colors"
+                  onClick={saveEdit}
+                  className="h-10 bg-blue-600 text-white hover:bg-blue-700 transition-colors"
                 >
-                  Thêm vắc-xin
+                  Lưu thay đổi
                 </Button>
               </DialogFooter>
             </DialogContent>
           </Dialog>
         </div>
-      </CardHeader>
-      <CardContent>
-        <div className="space-y-3">
-          {vaccines.length === 0 ? (
-            <div className="text-center text-gray-500 py-8">
-              Không có vắc-xin nào
-            </div>
-          ) : (
-            vaccines.map((vaccine) => (
-              <div
-                key={vaccine.MaVacXin}
-                className="flex items-center justify-between p-4 border rounded-lg"
-              >
-                <div>
-                  <div className="font-semibold text-pink-600">
-                    {vaccine.MaVacXin} - {vaccine.TenVacXin}
-                  </div>
-                  <div className="text-sm text-gray-500">
-                    {vaccine.GiaTien} VNĐ
-                  </div>
-                </div>
-                <div className="flex gap-2">
-                  <Button
-                    variant="outline"
-                    size="icon"
-                    className="text-green-600 hover:bg-green-600 hover:text-white transition-colors"
-                    onClick={() => handleEdit(vaccine)}
-                  >
-                    <Edit className="h-4 w-4" />
-                  </Button>
-                </div>
-              </div>
-            ))
-          )}
-        </div>
-
-        {/* Edit Dialog */}
-        <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle className="text-pink-600 font-semibold">
-                Chỉnh sửa vắc-xin
-              </DialogTitle>
-              <DialogDescription>
-                Cập nhật thông tin vắc-xin{" "}
-                <strong>{selectedVaccine?.MaVacXin}</strong>
-              </DialogDescription>
-            </DialogHeader>
-            <div className="space-y-4 py-4">
-              <div className="space-y-2">
-                <Label htmlFor="edit-TenVacXin">Tên vắc-xin</Label>
-                <Input
-                  id="edit-TenVacXin"
-                  value={editFormData.TenVacXin}
-                  onChange={(e) =>
-                    setEditFormData({
-                      ...editFormData,
-                      TenVacXin: e.target.value,
-                    })
-                  }
-                />
-              </div>
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="edit-GiaTien">Giá tiền (VNĐ)</Label>
-              <Input
-                id="edit-GiaTien"
-                type="number"
-                value={editFormData.GiaTien}
-                onChange={(e) =>
-                  setEditFormData({
-                    ...editFormData,
-                    GiaTien: e.target.value,
-                  })
-                }
-              />
-            </div>
-            <DialogFooter>
-              <Button
-                onClick={saveEdit}
-                className="bg-green-100 text-green-600 border-green-600 hover:bg-green-600 hover:text-white transition-colors"
-              >
-                Lưu thay đổi
-              </Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
-      </CardContent>
-    </Card>
+      </main>
+    </div>
   );
 }

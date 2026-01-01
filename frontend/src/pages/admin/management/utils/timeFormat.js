@@ -36,3 +36,9 @@ export function inputHHMMToServerTime(value) {
   const ss = (m[3] ?? "00").padStart(2, "0");
   return `${hh}:${mm}:${ss}`;
 }
+
+export const formatDate = (dateString) => {
+  if (!dateString) return "Đến nay";
+  const date = new Date(dateString);
+  return date.toLocaleDateString("vi-VN");
+};

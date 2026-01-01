@@ -40,23 +40,6 @@ export default function ManagementDetail({ type, onBack }) {
 
   return (
     <>
-      <div className="flex items-center gap-4">
-        <Button
-          variant="ghost"
-          size="icon"
-          onClick={onBack}
-          className="hover:text-red-600"
-        >
-          <ArrowLeft className="h-5 w-5" />
-        </Button>
-        <div>
-          <h1 className="text-3xl font-bold text-gray-900">
-            {getTitleByType()}
-          </h1>
-          <p className="text-gray-500 mt-1">Thêm, sửa, xóa thông tin</p>
-        </div>
-      </div>
-
       {type === "employee" && <EmployeeManagement />}
       {type === "promotion" && <PromotionManagement />}
       {type === "service" && <ServiceManagement />}

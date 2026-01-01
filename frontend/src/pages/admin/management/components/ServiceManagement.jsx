@@ -1,14 +1,20 @@
-// Import UI components (giữ nguyên đường dẫn tương đối đã sửa)
-import React, { useState, useEffect, useMemo } from "react";
-import { Button } from "../../../../components/ui/button";
-import { branchAPI, serviceAPI } from "../../../../api/services";
+import React, { useEffect, useMemo, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "../../../../components/ui/card";
+  ArrowLeft,
+  Plus,
+  MapPin,
+  Trash2,
+  Sparkles,
+  Syringe,
+  ShoppingBag,
+  Stethoscope,
+} from "lucide-react";
+
+import AdminHeader from "../../components/AdminHeader";
+import { Button } from "../../../../components/ui/button";
+import { branchAPI, serviceAPI, employeeAPI } from "../../../../api/services";
+import { Card, CardContent } from "../../../../components/ui/card";
 import { Label } from "../../../../components/ui/label";
 import {
   Dialog,
@@ -19,20 +25,14 @@ import {
   DialogTrigger,
   DialogFooter,
 } from "../../../../components/ui/dialog";
-// Import Icons
-import {
-  Plus,
-  Trash2,
-  ArrowLeft,
-  ShoppingBag,
-  Syringe,
-  Sparkles,
-  Stethoscope,
-} from "lucide-react";
 
 export default function ServiceManagement() {
+  const navigate = useNavigate();
+  const onBackToManagement = () => navigate("/admin/management");
+
   const [branches, setBranches] = useState([]);
   const [selectedBranch, setSelectedBranch] = useState(null);
+
   const [servicesBranch, setServicesBranch] = useState([]);
   const [allServices, setAllServices] = useState([]);
 
@@ -42,21 +42,31 @@ export default function ServiceManagement() {
   const [isAddServiceDialogOpen, setIsAddServiceDialogOpen] = useState(false);
   const [isDeleteServiceDialogOpen, setIsDeleteServiceDialogOpen] =
     useState(false);
+
   const [selectedService, setSelectedService] = useState("");
   const [serviceToDelete, setServiceToDelete] = useState(null);
 
+  // ✅ Stats theo chi nhánh (tổng SP tồn, tổng vaccine tồn, số bác sĩ)
+  const [branchStats, setBranchStats] = useState({
+    productCount: 0,
+    vaccineCount: 0,
+    doctorCount: 0,
+  });
+
   // ✅ chỉ hiện dịch vụ CHƯA có trong chi nhánh
   const availableServices = useMemo(() => {
-    const branchServiceIds = new Set(servicesBranch.map((s) => s.LoaiDichVu));
-    return allServices.filter((s) => !branchServiceIds.has(s.LoaiDichVu));
+    const branchServiceIds = new Set(
+      (servicesBranch || []).map((s) => s.LoaiDichVu)
+    );
+    return (allServices || []).filter(
+      (s) => !branchServiceIds.has(s.LoaiDichVu)
+    );
   }, [servicesBranch, allServices]);
 
-  // Fetch danh sách chi nhánh + dịch vụ khi mount
   useEffect(() => {
     (async () => {
       try {
         setLoading(true);
-
         const [bRes, sRes] = await Promise.all([
           branchAPI.getAll(),
           serviceAPI.getAll(),
@@ -64,10 +74,12 @@ export default function ServiceManagement() {
 
         const branchesData = bRes.data?.data ?? bRes.data ?? [];
         const servicesData = sRes.data?.data ?? sRes.data ?? [];
-        setBranches(branchesData);
-        setAllServices(servicesData);
+
+        setBranches(Array.isArray(branchesData) ? branchesData : []);
+        setAllServices(Array.isArray(servicesData) ? servicesData : []);
         setError(null);
       } catch (err) {
+        console.error(err);
         setError("Không thể tải dữ liệu ban đầu");
       } finally {
         setLoading(false);
@@ -75,10 +87,10 @@ export default function ServiceManagement() {
     })();
   }, []);
 
-  // Fetch dịch vụ của chi nhánh khi chọn chi nhánh
   useEffect(() => {
     if (selectedBranch?.MaChiNhanh) {
       fetchServicesOfBranch(selectedBranch.MaChiNhanh);
+      fetchBranchStats(selectedBranch.MaChiNhanh);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedBranch]);
@@ -87,9 +99,8 @@ export default function ServiceManagement() {
     try {
       setLoading(true);
       const res = await branchAPI.getServicesStock(branchId);
-
       const list = res.data?.data ?? res.data ?? [];
-      setServicesBranch(list);
+      setServicesBranch(Array.isArray(list) ? list : []);
       setError(null);
     } catch (err) {
       console.error("Lỗi khi tải dịch vụ:", err);
@@ -97,6 +108,68 @@ export default function ServiceManagement() {
       setServicesBranch([]);
     } finally {
       setLoading(false);
+    }
+  };
+
+  // ✅ Lấy stats chi nhánh
+  // NOTE: doctorCount cần API getEmployees theo chi nhánh. Nếu chưa có, doctorCount sẽ 0.
+  const fetchBranchStats = async (branchId) => {
+    try {
+      // Fetch products and vaccines for the branch
+      const [pRes, vRes] = await Promise.all([
+        branchAPI.getProductsStock(branchId),
+        branchAPI.getVaccinesStock(branchId),
+      ]);
+
+      const products = pRes?.data?.data ?? pRes?.data ?? [];
+      const vaccines = vRes?.data?.data ?? vRes?.data ?? [];
+
+      // Fetch employees and filter by branch fields
+      const empRes = await employeeAPI.getAll();
+      const allEmployees = empRes?.data?.data ?? empRes?.data ?? [];
+
+      // Try to match employees by branch identifier. backend `getAllEmployees` returns `TenChiNhanh`.
+      const branchObj = (branches || []).find(
+        (b) => String(b.MaChiNhanh) === String(branchId)
+      );
+      const branchName = branchObj?.TenChiNhanh;
+
+      const employees = (allEmployees || []).filter((e) => {
+        // prefer matching by TenChiNhanh (available from backend join)
+        if (
+          branchName &&
+          String(e.TenChiNhanh || "").trim() === String(branchName).trim()
+        )
+          return true;
+
+        const bid = String(branchId);
+        return (
+          String(e.MaChiNhanh || "") === bid ||
+          String(e.ChiNhanh || "") === bid ||
+          String(e.BranchId || "") === bid ||
+          String(e.ChiNhanhId || "") === bid
+        );
+      });
+
+      const productCount = (products || []).reduce(
+        (sum, x) => sum + Number(x.SoLuongTon ?? 0),
+        0
+      );
+      const vaccineCount = (vaccines || []).reduce(
+        (sum, x) => sum + Number(x.SoLuongTon ?? 0),
+        0
+      );
+
+      const doctorCount = (employees || []).filter((e) =>
+        String(e.ViTri || "")
+          .toLowerCase()
+          .includes("bác sĩ")
+      ).length;
+
+      setBranchStats({ productCount, vaccineCount, doctorCount });
+    } catch (e) {
+      console.error("fetchBranchStats error:", e);
+      setBranchStats({ productCount: 0, vaccineCount: 0, doctorCount: 0 });
     }
   };
 
@@ -110,11 +183,7 @@ export default function ServiceManagement() {
 
   const handleAddServiceToBranch = async () => {
     if (!selectedBranch?.MaChiNhanh) return;
-
-    if (!selectedService) {
-      alert("Vui lòng chọn dịch vụ để thêm");
-      return;
-    }
+    if (!selectedService) return alert("Vui lòng chọn dịch vụ để thêm");
 
     try {
       await branchAPI.addServiceToBranch(selectedBranch.MaChiNhanh, {
@@ -122,7 +191,6 @@ export default function ServiceManagement() {
       });
 
       await fetchServicesOfBranch(selectedBranch.MaChiNhanh);
-      // reset dialog
       setSelectedService("");
       setIsAddServiceDialogOpen(false);
       alert("Thêm dịch vụ thành công");
@@ -156,273 +224,324 @@ export default function ServiceManagement() {
     }
   };
 
-  // =========================
-  // UI: Danh sách chi nhánh
-  // =========================
-  if (!selectedBranch) {
-    if (loading) {
-      return (
-        <Card>
-          <CardContent className="flex items-center justify-center py-8">
-            <div className="text-gray-500">Đang tải...</div>
-          </CardContent>
-        </Card>
-      );
+  const getServiceConfig = (serviceName = "") => {
+    const name = serviceName.toLowerCase();
+
+    if (name.includes("tiêm phòng")) {
+      return {
+        type: "vaccine",
+        icon: Syringe,
+        text: "text-cyan-600",
+        badge: "bg-cyan-100 text-cyan-600",
+        border: "border-cyan-600",
+        bg: "bg-gradient-to-br from-white to-cyan-50",
+      };
     }
-
-    if (error) {
-      return (
-        <Card>
-          <CardContent className="flex items-center justify-center py-8">
-            <div className="text-red-600">{error}</div>
-          </CardContent>
-        </Card>
-      );
+    if (name.includes("mua hàng")) {
+      return {
+        type: "product",
+        icon: ShoppingBag,
+        text: "text-sky-600",
+        badge: "bg-sky-100 text-sky-600",
+        border: "border-sky-600",
+        bg: "bg-gradient-to-br from-white to-sky-50",
+      };
     }
+    if (name.includes("khám bệnh")) {
+      return {
+        type: "doctor",
+        icon: Stethoscope,
+        text: "text-blue-600",
+        badge: "bg-blue-100 text-blue-600",
+        border: "border-blue-600",
+        bg: "bg-gradient-to-br from-white to-blue-50",
+      };
+    }
+    return {
+      type: "other",
+      icon: Sparkles,
+      badge: "bg-purple-100 text-purple-700",
+    };
+  };
 
-    return (
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-teal-600 font-semibold text-xl">
-            Danh sách chi nhánh
-          </CardTitle>
-          <CardDescription className="text-gray-600">
-            Chọn chi nhánh để xem và quản lý dịch vụ
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="grid md:grid-cols-2 gap-3">
-            {branches.map((branch) => (
-              <Button
-                key={branch.MaChiNhanh}
-                variant="outline"
-                className="justify-start h-auto p-4 bg-transparent"
-                onClick={() => setSelectedBranch(branch)}
-              >
-                <div className="text-left">
-                  <div className="font-semibold text-teal-600">
-                    {branch.TenChiNhanh}
-                  </div>
-                  <div className="text-sm text-gray-500">
-                    {branch.ThanhPho} - Xem dịch vụ
-                  </div>
-                </div>
-              </Button>
-            ))}
-          </div>
-        </CardContent>
-      </Card>
-    );
-  }
+  // ✅ hiển thị đúng 1 chỉ số theo loại dịch vụ
+  const getPrimaryMetric = (type) => {
+    if (type === "doctor") {
+      return {
+        label: "Tổng số bác sĩ tại chi nhánh",
+        value: Number(branchStats.doctorCount || 0).toLocaleString("vi-VN"),
+      };
+    }
+    if (type === "vaccine") {
+      return {
+        label: "Tổng số vắc xin tại chi nhánh",
+        value: Number(branchStats.vaccineCount || 0).toLocaleString("vi-VN"),
+      };
+    }
+    if (type === "product") {
+      return {
+        label: "Tổng số sản phẩm tại chi nhánh",
+        value: Number(branchStats.productCount || 0).toLocaleString("vi-VN"),
+      };
+    }
+    // mặc định: show đủ 3 (hoặc bạn có thể đổi thành “—”)
+    return {
+      label: "Tổng số lượng",
+      value: `${Number(branchStats.productCount || 0).toLocaleString(
+        "vi-VN"
+      )} / ${Number(branchStats.vaccineCount || 0).toLocaleString(
+        "vi-VN"
+      )} / ${Number(branchStats.doctorCount || 0).toLocaleString("vi-VN")}`,
+    };
+  };
 
-  // =========================
-  // UI: Trong 1 chi nhánh
-  // =========================
   return (
-    <>
-      <Button
-        variant="outline"
-        className="bg-teal-100 text-teal-600 border-teal-600 hover:bg-teal-600 hover:text-white transition-colors"
-        onClick={handleBackToBranches}
-      >
-        <ArrowLeft className="h-4 w-4" />
-        Quay lại danh sách chi nhánh
-      </Button>
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-sky-50 to-cyan-50">
+      <AdminHeader />
 
-      <Card>
-        <CardHeader>
-          <div className="flex items-center justify-between">
-            <div>
-              <CardTitle className="text-teal-600 font-semibold text-xl">
-                Dịch vụ tại {selectedBranch.TenChiNhanh}
-              </CardTitle>
-              <CardDescription className="text-gray-600">
-                Quản lý dịch vụ của chi nhánh
-              </CardDescription>
+      <main className="w-full">
+        <div className="max-w-[1920px] mx-auto px-6 py-8 space-y-6">
+          {/* PAGE HEADER */}
+          <div className="flex items-center justify-between bg-white rounded-xl shadow-md p-6 border border-blue-100">
+            <div className="flex items-center gap-4">
+              <Button
+                variant="outline"
+                size="icon"
+                className="bg-blue-50 text-blue-600 border-blue-200 hover:bg-blue-600 hover:text-white transition-colors"
+                onClick={
+                  selectedBranch ? handleBackToBranches : onBackToManagement
+                }
+              >
+                <ArrowLeft className="h-4 w-4" />
+              </Button>
+
+              <div>
+                <h1 className="text-3xl font-bold bg-gradient-to-r from-blue-600 to-teal-600 bg-clip-text text-transparent">
+                  {selectedBranch
+                    ? `Dịch vụ - ${selectedBranch.TenChiNhanh}`
+                    : "Quản lý dịch vụ theo chi nhánh"}
+                </h1>
+
+                <p className="text-gray-600 mt-1">
+                  {selectedBranch
+                    ? "Thêm / xóa dịch vụ đang áp dụng tại chi nhánh"
+                    : "Chọn chi nhánh để xem và quản lý danh sách dịch vụ"}
+                </p>
+              </div>
             </div>
 
-            <Dialog
-              open={isAddServiceDialogOpen}
-              onOpenChange={setIsAddServiceDialogOpen}
-            >
-              <DialogTrigger asChild>
-                <Button
-                  variant="outline"
-                  className="bg-teal-100 text-teal-600 border-teal-600 hover:bg-teal-600 hover:text-white transition-colors"
-                  disabled={availableServices.length === 0}
-                >
-                  <Plus className="h-4 w-4" />
-                  Thêm dịch vụ
-                </Button>
-              </DialogTrigger>
-
-              <DialogContent>
-                <DialogHeader>
-                  <DialogTitle className="text-teal-600 font-semibold">
-                    Thêm dịch vụ cho chi nhánh
-                  </DialogTitle>
-                  <DialogDescription className="text-gray-600">
-                    Chỉ hiển thị các dịch vụ chưa có trong chi nhánh
-                  </DialogDescription>
-                </DialogHeader>
-
-                <div className="space-y-4 py-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="serviceSelect">Chọn dịch vụ</Label>
-
-                    {availableServices.length === 0 ? (
-                      <div className="text-sm text-gray-500">
-                        Chi nhánh này đã có tất cả dịch vụ trong danh mục.
-                      </div>
-                    ) : (
-                      <select
-                        id="serviceSelect"
-                        value={selectedService}
-                        onChange={(e) => setSelectedService(e.target.value)}
-                        className="w-full border rounded-lg p-2 flex h-10 border-input bg-background text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-                      >
-                        <option value="">Chọn dịch vụ</option>
-                        {availableServices.map((service) => (
-                          <option
-                            key={service.LoaiDichVu}
-                            value={service.LoaiDichVu}
-                          >
-                            {service.LoaiDichVu}
-                          </option>
-                        ))}
-                      </select>
-                    )}
-                  </div>
-                </div>
-
-                <DialogFooter>
+            {/* ACTIONS */}
+            {selectedBranch && (
+              <Dialog
+                open={isAddServiceDialogOpen}
+                onOpenChange={setIsAddServiceDialogOpen}
+              >
+                <DialogTrigger asChild>
                   <Button
-                    onClick={handleAddServiceToBranch}
-                    variant="outline"
-                    className="bg-teal-100 border-teal-600 text-teal-600 hover:bg-teal-600 hover:text-white transition-colors"
+                    className="h-10 gap-2 bg-blue-600 text-white hover:bg-blue-700 transition-colors shadow-md"
                     disabled={availableServices.length === 0}
                   >
+                    <Plus className="h-4 w-4" />
                     Thêm dịch vụ
                   </Button>
-                </DialogFooter>
-              </DialogContent>
-            </Dialog>
+                </DialogTrigger>
+
+                <DialogContent className="sm:max-w-[700px]">
+                  <DialogHeader>
+                    <DialogTitle className="text-2xl font-bold bg-gradient-to-r from-blue-600 to-blue-500 bg-clip-text text-transparent">
+                      Thêm dịch vụ cho chi nhánh
+                    </DialogTitle>
+                    <DialogDescription className="text-gray-500 mt-2">
+                      Chỉ hiển thị các dịch vụ chưa có trong chi nhánh.
+                    </DialogDescription>
+                  </DialogHeader>
+
+                  <div className="space-y-4 py-4">
+                    <div className="grid grid-cols-2 gap-6">
+                      <div className="space-y-2">
+                        <Label htmlFor="serviceSelect">Chọn dịch vụ</Label>
+
+                        {availableServices.length === 0 ? (
+                          <div className="text-sm text-gray-500">
+                            Chi nhánh này đã có tất cả dịch vụ trong danh mục.
+                          </div>
+                        ) : (
+                          <select
+                            id="serviceSelect"
+                            value={selectedService}
+                            onChange={(e) => setSelectedService(e.target.value)}
+                            className="w-full border rounded-lg p-2 flex h-10 border-input bg-background text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                          >
+                            <option value="">Chọn dịch vụ</option>
+                            {availableServices.map((s) => (
+                              <option key={s.LoaiDichVu} value={s.LoaiDichVu}>
+                                {s.LoaiDichVu}
+                              </option>
+                            ))}
+                          </select>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+
+                  <DialogFooter className="gap-2">
+                    <Button
+                      onClick={handleAddServiceToBranch}
+                      className="h-10 bg-blue-600 text-white hover:bg-blue-700 transition-colors"
+                      disabled={availableServices.length === 0}
+                    >
+                      Thêm vào chi nhánh
+                    </Button>
+                  </DialogFooter>
+                </DialogContent>
+              </Dialog>
+            )}
           </div>
-        </CardHeader>
 
-        <CardContent>
+          {/* CONTENT */}
           {loading ? (
-            <div className="text-center py-8 text-gray-500">
-              Đang tải dịch vụ...
-            </div>
-          ) : servicesBranch.length === 0 ? (
-            <div className="text-center py-8 text-gray-500">
-              Chưa có dịch vụ nào
-            </div>
-          ) : (
-            <div className="space-y-3">
-              {servicesBranch.map((service) => {
-                // Map tên dịch vụ với icon và màu phù hợp
-                const getServiceConfig = (serviceName) => {
-                  const name = serviceName.toLowerCase();
+            <Card>
+              <CardContent className="p-6 text-center text-gray-500">
+                Đang tải dữ liệu...
+              </CardContent>
+            </Card>
+          ) : error ? (
+            <Card>
+              <CardContent className="p-6 text-center text-red-600">
+                {error}
+              </CardContent>
+            </Card>
+          ) : !selectedBranch ? (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
+              {branches.map((branch) => (
+                <Card
+                  key={branch.MaChiNhanh}
+                  className="relative bg-white rounded-xl shadow-md hover:shadow-xl transition-all duration-300 hover:-translate-y-1 border border-sky-600"
+                >
+                  <CardContent>
+                    <div className="mb-4 pr-4">
+                      <h3 className="text-lg font-bold text-sky-600 mb-2">
+                        {branch.TenChiNhanh}
+                      </h3>
+                      <span className="inline-block px-3 py-1 text-xs font-medium bg-blue-100 text-blue-700 rounded-full">
+                        {branch.MaChiNhanh}
+                      </span>
+                    </div>
 
-                  if (name.includes("tiêm") || name.includes("tiêm phòng")) {
-                    return {
-                      icon: Syringe,
-                      bg: "bg-pink-100",
-                      text: "text-pink-600",
-                    };
-                  }
-
-                  if (
-                    name.includes("mua") ||
-                    name.includes("bán") ||
-                    name.includes("hàng")
-                  ) {
-                    return {
-                      icon: ShoppingBag,
-                      bg: "bg-emerald-100",
-                      text: "text-emerald-600",
-                    };
-                  }
-
-                  if (name.includes("khám") || name.includes("bệnh")) {
-                    return {
-                      icon: Stethoscope,
-                      bg: "bg-blue-100",
-                      text: "text-blue-600",
-                    };
-                  }
-
-                  // Default cho các dịch vụ khác
-                  return {
-                    icon: Sparkles,
-                    bg: "bg-purple-100",
-                    text: "text-purple-600",
-                  };
-                };
-
-                const config = getServiceConfig(service.LoaiDichVu);
-                const IconComponent = config.icon;
-
-                return (
-                  <div
-                    key={service.LoaiDichVu}
-                    className="flex items-center justify-between p-4 border rounded-lg hover:shadow-md transition-shadow"
-                  >
-                    <div className="flex items-center gap-3 flex-1">
-                      <div
-                        className={`h-10 w-10 rounded-lg ${config.bg} flex items-center justify-center`}
-                      >
-                        <IconComponent className={`h-5 w-5 ${config.text}`} />
-                      </div>
-                      <div className="font-semibold text-teal-600">
-                        {service.LoaiDichVu}
-                      </div>
+                    <div className="flex items-start gap-2 text-sm text-gray-600 mb-7">
+                      <MapPin className="h-4 w-4 mt-0.5 text-gray-400 flex-shrink-0" />
+                      <span>
+                        {branch.Phuong}, {branch.ThanhPho}
+                      </span>
                     </div>
 
                     <Button
-                      size="sm"
                       variant="outline"
-                      className="bg-red-100 border-red-600 text-red-600 hover:bg-red-600 hover:text-white transition-colors"
-                      onClick={() => handleDeleteService(service)}
+                      className="w-full bg-sky-50 border-sky-200 text-sky-600 hover:bg-sky-600 hover:text-white transition-colors"
+                      onClick={() => setSelectedBranch(branch)}
                     >
-                      <Trash2 className="h-4 w-4" />
+                      Quản lý
                     </Button>
-                  </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          ) : servicesBranch.length === 0 ? (
+            <Card>
+              <CardContent className="p-10 text-center text-gray-500">
+                Chưa có dịch vụ nào
+              </CardContent>
+            </Card>
+          ) : (
+            // ✅ mỗi card chỉ show 1 metric theo loại dịch vụ
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {servicesBranch.map((service) => {
+                const cfg = getServiceConfig(service.LoaiDichVu);
+                const Icon = cfg.icon;
+                const metric = getPrimaryMetric(cfg.type);
+
+                return (
+                  <Card
+                    key={service.LoaiDichVu}
+                    className={`relative rounded-xl shadow-md hover:shadow-xl transition-all duration-300 hover:-translate-y-1 border ${cfg.border} ${cfg.bg}`}
+                  >
+                    <CardContent>
+                      {/* Trash icon nhỏ góc phải */}
+                      <button
+                        type="button"
+                        onClick={() => handleDeleteService(service)}
+                        className="absolute top-4 right-4 h-9 w-9 grid place-items-center rounded-lg bg-red-50 text-red-600 hover:text-white border border-red-100 hover:bg-red-600 transition-colors"
+                        title="Xóa dịch vụ"
+                      >
+                        <Trash2 className="h-5 w-5" />
+                      </button>
+
+                      {/* Header: Icon + Tên dịch vụ (center theo icon) */}
+                      <div className="flex items-center gap-3 pr-12">
+                        <div
+                          className={`h-12 w-12 rounded-xl flex items-center justify-center ${cfg.badge}`}
+                        >
+                          <Icon className="h-6 w-6" />
+                        </div>
+
+                        <div className="min-w-0">
+                          <div
+                            className={`text-xl font-bold leading-tight ${cfg.text}`}
+                          >
+                            {service.LoaiDichVu}
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Value */}
+                      <div
+                        className={`mt-6 mb-4 text-4xl font-bold ${cfg.text}`}
+                      >
+                        {metric.value}
+                      </div>
+
+                      {/* dưới tên: label */}
+                      <div className="mt-1 text-sm text-gray-600">
+                        {metric.label}
+                      </div>
+                    </CardContent>
+                  </Card>
                 );
               })}
             </div>
           )}
-        </CardContent>
-      </Card>
+        </div>
 
-      {/* Delete Confirmation Dialog */}
-      <Dialog
-        open={isDeleteServiceDialogOpen}
-        onOpenChange={setIsDeleteServiceDialogOpen}
-      >
-        <DialogContent className="gap-0">
-          <DialogHeader className="pb-3">
-            <DialogTitle className="text-red-600 font-semibold">
-              Xác nhận xóa dịch vụ
-            </DialogTitle>
-            <DialogDescription>
-              Bạn có chắc chắn muốn xóa dịch vụ{" "}
-              <strong>{serviceToDelete?.LoaiDichVu}</strong> khỏi chi nhánh này?
-            </DialogDescription>
-          </DialogHeader>
-          <DialogFooter className="pt-3">
-            <Button
-              onClick={confirmDeleteService}
-              variant="outline"
-              className="bg-red-100 text-red-600 border-red-600 hover:bg-red-600 hover:text-white transition-colors"
-            >
-              Xác nhận
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-    </>
+        {/* Delete Confirmation Dialog */}
+        <Dialog
+          open={isDeleteServiceDialogOpen}
+          onOpenChange={setIsDeleteServiceDialogOpen}
+        >
+          <DialogContent className="gap-0 sm:max-w-[520px]">
+            <DialogHeader className="pb-3">
+              <DialogTitle className="text-red-600 font-semibold">
+                Xác nhận xóa dịch vụ
+              </DialogTitle>
+              <DialogDescription>
+                Bạn có chắc chắn muốn xóa dịch vụ{" "}
+                <strong className="text-red-600 font-semibold">
+                  {serviceToDelete?.LoaiDichVu}
+                </strong>{" "}
+                khỏi chi nhánh này?
+              </DialogDescription>
+            </DialogHeader>
+
+            <DialogFooter className="pt-3 gap-2">
+              <Button
+                onClick={confirmDeleteService}
+                className="h-10 bg-red-600 text-white hover:bg-red-700 transition-colors"
+              >
+                Xác nhận
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+      </main>
+    </div>
   );
 }

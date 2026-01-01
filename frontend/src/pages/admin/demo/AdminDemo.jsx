@@ -9,7 +9,7 @@ import {
 import {
   Users,
   Building2,
-  UserCheck,
+  ShoppingBag,
   Stethoscope,
   ShoppingCart,
   Headset,
@@ -79,7 +79,7 @@ export default function AdminDemo() {
   }, []);
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-cyan-50 via-blue-50 to-teal-50">
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-sky-50 to-cyan-50">
       <AdminHeader />
 
       {/* Main Content */}
@@ -133,61 +133,65 @@ export default function AdminDemo() {
                 <Card className="border-t-4 border-t-blue-500 shadow-xl hover:shadow-2xl transition-all hover:-translate-y-2 bg-gradient-to-br from-white to-blue-50">
                   <CardHeader className="pb-3">
                     <CardDescription className="flex items-center justify-between">
-                      <span className="font-semibold text-base">Chi nhánh</span>
+                      <span className="text-2xl font-bold bg-gradient-to-r from-blue-600 to-blue-500 bg-clip-text text-transparent">
+                        Chi nhánh
+                      </span>
                       <div className="p-3 bg-blue-100 rounded-full">
                         <Building2 className="h-6 w-6 text-blue-600" />
                       </div>
                     </CardDescription>
-                    <CardTitle className="text-4xl font-bold bg-gradient-to-r from-blue-600 to-blue-800 bg-clip-text text-transparent">
+                    <CardTitle className="text-4xl font-bold text-blue-600">
                       {dashboardData.totalBranches}
                     </CardTitle>
                   </CardHeader>
                   <CardContent>
                     <div className="flex items-center text-sm">
-                      <span className="text-gray-600 font-medium">
-                        Tổng số chi nhánh
-                      </span>
+                      <span className="text-gray-600">Tổng số chi nhánh</span>
                     </div>
                   </CardContent>
                 </Card>
 
-                <Card className="border-t-4 border-t-indigo-500 shadow-xl hover:shadow-2xl transition-all hover:-translate-y-2 bg-gradient-to-br from-white to-indigo-50">
+                <Card className="border-t-4 border-t-sky-500 shadow-xl hover:shadow-2xl transition-all hover:-translate-y-2 bg-gradient-to-br from-white to-sky-50">
                   <CardHeader className="pb-3">
                     <CardDescription className="flex items-center justify-between">
-                      <span className="font-semibold text-base">Sản phẩm</span>
-                      <div className="p-3 bg-indigo-100 rounded-full">
-                        <Package className="h-6 w-6 text-indigo-600" />
+                      <span className="text-2xl font-bold text-sky-600">
+                        Sản phẩm
+                      </span>
+                      <div className="p-3 bg-sky-100 rounded-full">
+                        <ShoppingBag className="h-6 w-6 text-sky-600" />
                       </div>
                     </CardDescription>
-                    <CardTitle className="text-4xl font-bold bg-gradient-to-r from-indigo-600 to-indigo-800 bg-clip-text text-transparent">
+                    <CardTitle className="text-4xl font-bold bg-gradient-to-r from-sky-600 to-sky-400 bg-clip-text text-transparent">
                       {dashboardData.totalProducts.toLocaleString()}
                     </CardTitle>
                   </CardHeader>
                   <CardContent>
                     <div className="flex items-center text-sm">
-                      <span className="text-gray-600 font-medium">
-                        Tổng số sản phẩm
+                      <span className="text-gray-600">
+                        Số lượng sản phẩm khác nhau
                       </span>
                     </div>
                   </CardContent>
                 </Card>
 
-                <Card className="border-t-4 border-t-rose-500 shadow-xl hover:shadow-2xl transition-all hover:-translate-y-2 bg-gradient-to-br from-white to-rose-50">
+                <Card className="border-t-4 border-t-cyan-500 shadow-xl hover:shadow-2xl transition-all hover:-translate-y-2 bg-gradient-to-br from-white to-cyan-50">
                   <CardHeader className="pb-3">
                     <CardDescription className="flex items-center justify-between">
-                      <span className="font-semibold text-base">Vaccine</span>
-                      <div className="p-3 bg-rose-100 rounded-full">
-                        <Syringe className="h-6 w-6 text-rose-600" />
+                      <span className="text-2xl font-bold text-cyan-600">
+                        Vaccine
+                      </span>
+                      <div className="p-3 bg-cyan-100 rounded-full">
+                        <Syringe className="h-6 w-6 text-cyan-600" />
                       </div>
                     </CardDescription>
-                    <CardTitle className="text-4xl font-bold bg-gradient-to-r from-rose-600 to-rose-800 bg-clip-text text-transparent">
+                    <CardTitle className="text-4xl font-bold text-cyan-600">
                       {dashboardData.totalVaccines.toLocaleString()}
                     </CardTitle>
                   </CardHeader>
                   <CardContent>
                     <div className="flex items-center text-sm">
-                      <span className="text-gray-600 font-medium">
-                        Tổng số vaccine
+                      <span className="text-gray-600">
+                        Số lượng vaccine khác nhau
                       </span>
                     </div>
                   </CardContent>
@@ -196,65 +200,69 @@ export default function AdminDemo() {
 
               {/* Row 2: 3 loại nhân viên */}
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                <Card className="border-t-4 border-t-green-500 shadow-xl hover:shadow-2xl transition-all hover:-translate-y-2 bg-gradient-to-br from-white to-green-50">
+                <Card className="border-t-4 border-t-blue-500 shadow-xl hover:shadow-2xl transition-all hover:-translate-y-2 bg-gradient-to-br from-white to-blue-50">
                   <CardHeader className="pb-3">
                     <CardDescription className="flex items-center justify-between">
-                      <span className="font-semibold text-base">Tiếp tân</span>
-                      <div className="p-3 bg-green-100 rounded-full">
-                        <Headset className="h-6 w-6 text-green-600" />
+                      <span className="text-2xl font-bold text-blue-600">
+                        Tiếp tân
+                      </span>
+                      <div className="p-3 bg-blue-100 rounded-full">
+                        <Headset className="h-6 w-6 text-blue-600" />
                       </div>
                     </CardDescription>
-                    <CardTitle className="text-4xl font-bold bg-gradient-to-r from-green-600 to-green-800 bg-clip-text text-transparent">
+                    <CardTitle className="text-4xl font-bold text-blue-600">
                       {dashboardData.totalReceptionists.toLocaleString()}
                     </CardTitle>
                   </CardHeader>
                   <CardContent>
                     <div className="flex items-center text-sm">
-                      <span className="text-gray-600 font-medium">
-                        Nhân viên tiếp tân
+                      <span className="text-gray-600">
+                        Tổng số nhân viên tiếp tân
                       </span>
                     </div>
                   </CardContent>
                 </Card>
 
-                <Card className="border-t-4 border-t-amber-500 shadow-xl hover:shadow-2xl transition-all hover:-translate-y-2 bg-gradient-to-br from-white to-amber-50">
+                <Card className="border-t-4 border-t-sky-500 shadow-xl hover:shadow-2xl transition-all hover:-translate-y-2 bg-gradient-to-br from-white to-sky-50">
                   <CardHeader className="pb-3">
                     <CardDescription className="flex items-center justify-between">
-                      <span className="font-semibold text-base">Bán hàng</span>
-                      <div className="p-3 bg-amber-100 rounded-full">
-                        <ShoppingCart className="h-6 w-6 text-amber-600" />
+                      <span className="text-2xl font-bold text-sky-600">
+                        Bán hàng
+                      </span>
+                      <div className="p-3 bg-sky-100 rounded-full">
+                        <ShoppingCart className="h-6 w-6 text-sky-600" />
                       </div>
                     </CardDescription>
-                    <CardTitle className="text-4xl font-bold bg-gradient-to-r from-amber-600 to-amber-800 bg-clip-text text-transparent">
+                    <CardTitle className="text-4xl font-bold text-sky-600">
                       {dashboardData.totalSalesStaff.toLocaleString()}
                     </CardTitle>
                   </CardHeader>
                   <CardContent>
                     <div className="flex items-center text-sm">
-                      <span className="text-gray-600 font-medium">
-                        Nhân viên bán hàng
+                      <span className="text-gray-600">
+                        Tổng số nhân viên bán hàng
                       </span>
                     </div>
                   </CardContent>
                 </Card>
 
-                <Card className="border-t-4 border-t-purple-500 shadow-xl hover:shadow-2xl transition-all hover:-translate-y-2 bg-gradient-to-br from-white to-purple-50">
+                <Card className="border-t-4 border-t-cyan-500 shadow-xl hover:shadow-2xl transition-all hover:-translate-y-2 bg-gradient-to-br from-white to-cyan-50">
                   <CardHeader className="pb-3">
                     <CardDescription className="flex items-center justify-between">
-                      <span className="font-semibold text-base">Bác sĩ</span>
-                      <div className="p-3 bg-purple-100 rounded-full">
-                        <Stethoscope className="h-6 w-6 text-purple-600" />
+                      <span className="text-2xl font-bold text-cyan-600">
+                        Bác sĩ
+                      </span>
+                      <div className="p-3 bg-cyan-100 rounded-full">
+                        <Stethoscope className="h-6 w-6 text-cyan-600" />
                       </div>
                     </CardDescription>
-                    <CardTitle className="text-4xl font-bold bg-gradient-to-r from-purple-600 to-purple-800 bg-clip-text text-transparent">
+                    <CardTitle className="text-4xl font-bold text-cyan-600">
                       {dashboardData.totalDoctors.toLocaleString()}
                     </CardTitle>
                   </CardHeader>
                   <CardContent>
                     <div className="flex items-center text-sm">
-                      <span className="text-gray-600 font-medium">
-                        Tổng số bác sĩ
-                      </span>
+                      <span className="text-gray-600">Tổng số bác sĩ</span>
                     </div>
                   </CardContent>
                 </Card>

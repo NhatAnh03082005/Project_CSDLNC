@@ -98,7 +98,7 @@ router.delete(
 );
 
 /**
- * @route   GET /api/branches/:id/tranferHictory
+ * @route   GET /api/branches/:id/transferHistory
  * @desc    Lịch sử chuyển kho giữa các chi nhánh
  * @access  Public
  */
