@@ -14,7 +14,7 @@ class AuthController {
   }
 
   /**
-   * Đăng nhập khách hàng
+   * Đăng nhập khách hàng -> Đây là chức năng đăng nhập chung cho cả Khách và Nhân viên
    */
   // Trong file auth.controller.js
   async login(req, res, next) {
