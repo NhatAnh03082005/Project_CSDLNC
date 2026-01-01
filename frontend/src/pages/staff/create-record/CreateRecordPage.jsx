@@ -8,7 +8,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../..
 import { Input } from "../../../components/ui/input";
 import { Label } from "../../../components/ui/label";
 import { Badge } from "../../../components/ui/badge";
-import { ArrowLeft, Save, Search, FilePlus, PawPrint } from "lucide-react";
+import { ArrowLeft, Save, Search, FilePlus, PawPrint, User, Phone, CreditCard, X } from "lucide-react";
 
 // Xóa bỏ "use client"
 
@@ -18,6 +18,7 @@ export default function CreateRecordPage() {
   // Loại bỏ khai báo kiểu TypeScript: <any> và <string | null>
   const [selectedCustomer, setSelectedCustomer] = useState(null);
   const [selectedPet, setSelectedPet] = useState(null);
+  const [serviceType, setServiceType] = useState("Khám bệnh"); // Mặc định là Khám bệnh
   
   const [searchQuery, setSearchQuery] = useState({
     name: "",
@@ -94,31 +95,32 @@ export default function CreateRecordPage() {
   };
 
   const handleSubmit = () => {
-    if (selectedCustomer && selectedPet) {
-      // Loại bỏ khai báo kiểu TypeScript: as keyof typeof mockPets
-      const customerPets = mockPets[selectedCustomer.id];
-      const selectedPetData = customerPets?.find((p) => p.id === selectedPet);
+  if (selectedCustomer && selectedPet) {
+    const customerPets = mockPets[selectedCustomer.id];
+    const selectedPetData = customerPets?.find((p) => p.id === selectedPet);
 
-      alert(
-        `Hồ sơ đã được tạo thành công!\nKhách hàng: ${selectedCustomer.name}\nThú cưng: ${selectedPetData?.name}`,
-      );
-      
-      // Reset
-      setStep("customer-list");
-      setSelectedCustomer(null);
-      setSelectedPet(null);
-      setSearchQuery({ name: "", phone: "", cccd: "" });
-    }
+    // Hiển thị thêm ServiceType trong thông báo
+    alert(
+      `Hồ sơ ${serviceType.toLowerCase()} đã được tạo thành công!\n` +
+      `Khách hàng: ${selectedCustomer.name}\n` +
+      `Thú cưng: ${selectedPetData?.name}`
+    );
+    
+    // Reset về trạng thái ban đầu
+    setStep("customer-list");
+    setSelectedCustomer(null);
+    setSelectedPet(null);
+    setServiceType("khám bệnh"); // Reset dịch vụ
+    setSearchQuery({ name: "", phone: "", cccd: "" });
+  }
   };
 
   return (
     <div className="min-h-screen bg-gray-50 p-6">
       <div className="max-w-6xl mx-auto space-y-6">
-        {/* Sửa Link href -> to */}
         <Link to="/staff/demo">
-          <Button variant="ghost" className="gap-2">
-            <ArrowLeft className="h-4 w-4" />
-            Quay lại
+          <Button variant="ghost" className="gap-2 text-slate-500 hover:bg-white hover:shadow-sm transition-all">
+            <ArrowLeft className="h-4 w-4" /> Quay lại
           </Button>
         </Link>
 
@@ -128,58 +130,88 @@ export default function CreateRecordPage() {
             Tạo hồ sơ
           </h1>
           <p className="text-gray-500 mt-1">
-            {step === "customer-list" ? "Tìm kiếm và chọn khách hàng" : "Chọn thú cưng để tạo hồ sơ"}
+            {step === "customer-list" ? "Tra cứu khách hàng và tạo hồ sơ" : "Chọn thú cưng để tạo hồ sơ"}
           </p>
         </div>
 
         {/* Step 1: Customer List with Search */}
         {step === "customer-list" && (
-          <Card>
-            <CardHeader>
-              <CardTitle>Danh sách khách hàng</CardTitle>
-              <CardDescription>Tìm kiếm và chọn khách hàng để tạo hồ sơ</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-6">
-              {/* Search Filters */}
-              <div className="grid md:grid-cols-3 gap-4 p-4 bg-gray-50 rounded-lg">
-                <div className="space-y-2">
-                  <Label htmlFor="search-name">Tên khách hàng</Label>
-                  <Input
-                    id="search-name"
-                    placeholder="Nhập tên..."
-                    value={searchQuery.name}
-                    onChange={(e) => setSearchQuery({ ...searchQuery, name: e.target.value })}
-                  />
+          <Card className="border-none shadow-md overflow-hidden bg-white">
+            {/* Bỏ CardHeader cũ, gộp tất cả nội dung vào CardContent */}
+            <CardContent className="space-y-6 pt-6">
+              
+              {/* Vùng màu xanh chứa cả Tiêu đề và Ô nhập liệu */}
+              <div className="p-6 bg-blue-50/50 rounded-xl border border-blue-100 space-y-4">
+                
+                {/* Tiêu đề được đưa vào trong vùng xanh */}
+                <div className="flex justify-between items-start">
+                  <div>
+                    <h2 className="text-lg font-bold text-blue-700">Tìm kiếm khách hàng theo bộ lọc</h2>
+                  </div>
+                  <Button 
+                    variant="ghost" 
+                    size="sm" 
+                    className="text-gray-400 hover:text-red-500 hover:bg-red-50 transition-colors"
+                    onClick={() => setSearchQuery({ name: "", phone: "", cccd: "" })}
+                  >
+                    <X className="h-4 w-4 mr-2" />
+                    Xóa bộ lọc
+                  </Button>
                 </div>
 
-                <div className="space-y-2">
-                  <Label htmlFor="search-phone">Số điện thoại</Label>
-                  <Input
-                    id="search-phone"
-                    placeholder="Nhập SĐT..."
-                    value={searchQuery.phone}
-                    onChange={(e) => setSearchQuery({ ...searchQuery, phone: e.target.value })}
-                  />
-                </div>
+                {/* Các ô nhập liệu */}
+                <div className="grid md:grid-cols-3 gap-6">
+                  <div className="space-y-2">
+                    <Label htmlFor="search-name" className="text-blue-900 font-medium ml-1">Tên khách hàng</Label>
+                    <div className="relative">
+                      <User className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-blue-300" />
+                      <Input
+                        id="search-name"
+                        className="pl-10 bg-white border-blue-200 focus:ring-blue-500 rounded-lg placeholder:text-gray-300"
+                        placeholder="Họ tên khách hàng..."
+                        value={searchQuery.name}
+                        onChange={(e) => setSearchQuery({ ...searchQuery, name: e.target.value })}
+                      />
+                    </div>
+                  </div>
 
-                <div className="space-y-2">
-                  <Label htmlFor="search-cccd">CCCD</Label>
-                  <Input
-                    id="search-cccd"
-                    placeholder="Nhập CCCD..."
-                    value={searchQuery.cccd}
-                    onChange={(e) => setSearchQuery({ ...searchQuery, cccd: e.target.value })}
-                  />
+                  <div className="space-y-2">
+                    <Label htmlFor="search-phone" className="text-blue-900 font-medium ml-1">Số điện thoại</Label>
+                    <div className="relative">
+                      <Phone className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-blue-300" />
+                      <Input
+                        id="search-phone"
+                        className="pl-10 bg-white border-blue-200 focus:ring-blue-500 rounded-lg placeholder:text-gray-300"
+                        placeholder="0xxx xxx xxx"
+                        value={searchQuery.phone}
+                        onChange={(e) => setSearchQuery({ ...searchQuery, phone: e.target.value })}
+                      />
+                    </div>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="search-cccd" className="text-blue-900 font-medium ml-1">Số CCCD</Label>
+                    <div className="relative">
+                      <CreditCard className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-blue-300" />
+                      <Input
+                        id="search-cccd"
+                        className="pl-10 bg-white border-blue-200 focus:ring-blue-500 rounded-lg placeholder:text-gray-300"
+                        placeholder="Số CCCD khách hàng..."
+                        value={searchQuery.cccd}
+                        onChange={(e) => setSearchQuery({ ...searchQuery, cccd: e.target.value })}
+                      />
+                    </div>
+                  </div>
                 </div>
               </div>
 
-              {/* Customer List */}
-              <div className="space-y-3">
-                <div className="flex items-center justify-between">
-                  <Label>Chọn khách hàng ({filteredCustomers.length} khách hàng)</Label>
-                  <Button variant="ghost" size="sm" onClick={() => setSearchQuery({ name: "", phone: "", cccd: "" })}>
-                    Xóa bộ lọc
-                  </Button>
+              {/* Kết quả tìm kiếm (Phần danh sách khách hàng giữ nguyên bên dưới) */}
+              <div className="space-y-4 px-2">
+                <div className="flex items-center gap-2">
+                  <div className="h-2 w-2 rounded-full bg-blue-500"></div>
+                  <span className="font-semibold text-gray-700">
+                    Kết quả: <span className="text-blue-600">{filteredCustomers.length}</span> khách hàng
+                  </span>
                 </div>
 
                 {filteredCustomers.length === 0 ? (
@@ -290,20 +322,67 @@ export default function CreateRecordPage() {
                 </div>
               </div>
 
-              <div className="flex gap-3 pt-4">
-                <Button onClick={handleSubmit} disabled={!selectedPet} className="gap-2">
-                  <Save className="h-4 w-4" />
-                  Tạo hồ sơ
-                </Button>
+              {/* Service Selection */}
+              <div className="space-y-3 mb-6">
+                <Label className="text-blue-900 font-semibold">Loại dịch vụ thực hiện *</Label>
+                <div className="flex gap-4">
+                  <div 
+                    onClick={() => setServiceType("Khám bệnh")}
+                    className={`flex-1 p-3 rounded-lg border-2 cursor-pointer transition-all flex items-center justify-center gap-2 ${
+                      serviceType === "Khám bệnh" 
+                      ? "border-blue-600 bg-blue-50 text-blue-700" 
+                      : "border-gray-100 bg-white text-gray-400 hover:border-gray-200"
+                    }`}
+                  >
+                    <div className={`h-4 w-4 rounded-full border-2 flex items-center justify-center ${serviceType === "Khám bệnh" ? "border-blue-600" : "border-gray-300"}`}>
+                      {serviceType === "Khám bệnh" && <div className="h-2 w-2 rounded-full bg-blue-600" />}
+                    </div>
+                    <span className="text-sm font-medium">Khám bệnh</span>
+                  </div>
+
+                  <div 
+                    onClick={() => setServiceType("Tiêm phòng")}
+                    className={`flex-1 p-3 rounded-lg border-2 cursor-pointer transition-all flex items-center justify-center gap-2 ${
+                      serviceType === "Tiêm phòng" 
+                      ? "border-blue-600 bg-blue-50 text-blue-700" 
+                      : "border-gray-100 bg-white text-gray-400 hover:border-gray-200"
+                    }`}
+                  >
+                    <div className={`h-4 w-4 rounded-full border-2 flex items-center justify-center ${serviceType === "Tiêm phòng" ? "border-blue-600" : "border-gray-300"}`}>
+                      {serviceType === "Tiêm phòng" && <div className="h-2 w-2 rounded-full bg-blue-600" />}
+                    </div>
+                    <span className="text-sm font-medium">Tiêm phòng</span>
+                  </div>
+                </div>
+              </div>
+
+              <div className="flex items-center justify-between pt-5 border-t border-gray-100 mt-6">
+                {/* Nút quay lại nằm bên trái, kiểu dáng nhẹ nhàng hơn */}
                 <Button
-                  variant="outline"
+                  variant="ghost"
+                  className="text-gray-500 hover:bg-gray-100 px-6"
                   onClick={() => {
                     setStep("customer-list");
                     setSelectedCustomer(null);
                     setSelectedPet(null);
                   }}
                 >
-                  Quay lại
+                  <ArrowLeft className="h-4 w-4 mr-2" />
+                  Quay lại bước trước
+                </Button>
+
+                {/* Nút chính nằm bên phải, nổi bật với màu xanh và bóng đổ */}
+                <Button 
+                  onClick={handleSubmit} 
+                  disabled={!selectedPet} 
+                  className={`gap-2 px-4 py-2 text-xs font-semibold transition-all ${
+                    !selectedPet 
+                      ? "bg-gray-200 text-gray-400" 
+                      : "bg-blue-700 hover:bg-blue-700 text-white hover:shadow-blue-200"
+                  }`}
+                >
+                  <Save className="h-3 w-3" />
+                  TẠO HỒ SƠ
                 </Button>
               </div>
             </CardContent>
