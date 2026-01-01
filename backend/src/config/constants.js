@@ -7,10 +7,10 @@ module.exports = {
   PORT: process.env.PORT || 3000,
 
   // Roles
-  ROLES: {
-    CUSTOMER: 'KHACH_HANG',
-    EMPLOYEE: 'NHAN_VIEN',
-    ADMIN: 'QUAN_TRI'
+  ROLES: { //Dương có sửa ở đây để làm đúng giá trị
+    CUSTOMER: "customer"  ,
+    EMPLOYEE: "staff",
+    ADMIN: "admin"
   },
 
   // Membership Tiers
