@@ -1,15 +1,15 @@
 import React from "react";
-import { NavLink, Link, useNavigate } from "react-router-dom"; 
-import { 
-  ShoppingCart, 
-  User, 
-  FolderOpen, 
-  ClipboardPlus, 
-  Star, 
-  Heart, 
+import { NavLink, Link, useNavigate } from "react-router-dom";
+import {
+  ShoppingCart,
+  User,
+  FolderOpen,
+  ClipboardPlus,
+  Star,
+  Heart,
   LogOut,
-  History, 
-  Calendar 
+  History,
+  Calendar,
 } from "lucide-react";
 
 import { Button } from "../ui/button";
@@ -57,9 +57,9 @@ export default function Header() {
       useAuthStore.getState().logout();
       navigate("/login");
     }
-  }
+  };
 
-  const navLinkClass = ({ isActive }) => 
+  const navLinkClass = ({ isActive }) =>
     `text-sm font-medium transition-colors hover:text-blue-600 ${
       isActive ? "text-blue-600" : "text-gray-600"
     }`;
@@ -70,7 +70,11 @@ export default function Header() {
         {/* Logo */}
         <div className="flex items-center gap-2">
           <Link to="/customer" className="flex items-center gap-2">
-            <Heart className="h-8 w-8 text-blue-600 fill-blue-600" />
+            <img
+              src="Logo.png"
+              alt="PetCareX Logo"
+              className="h-10 w-10 object-contain"
+            />
             <span className="text-xl font-bold text-blue-900">PetCareX</span>
           </Link>
         </div>
@@ -92,11 +96,11 @@ export default function Header() {
         </nav>
 
         <div className="flex items-center gap-3">
-  <Link to="/invoices">
-    <Button variant="ghost" size="icon" title="Lịch sử hóa đơn">
-      <History className="h-5 w-5" />
-    </Button>
-  </Link>
+          <Link to="/invoices">
+            <Button variant="ghost" size="icon" title="Lịch sử hóa đơn">
+              <History className="h-5 w-5" />
+            </Button>
+          </Link>
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button variant="ghost" size="icon" className="relative">
@@ -112,11 +116,21 @@ export default function Header() {
               <div className="max-h-80 overflow-y-auto">
                 <div className="flex items-start gap-3 p-3 hover:bg-gray-50 rounded-lg transition-colors">
                   <div className="flex-1">
-                    <p className="font-medium text-sm">Royal Canin Mini Adult</p>
+                    <p className="font-medium text-sm">
+                      Royal Canin Mini Adult
+                    </p>
                     <p className="text-xs text-gray-500">Thức ăn • SL: 2</p>
-                    <p className="text-sm font-semibold text-blue-600 mt-1">900.000₫</p>
+                    <p className="text-sm font-semibold text-blue-600 mt-1">
+                      900.000₫
+                    </p>
                   </div>
-                  <Button variant="ghost" size="sm" className="text-gray-400 hover:text-red-600">×</Button>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="text-gray-400 hover:text-red-600"
+                  >
+                    ×
+                  </Button>
                 </div>
               </div>
               <DropdownMenuSeparator />
@@ -125,7 +139,10 @@ export default function Header() {
                   <span>Tổng cộng:</span>
                   <span className="text-lg text-blue-600">1.185.000₫</span>
                 </div>
-                <Button asChild className="w-full bg-blue-600 hover:bg-blue-700">
+                <Button
+                  asChild
+                  className="w-full bg-blue-600 hover:bg-blue-700"
+                >
                   <Link to="/checkout">Thanh toán ngay</Link>
                 </Button>
               </div>
@@ -134,17 +151,24 @@ export default function Header() {
 
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="ghost" className="relative h-10 w-10 rounded-full border border-gray-100 hover:border-blue-200">
+              <Button
+                variant="ghost"
+                className="relative h-10 w-10 rounded-full border border-gray-100 hover:border-blue-200"
+              >
                 <Avatar className="h-9 w-9">
                   <AvatarImage src="/avatar-placeholder.png" alt="User" />
-                  <AvatarFallback className="bg-blue-100 text-blue-700">KH</AvatarFallback>
+                  <AvatarFallback className="bg-blue-100 text-blue-700">
+                    KH
+                  </AvatarFallback>
                 </Avatar>
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent className="w-64" align="end" forceMount>
               <DropdownMenuLabel className="font-normal">
                 <div className="flex flex-col space-y-1 py-1">
-                  <p className="text-sm font-semibold text-gray-900">Khách hàng</p>
+                  <p className="text-sm font-semibold text-gray-900">
+                    Khách hàng
+                  </p>
                   <p className="text-xs text-gray-500 truncate">
                     {isAuthenticated && <span>{user.Email}</span>}
                   </p>
@@ -158,26 +182,30 @@ export default function Header() {
               </DropdownMenuItem>
               <DropdownMenuItem asChild>
                 <Link to="/pets" className="cursor-pointer">
-                  <FolderOpen className="mr-3 h-4 w-4 text-gray-500" /> Hồ sơ thú cưng
+                  <FolderOpen className="mr-3 h-4 w-4 text-gray-500" /> Hồ sơ
+                  thú cưng
                 </Link>
               </DropdownMenuItem>
               <DropdownMenuItem asChild>
                 <Link to="/appointments" className="cursor-pointer">
-                  <Calendar className="mr-3 h-4 w-4 text-gray-500" /> Lịch hẹn của tôi
+                  <Calendar className="mr-3 h-4 w-4 text-gray-500" /> Lịch hẹn
+                  của tôi
                 </Link>
               </DropdownMenuItem>
               <DropdownMenuItem asChild>
                 <Link to="/vaccination-packages" className="cursor-pointer">
-                  <ClipboardPlus className="mr-3 h-4 w-4 text-gray-500" /> Gói tiêm phòng
+                  <ClipboardPlus className="mr-3 h-4 w-4 text-gray-500" /> Gói
+                  tiêm phòng
                 </Link>
               </DropdownMenuItem>
               <DropdownMenuItem asChild>
                 <Link to="/reviews" className="cursor-pointer">
-                  <Star className="mr-3 h-4 w-4 text-gray-500" /> Đánh giá dịch vụ
+                  <Star className="mr-3 h-4 w-4 text-gray-500" /> Đánh giá dịch
+                  vụ
                 </Link>
               </DropdownMenuItem>
               <DropdownMenuSeparator />
-              <DropdownMenuItem 
+              <DropdownMenuItem
                 className="text-red-600 focus:bg-red-50 focus:text-red-600 cursor-pointer"
                 onClick={() => handleLogout()}
               >

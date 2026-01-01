@@ -16,10 +16,18 @@ class AuthController {
   /**
    * Đăng nhập khách hàng
    */
+  // Trong file auth.controller.js
   async login(req, res, next) {
     try {
-      const { email, password } = req.body;
-      const response = await authService.login(email, password);
+      const { email, password, staffCode, role } = req.body;
+      let response;
+
+      if (role === "staff" && staffCode) {
+        response = await authService.loginStaff(staffCode);
+      } else {
+        response = await authService.login(email, password);
+      }
+
       return res.status(response.status || 200).json(response);
     } catch (error) {
       next(error);
@@ -31,10 +39,9 @@ class AuthController {
       success: true,
       status: 200,
       message: "Đăng xuất thành công",
-      error: null
+      error: null,
     });
   }
-
 }
 
 module.exports = new AuthController();
