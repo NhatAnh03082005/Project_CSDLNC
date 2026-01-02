@@ -1,105 +1,47 @@
-const express = require('express');
+const express = require("express");
 const router = express.Router();
-const { authenticate, authorize } = require('../../middlewares/auth');
-const { ROLES } = require('../../config/constants');
+const reportsController = require("./reports.controller");
 
 /**
  * @route   GET /api/reports/revenue
- * @desc    Báo cáo doanh thu
- * @access  Private - QUAN_TRI
+ * @desc    Thống kê doanh thu
+ * @access  Public
  */
-router.get('/revenue', authenticate, authorize(ROLES.ADMIN), (req, res) => {
-  res.json({ message: 'Get revenue report' });
-});
+router.get("/revenue", reportsController.getRevenueStats);
 
 /**
- * @route   GET /api/reports/revenue/branch/:branchId
- * @desc    Báo cáo doanh thu theo chi nhánh
- * @access  Private - QUAN_TRI
+ * @route   GET /api/reports/products
+ * @desc    Thống kê sản phẩm
+ * @access  Public
  */
-router.get('/revenue/branch/:branchId', authenticate, authorize(ROLES.ADMIN), (req, res) => {
-  res.json({ message: 'Get branch revenue report' });
-});
+router.get("/products", reportsController.getProductStats);
 
 /**
- * @route   GET /api/reports/revenue/service
- * @desc    Báo cáo doanh thu theo dịch vụ
- * @access  Private - QUAN_TRI
+ * @route   GET /api/reports/vaccines
+ * @desc    Thống kê loại vacxin
+ * @access  Public
  */
-router.get('/revenue/service', authenticate, authorize(ROLES.ADMIN), (req, res) => {
-  res.json({ message: 'Get service revenue report' });
-});
+router.get("/vaccines", reportsController.getVaccineStats);
 
 /**
- * @route   GET /api/reports/revenue/product
- * @desc    Báo cáo doanh thu theo sản phẩm
- * @access  Private - QUAN_TRI
+ * @route   GET /api/reports/services
+ * @desc    Thống kê dịch vụ
+ * @access  Public
  */
-router.get('/revenue/product', authenticate, authorize(ROLES.ADMIN), (req, res) => {
-  res.json({ message: 'Get product revenue report' });
-});
+router.get("/services", reportsController.getServiceStats);
 
 /**
  * @route   GET /api/reports/customers
  * @desc    Thống kê khách hàng
- * @access  Private - QUAN_TRI
+ * @access  Public
  */
-router.get('/customers', authenticate, authorize(ROLES.ADMIN), (req, res) => {
-  res.json({ message: 'Get customer statistics' });
-});
+router.get("/customers", reportsController.getCustomerStats);
 
 /**
- * @route   GET /api/reports/customers/new
- * @desc    Thống kê khách hàng mới
- * @access  Private - QUAN_TRI
+ * @route   GET /api/reports/performance
+ * @desc    Thống kê hiệu suất nhân viên
+ * @access  Public
  */
-router.get('/customers/new', authenticate, authorize(ROLES.ADMIN), (req, res) => {
-  res.json({ message: 'Get new customers report' });
-});
-
-/**
- * @route   GET /api/reports/customers/by-tier
- * @desc    Thống kê theo hạng thành viên
- * @access  Private - QUAN_TRI
- */
-router.get('/customers/by-tier', authenticate, authorize(ROLES.ADMIN), (req, res) => {
-  res.json({ message: 'Get customers by tier report' });
-});
-
-/**
- * @route   GET /api/reports/vaccinations
- * @desc    Thống kê tiêm phòng
- * @access  Private - QUAN_TRI
- */
-router.get('/vaccinations', authenticate, authorize(ROLES.ADMIN), (req, res) => {
-  res.json({ message: 'Get vaccination statistics' });
-});
-
-/**
- * @route   GET /api/reports/vaccinations/top
- * @desc    Top vacxin được sử dụng nhiều nhất
- * @access  Private - QUAN_TRI
- */
-router.get('/vaccinations/top', authenticate, authorize(ROLES.ADMIN), (req, res) => {
-  res.json({ message: 'Get top vaccinations' });
-});
-
-/**
- * @route   GET /api/reports/employees/performance
- * @desc    Hiệu suất nhân viên
- * @access  Private - QUAN_TRI
- */
-router.get('/employees/performance', authenticate, authorize(ROLES.ADMIN), (req, res) => {
-  res.json({ message: 'Get employee performance report' });
-});
-
-/**
- * @route   GET /api/reports/dashboard
- * @desc    Dashboard tổng quan
- * @access  Private - QUAN_TRI
- */
-router.get('/dashboard', authenticate, authorize(ROLES.ADMIN), (req, res) => {
-  res.json({ message: 'Get dashboard statistics' });
-});
+router.get("/performance", reportsController.getPerformanceStats);
 
 module.exports = router;

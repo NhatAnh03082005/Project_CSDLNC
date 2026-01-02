@@ -76,7 +76,7 @@ export default function Header() {
         <div className="flex items-center gap-2">
           <Link to="/customer" className="flex items-center gap-2">
             <img
-              src="Logo.png"
+              src="logo.png"
               alt="PetCareX Logo"
               className="h-10 w-10 object-contain"
             />

@@ -1,6 +1,34 @@
-const { sql, poolPromise } = require("../../config/database");
+const sql = require("mssql");
+const { poolPromise } = require("../../config/database");
 
 class ProductsService {
+  /**
+   * Lấy danh sách toàn bộ sản phẩm (Dùng cho Admin)
+   * logic từ feature/admin
+   */
+  async getAllProducts() {
+    try {
+      const pool = await poolPromise;
+      const result = await pool.request().query(`
+          SELECT 
+            MaSanPham,
+            TenSanPham,
+            LoaiSanPham,
+            DonGia
+          FROM SanPham
+          ORDER BY MaSanPham
+        `);
+
+      return result.recordset;
+    } catch (error) {
+      throw error;
+    }
+  }
+
+  /**
+   * Lấy danh sách sản phẩm theo chi nhánh (Dùng cho Client)
+   * logic từ HEAD
+   */
   async getProductsByBranch(maChiNhanh) {
     try {
       const pool = await poolPromise;
@@ -74,7 +102,6 @@ class ProductsService {
       };
     } catch (error) {
       console.error("Error fetching products by branch:", error);
-      console.error("maChiNhanh received:", maChiNhanh);
       return {
         success: false,
         status: 500,
@@ -84,95 +111,159 @@ class ProductsService {
     }
   }
 
-  async getProductById(maSanPham, maChiNhanh) {
+  /**
+   * Lấy chi tiết sản phẩm
+   * Gộp logic: Hỗ trợ cả truy vấn chung (Admin) và truy vấn kèm tồn kho chi nhánh (Client)
+   */
+  async getProductById(maSanPham, maChiNhanh = null) {
     try {
       const pool = await poolPromise;
 
       if (!maSanPham) {
+        // Trả về error format cho client nếu thiếu params
+        if (maChiNhanh)
+          return { success: false, status: 400, message: "Thiếu mã sản phẩm" };
+        throw new Error("Mã sản phẩm không được để trống");
+      }
+
+      // Nếu có maChiNhanh -> Trả về format chi tiết kèm tồn kho (Client logic HEAD)
+      if (maChiNhanh) {
+        const maChiNhanhFormatted = String(maChiNhanh).trim();
+        const result = await pool
+          .request()
+          .input("MaSanPham", sql.Char(5), maSanPham)
+          .input("MaChiNhanh", sql.Char(4), maChiNhanhFormatted)
+          .query(
+            `
+            SELECT 
+              sp.MaSanPham,
+              sp.TenSanPham,
+              sp.LoaiSanPham,
+              sp.DonGia,
+              ISNULL(tk.SoLuongTon, 0) AS SoLuongTonKho
+            FROM dbo.SanPham sp
+            LEFT JOIN dbo.SanPham_TonKho tk 
+              ON sp.MaSanPham = tk.MaSanPham AND tk.MaChiNhanh = @MaChiNhanh
+            WHERE sp.MaSanPham = @MaSanPham
+          `
+          );
+
+        if (result.recordset.length === 0) {
+          return {
+            success: false,
+            status: 404,
+            message: "Không tìm thấy sản phẩm",
+          };
+        }
+
+        const product = result.recordset[0];
+        const branchResult = await pool
+          .request()
+          .input("MaChiNhanh", sql.Char(4), maChiNhanhFormatted)
+          .query(
+            `SELECT TOP 1 MaChiNhanh, TenChiNhanh FROM dbo.ChiNhanh WHERE MaChiNhanh = @MaChiNhanh`
+          );
+
         return {
-          success: false,
-          status: 400,
-          message: "Mã sản phẩm không được để trống",
+          success: true,
+          status: 200,
+          data: {
+            maSanPham: product.MaSanPham,
+            tenSanPham: product.TenSanPham,
+            loaiSanPham: product.LoaiSanPham,
+            donGia: parseFloat(product.DonGia),
+            soLuongTonKho: product.SoLuongTonKho || 0,
+            chiNhanh:
+              branchResult.recordset.length > 0
+                ? {
+                    maChiNhanh: branchResult.recordset[0].MaChiNhanh,
+                    tenChiNhanh: branchResult.recordset[0].TenChiNhanh,
+                  }
+                : null,
+            moTa: null,
+          },
         };
       }
 
-      if (!maChiNhanh) {
-        return {
-          success: false,
-          status: 400,
-          message: "Mã chi nhánh không được để trống",
-        };
-      }
-
-      const maChiNhanhFormatted = String(maChiNhanh).trim();
-
+      // Nếu không có maChiNhanh -> Trả về format đơn giản (Admin logic feature/admin)
       const result = await pool
         .request()
-        .input("MaSanPham", sql.Char(5), maSanPham)
-        .input("MaChiNhanh", sql.Char(4), maChiNhanhFormatted)
+        .input("MaSanPham", sql.NVarChar, maSanPham)
         .query(
-          `
-          SELECT 
-            sp.MaSanPham,
-            sp.TenSanPham,
-            sp.LoaiSanPham,
-            sp.DonGia,
-            ISNULL(tk.SoLuongTon, 0) AS SoLuongTonKho
-          FROM dbo.SanPham sp
-          LEFT JOIN dbo.SanPham_TonKho tk 
-            ON sp.MaSanPham = tk.MaSanPham AND tk.MaChiNhanh = @MaChiNhanh
-          WHERE sp.MaSanPham = @MaSanPham
-        `
+          `SELECT MaSanPham, TenSanPham, LoaiSanPham, DonGia FROM SanPham WHERE MaSanPham = @MaSanPham`
         );
 
-      if (result.recordset.length === 0) {
+      return result.recordset[0];
+    } catch (error) {
+      if (maChiNhanh)
         return {
           success: false,
-          status: 404,
-          message: "Không tìm thấy sản phẩm",
+          status: 500,
+          message: "Lỗi Server",
+          error: error.message,
         };
+      throw error;
+    }
+  }
+
+  /**
+   * Tạo sản phẩm mới (Admin)
+   * logic từ feature/admin
+   */
+  async createProduct(productData) {
+    try {
+      const pool = await poolPromise;
+      const { TenSanPham, LoaiSanPham, DonGia } = productData;
+
+      if (!TenSanPham || !LoaiSanPham || !DonGia) {
+        throw new Error("Vui lòng điền đầy đủ thông tin bắt buộc");
       }
 
-      const product = result.recordset[0];
-
-      const branchResult = await pool
+      const insertResult = await pool
         .request()
-        .input("MaChiNhanh", sql.Char(4), maChiNhanhFormatted)
-        .query(
-          `
-          SELECT TOP 1 MaChiNhanh, TenChiNhanh
-          FROM dbo.ChiNhanh
-          WHERE MaChiNhanh = @MaChiNhanh
-        `
-        );
+        .input("TenSanPham", sql.NVarChar, TenSanPham)
+        .input("LoaiSanPham", sql.NVarChar, LoaiSanPham)
+        .input("DonGia", sql.Int, DonGia).query(`
+          INSERT INTO SanPham (TenSanPham, LoaiSanPham, DonGia)
+          VALUES (@TenSanPham, @LoaiSanPham, @DonGia);
+          SELECT SCOPE_IDENTITY() AS MaSanPham;
+        `);
 
-      return {
-        success: true,
-        status: 200,
-        data: {
-          maSanPham: product.MaSanPham,
-          tenSanPham: product.TenSanPham,
-          loaiSanPham: product.LoaiSanPham,
-          donGia: parseFloat(product.DonGia),
-          soLuongTonKho: product.SoLuongTonKho || 0,
-          chiNhanh: branchResult.recordset.length > 0 ? {
-            maChiNhanh: branchResult.recordset[0].MaChiNhanh,
-            tenChiNhanh: branchResult.recordset[0].TenChiNhanh,
-          } : null,
-          moTa: null,
-        },
-      };
+      const maSanPham = insertResult.recordset[0].MaSanPham;
+      return await this.getProductById(maSanPham);
     } catch (error) {
-      console.error("Error fetching product details:", error);
-      return {
-        success: false,
-        status: 500,
-        message: "Lỗi khi lấy chi tiết sản phẩm",
-        error: error.message,
-      };
+      console.error("Error in createProduct:", error);
+      throw error;
+    }
+  }
+
+  /**
+   * Cập nhật sản phẩm (Admin)
+   * logic từ feature/admin
+   */
+  async updateProduct(maSanPham, productData) {
+    try {
+      const pool = await poolPromise;
+      const { TenSanPham, LoaiSanPham, DonGia } = productData;
+
+      await pool
+        .request()
+        .input("MaSanPham", sql.NVarChar, maSanPham)
+        .input("TenSanPham", sql.NVarChar, TenSanPham)
+        .input("LoaiSanPham", sql.NVarChar, LoaiSanPham)
+        .input("DonGia", sql.Int, DonGia).query(`
+            UPDATE SanPham
+            SET
+              TenSanPham = @TenSanPham,
+              LoaiSanPham = @LoaiSanPham,
+              DonGia = @DonGia
+            WHERE MaSanPham = @MaSanPham
+        `);
+      return await this.getProductById(maSanPham);
+    } catch (error) {
+      throw error;
     }
   }
 }
 
 module.exports = new ProductsService();
-

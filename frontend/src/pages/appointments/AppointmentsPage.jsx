@@ -2,7 +2,13 @@ import React, { useState, useEffect } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { Link } from "react-router-dom";
 import { Button } from "../../components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../../components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "../../components/ui/card";
 import { Badge } from "../../components/ui/badge";
 import {
   AlertDialog,
@@ -14,7 +20,17 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "../../components/ui/alert-dialog";
-import { Heart, ArrowLeft, Calendar, Clock, MapPin, User, X, Loader2, CheckCircle2 } from "lucide-react";
+import {
+  Heart,
+  ArrowLeft,
+  Calendar,
+  Clock,
+  MapPin,
+  User,
+  X,
+  Loader2,
+  CheckCircle2,
+} from "lucide-react";
 import { appointmentAPI } from "../../api/services";
 import { Pagination } from "../../components/ui/pagination";
 
@@ -89,36 +105,16 @@ export default function AppointmentsPage() {
       }
     } catch (error) {
       console.error("Lỗi khi hủy lịch hẹn:", error);
-      const errorMessage = error.response?.data?.message || error.message || "Hủy lịch hẹn thất bại. Vui lòng thử lại!";
+      const errorMessage =
+        error.response?.data?.message ||
+        error.message ||
+        "Hủy lịch hẹn thất bại. Vui lòng thử lại!";
       alert(errorMessage);
     }
   };
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-blue-50 to-white">
-      <header className="sticky top-0 z-50 w-full border-b bg-white/95 backdrop-blur supports-[backdrop-filter]:bg-white/60">
-        <div className="container mx-auto flex h-16 items-center justify-between px-4">
-          <div className="flex items-center gap-2">
-            <Heart className="h-8 w-8 text-blue-600 fill-blue-600" />
-            <span className="text-xl font-bold text-blue-900">PetCare</span>
-          </div>
-          <nav className="flex items-center gap-6">
-            <Link to="/customer" className="text-sm font-medium hover:text-blue-600 transition-colors">
-              Trang chủ
-            </Link>
-            <Link to="/services" className="text-sm font-medium hover:text-blue-600 transition-colors">
-              Dịch vụ
-            </Link>
-            <Link to="/products" className="text-sm font-medium hover:text-blue-600 transition-colors">
-              Sản phẩm
-            </Link>
-            <Link to="/about" className="text-sm font-medium hover:text-blue-600 transition-colors">
-              Về chúng tôi
-            </Link>
-          </nav>
-        </div>
-      </header>
-
       <div className="container mx-auto px-4 py-12 max-w-4xl">
         <div className="mb-8">
           <Link to="/customer">
@@ -127,8 +123,12 @@ export default function AppointmentsPage() {
               Quay lại
             </Button>
           </Link>
-          <h1 className="text-3xl font-bold text-blue-900 mb-2">Lịch hẹn của tôi</h1>
-          <p className="text-gray-600">Quản lý các lịch hẹn khám bệnh và tiêm phòng</p>
+          <h1 className="text-3xl font-bold text-blue-900 mb-2">
+            Lịch hẹn của tôi
+          </h1>
+          <p className="text-gray-600">
+            Quản lý các lịch hẹn khám bệnh và tiêm phòng
+          </p>
         </div>
 
         {showSuccess && (
@@ -140,9 +140,12 @@ export default function AppointmentsPage() {
                     <CheckCircle2 className="h-5 w-5 text-green-600" />
                   </div>
                   <div className="flex-1">
-                    <p className="font-semibold text-green-900">Đặt lịch thành công!</p>
+                    <p className="font-semibold text-green-900">
+                      Đặt lịch thành công!
+                    </p>
                     <p className="text-sm text-green-700">
-                      Lịch hẹn của bạn đã được tạo và đang chờ xác nhận từ chi nhánh.
+                      Lịch hẹn của bạn đã được tạo và đang chờ xác nhận từ chi
+                      nhánh.
                     </p>
                   </div>
                 </div>
@@ -153,7 +156,9 @@ export default function AppointmentsPage() {
                   onClick={() => {
                     const newSearchParams = new URLSearchParams(searchParams);
                     newSearchParams.delete("success");
-                    navigate(`/appointments?${newSearchParams.toString()}`, { replace: true });
+                    navigate(`/appointments?${newSearchParams.toString()}`, {
+                      replace: true,
+                    });
                   }}
                 >
                   <X className="h-4 w-4" />
@@ -176,20 +181,27 @@ export default function AppointmentsPage() {
                 const canCancel = isPending;
 
                 return (
-                  <Card key={appointment.MaLichHen} className="hover:shadow-md transition-shadow">
+                  <Card
+                    key={appointment.MaLichHen}
+                    className="hover:shadow-md transition-shadow"
+                  >
                     <CardHeader>
                       <div className="flex items-start justify-between">
                         <div className="space-y-1">
                           <CardTitle className="text-xl flex items-center gap-2">
-                            {serviceNames[appointment.LoaiDichVu] || appointment.LoaiDichVu}
+                            {serviceNames[appointment.LoaiDichVu] ||
+                              appointment.LoaiDichVu}
                             <Badge
                               variant={isCompleted ? "default" : "secondary"}
                               className={isCompleted ? "bg-green-600" : ""}
                             >
-                              {statusNames[appointment.TrangThai] || appointment.TrangThai}
+                              {statusNames[appointment.TrangThai] ||
+                                appointment.TrangThai}
                             </Badge>
                           </CardTitle>
-                          <CardDescription>{appointment.TenChiNhanh}</CardDescription>
+                          <CardDescription>
+                            {appointment.TenChiNhanh}
+                          </CardDescription>
                         </div>
                       </div>
                     </CardHeader>
@@ -202,13 +214,25 @@ export default function AppointmentsPage() {
                               {(() => {
                                 const dateStr = appointment.ThoiGianHen;
                                 let date;
-                                if (typeof dateStr === 'string' && dateStr.includes('T')) {
-                                  const dateOnly = dateStr.split('T')[0];
-                                  const [year, month, day] = dateOnly.split('-');
-                                  date = new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
-                                } else if (typeof dateStr === 'string') {
-                                  const [year, month, day] = dateStr.split('-');
-                                  date = new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
+                                if (
+                                  typeof dateStr === "string" &&
+                                  dateStr.includes("T")
+                                ) {
+                                  const dateOnly = dateStr.split("T")[0];
+                                  const [year, month, day] =
+                                    dateOnly.split("-");
+                                  date = new Date(
+                                    parseInt(year),
+                                    parseInt(month) - 1,
+                                    parseInt(day)
+                                  );
+                                } else if (typeof dateStr === "string") {
+                                  const [year, month, day] = dateStr.split("-");
+                                  date = new Date(
+                                    parseInt(year),
+                                    parseInt(month) - 1,
+                                    parseInt(day)
+                                  );
                                 } else {
                                   date = new Date(dateStr);
                                 }
@@ -224,38 +248,48 @@ export default function AppointmentsPage() {
                           {appointment.TenBacSiPhuTrach && (
                             <div className="flex items-center gap-2 text-sm">
                               <User className="h-4 w-4 text-gray-500" />
-                              <span className="text-gray-700">BS: {appointment.TenBacSiPhuTrach}</span>
+                              <span className="text-gray-700">
+                                BS: {appointment.TenBacSiPhuTrach}
+                              </span>
                             </div>
                           )}
                         </div>
                         <div className="space-y-3">
                           <div className="flex items-center gap-2 text-sm">
                             <MapPin className="h-4 w-4 text-gray-500" />
-                            <span className="text-gray-700 text-pretty">{appointment.DiaChiChiNhanh}</span>
+                            <span className="text-gray-700 text-pretty">
+                              {appointment.DiaChiChiNhanh}
+                            </span>
                           </div>
                           <div className="flex items-center gap-2 text-sm">
                             <Clock className="h-4 w-4 text-gray-500" />
-                            <span className="text-gray-700">{appointment.SDTChiNhanh}</span>
+                            <span className="text-gray-700">
+                              {appointment.SDTChiNhanh}
+                            </span>
                           </div>
                         </div>
                       </div>
-                        {canCancel && appointment.TrangThai !== "Hoàn thành" && appointment.TrangThai !== "Đã hủy" && (
-                        <div className="mt-6 pt-4 border-t border-gray-200">
-                          <Button
-                            variant="outline"
-                            className="w-full text-red-600 border-red-300 hover:bg-red-50 hover:border-red-400 hover:text-red-700 transition-all duration-200 font-medium shadow-sm hover:shadow-md"
-                            onClick={() => setCancellingId(appointment.MaLichHen)}
-                          >
-                            <X className="h-4 w-4 mr-2" />
-                            Hủy lịch hẹn
-                          </Button>
-                        </div>
-                      )}
+                      {canCancel &&
+                        appointment.TrangThai !== "Hoàn thành" &&
+                        appointment.TrangThai !== "Đã hủy" && (
+                          <div className="mt-6 pt-4 border-t border-gray-200">
+                            <Button
+                              variant="outline"
+                              className="w-full text-red-600 border-red-300 hover:bg-red-50 hover:border-red-400 hover:text-red-700 transition-all duration-200 font-medium shadow-sm hover:shadow-md"
+                              onClick={() =>
+                                setCancellingId(appointment.MaLichHen)
+                              }
+                            >
+                              <X className="h-4 w-4 mr-2" />
+                              Hủy lịch hẹn
+                            </Button>
+                          </div>
+                        )}
                     </CardContent>
                   </Card>
                 );
               })}
-              
+
               {pagination.totalPages > 1 && (
                 <Pagination
                   currentPage={pagination.page}
@@ -271,8 +305,12 @@ export default function AppointmentsPage() {
                   <Calendar className="h-8 w-8 text-gray-400" />
                 </div>
                 <div>
-                  <p className="text-lg font-semibold text-gray-900 mb-1">Chưa có lịch hẹn nào</p>
-                  <p className="text-gray-600">Đặt lịch hẹn ngay để chăm sóc thú cưng của bạn</p>
+                  <p className="text-lg font-semibold text-gray-900 mb-1">
+                    Chưa có lịch hẹn nào
+                  </p>
+                  <p className="text-gray-600">
+                    Đặt lịch hẹn ngay để chăm sóc thú cưng của bạn
+                  </p>
                 </div>
                 <Link to="/customer">
                   <Button className="mt-2">Đặt lịch ngay</Button>
@@ -283,15 +321,21 @@ export default function AppointmentsPage() {
         </div>
       </div>
 
-      <AlertDialog open={!!cancellingId} onOpenChange={() => {
-        setCancellingId(null);
-        setCancellingAppointment(null);
-      }}>
+      <AlertDialog
+        open={!!cancellingId}
+        onOpenChange={() => {
+          setCancellingId(null);
+          setCancellingAppointment(null);
+        }}
+      >
         <AlertDialogContent className="bg-white border-gray-300 shadow-xl">
           <AlertDialogHeader>
-            <AlertDialogTitle className="text-gray-900">Xác nhận hủy lịch hẹn</AlertDialogTitle>
+            <AlertDialogTitle className="text-gray-900">
+              Xác nhận hủy lịch hẹn
+            </AlertDialogTitle>
             <AlertDialogDescription className="text-gray-600">
-              Bạn có chắc chắn muốn hủy lịch hẹn này? Hành động này không thể hoàn tác.
+              Bạn có chắc chắn muốn hủy lịch hẹn này? Hành động này không thể
+              hoàn tác.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
