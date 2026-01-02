@@ -181,14 +181,14 @@ export default function LoginPage() {
                       required
                     />
                   </div>
-                  <div className="flex justify-end">
+                  {/* <div className="flex justify-end">
                     <Link
                       to="#"
                       className="text-sm text-blue-600 hover:underline"
                     >
                       Quên mật khẩu?
                     </Link>
-                  </div>
+                  </div> */}
                 </div>
               )}
 
