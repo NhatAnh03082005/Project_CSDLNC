@@ -38,8 +38,8 @@ module.exports = {
 
   // Service Types
   SERVICE_TYPES: {
-    MEDICAL: 'KhamBenh',
-    VACCINATION: 'TiemPhong'
+    MEDICAL: 'Khám bệnh',// Dương đã sửa ở SERVICE_TYPES để đúng với giá trị trong DB
+    VACCINATION: 'Tiêm phòng'
   },
 
   // Product Categories
