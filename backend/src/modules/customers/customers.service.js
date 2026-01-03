@@ -457,6 +457,9 @@ class CustomersService {
         data: {
           ...invoiceInfo.recordset[0],
           chiTiet: formattedDetails,
+          // Đảm bảo trả về thông tin khuyến mãi
+          MaKhuyenMai: invoiceInfo.recordset[0].MaKhuyenMai || null,
+          TiLeGiamGia: invoiceInfo.recordset[0].TiLeGiamGia || 0,
         },
       };
     } catch (error) {
@@ -690,8 +693,8 @@ class CustomersService {
           });
         }
 
-        const phuThu = 0;
-        const tongTienFinal = tongTien + phuThu;
+        // Không cộng phí vận chuyển vì trigger trong database đã tự động tính tổng tiền
+        const tongTienFinal = tongTien;
         // Tính điểm loyalty (sẽ cộng vào KhachHang khi nhân viên xác nhận)
         const diemLoyalty = Math.floor(tongTienFinal / POINTS_PER_VND);
 

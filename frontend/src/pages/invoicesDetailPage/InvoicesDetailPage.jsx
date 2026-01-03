@@ -118,10 +118,43 @@ export default function InvoiceDetailPage() {
                 <div className="ml-12 pl-1 border-l-2 border-gray-100">
                   <div className="text-sm text-gray-600 space-y-1">
                     {item.LoaiChiTiet === "MuaHang" && (
-                      <p className="flex justify-between">
-                        <span>Sản phẩm: <strong>{item.ChiTiet.TenSanPham}</strong></span>
-                        <span>Số lượng: {item.ChiTiet.SoLuong}</span>
-                      </p>
+                      <div className="space-y-2">
+                        <p className="flex justify-between">
+                          <span>Sản phẩm: <strong>{item.ChiTiet.TenSanPham}</strong></span>
+                          <span>Số lượng: {item.ChiTiet.SoLuong}</span>
+                        </p>
+                        {(() => {
+                          const giaGoc = (item.ChiTiet.DonGia || 0) * (item.ChiTiet.SoLuong || 0);
+                          const giaSauGiam = item.ThanhTien || 0;
+                          const tienGiam = giaGoc - giaSauGiam;
+                          const tiLeGiam = data.TiLeGiamGia || 0;
+                          
+                          if (tiLeGiam > 0 && tienGiam > 0) {
+                            return (
+                              <div className="bg-green-50 border border-green-200 rounded-lg p-2 space-y-1 text-xs">
+                                <div className="flex justify-between text-gray-700">
+                                  <span>Giá gốc:</span>
+                                  <span className="line-through text-gray-500">{giaGoc.toLocaleString()}₫</span>
+                                </div>
+                                <div className="flex justify-between text-green-600 font-medium">
+                                  <span>Giảm giá ({tiLeGiam}%):</span>
+                                  <span>-{tienGiam.toLocaleString()}₫</span>
+                                </div>
+                                <div className="flex justify-between text-blue-700 font-bold border-t border-green-200 pt-1">
+                                  <span>Thành tiền:</span>
+                                  <span>{giaSauGiam.toLocaleString()}₫</span>
+                                </div>
+                              </div>
+                            );
+                          } else {
+                            return (
+                              <div className="text-xs text-gray-500">
+                                Đơn giá: {item.ChiTiet.DonGia?.toLocaleString() || 0}₫ × {item.ChiTiet.SoLuong || 0} = {giaGoc.toLocaleString()}₫
+                              </div>
+                            );
+                          }
+                        })()}
+                      </div>
                     )}
                     {item.LoaiChiTiet === "KhamBenh" && (
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
@@ -151,6 +184,33 @@ export default function InvoiceDetailPage() {
                   {data.HinhThucThanhToan}
                 </Badge>
               </div>
+              
+              {/* Hiển thị thông tin khuyến mãi nếu có */}
+              {data.TiLeGiamGia > 0 && data.MaKhuyenMai && (() => {
+                const tongTienTruocGiam = data.chiTiet.reduce((sum, item) => {
+                  if (item.LoaiChiTiet === "MuaHang") {
+                    return sum + ((item.ChiTiet.DonGia || 0) * (item.ChiTiet.SoLuong || 0));
+                  }
+                  return sum + (item.ThanhTien || 0);
+                }, 0);
+                const tongTienSauGiam = data.TongTien || 0;
+                const tongTienGiam = tongTienTruocGiam - tongTienSauGiam;
+                
+                return (
+                  <div className="w-full max-w-md bg-green-50 border border-green-200 rounded-lg p-4 space-y-2">
+                    <div className="flex justify-between text-sm text-gray-700">
+                      <span>Tạm tính:</span>
+                      <span className="line-through text-gray-500">{tongTienTruocGiam.toLocaleString()}₫</span>
+                    </div>
+                    <div className="flex justify-between text-sm text-green-600 font-medium">
+                      <span>Khuyến mãi ({data.TiLeGiamGia}%):</span>
+                      <span>-{tongTienGiam.toLocaleString()}₫</span>
+                    </div>
+                    <div className="border-t border-green-200 pt-2"></div>
+                  </div>
+                );
+              })()}
+              
               <div className="flex items-baseline gap-4 mt-2">
                 <span className="text-lg font-medium text-gray-700">Tổng cộng thanh toán:</span>
                 <h3 className="text-3xl font-black text-blue-600">

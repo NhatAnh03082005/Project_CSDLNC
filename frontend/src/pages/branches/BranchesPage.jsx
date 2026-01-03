@@ -21,7 +21,6 @@ import {
 import { Label } from "../../components/ui/label";
 import { Input } from "../../components/ui/input";
 import {
-  Heart,
   MapPin,
   Phone,
   Clock,
@@ -33,6 +32,7 @@ import {
 } from "lucide-react";
 import { branchAPI, appointmentAPI } from "../../api/services";
 import { Pagination } from "../../components/ui/pagination";
+import Header from "../../components/layout/header";
 
 const serviceInfo = {
   exam: {
@@ -248,14 +248,7 @@ export default function BranchesPage() {
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-blue-50 to-white">
-      <header className="sticky top-0 z-50 w-full border-b bg-white/95 backdrop-blur supports-[backdrop-filter]:bg-white/60">
-        <div className="container mx-auto flex h-16 items-center justify-between px-4">
-          <div className="flex items-center gap-2">
-            <Heart className="h-8 w-8 text-blue-600 fill-blue-600" />
-            <span className="text-xl font-bold text-blue-900">PetCareX</span>
-          </div>
-        </div>
-      </header>
+      <Header />
 
       <div className="container mx-auto px-4 py-12">
         <div className="mb-8">

@@ -9,6 +9,7 @@ import { Badge } from "../../components/ui/badge";
 import { Heart, ArrowLeft, CreditCard, Banknote, Tag, Calendar, Loader2, CheckCircle2 } from "lucide-react";
 import { useCartStore } from "../../store/cartStore";
 import { orderAPI, promotionAPI } from "../../api/services";
+import Header from "../../components/layout/header";
 
 export default function CheckoutPage() {
   const navigate = useNavigate();
@@ -59,14 +60,13 @@ export default function CheckoutPage() {
     (sum, item) => sum + (item.donGia || item.price || 0) * item.soLuong,
     0,
   );
-  const shippingFee = 30000; // Phí vận chuyển 30k khi đặt hàng trên web
 
   // Tính discount dựa trên active promotion (giống logic trigger)
   const discountPercent = activePromotion ? activePromotion.TiLeGiamGia : 0;
   const discountAmount = Math.floor((subtotal * discountPercent) / 100);
   
-  // Tổng tiền = (subtotal - discount) + shippingFee
-  const total = (subtotal - discountAmount) + shippingFee;
+  // Tổng tiền = subtotal - discount (không có phí vận chuyển, trigger sẽ tự tính)
+  const total = subtotal - discountAmount;
 
   const handlePlaceOrder = async () => {
     if (cartItems.length === 0) {
@@ -150,14 +150,7 @@ export default function CheckoutPage() {
   return (
     <div className="min-h-screen bg-gradient-to-b from-blue-50 to-white">
       {/* Header */}
-      <header className="sticky top-0 z-50 w-full border-b bg-white/95 backdrop-blur supports-[backdrop-filter]:bg-white/60">
-        <div className="container mx-auto flex h-16 items-center justify-between px-4">
-          <div className="flex items-center gap-2">
-            <Heart className="h-8 w-8 text-blue-600 fill-blue-600" />
-            <span className="text-xl font-bold text-blue-900">PetCareX</span>
-          </div>
-        </div>
-      </header>
+      <Header />
 
       {/* Main Content */}
       <div className="container mx-auto px-4 py-12">
@@ -321,10 +314,6 @@ export default function CheckoutPage() {
                   <div className="flex justify-between text-sm">
                     <span className="text-gray-600">Tạm tính:</span>
                     <span>{formatPrice(subtotal)}</span>
-                  </div>
-                  <div className="flex justify-between text-sm">
-                    <span className="text-gray-600">Phí vận chuyển:</span>
-                    <span>{formatPrice(shippingFee)}</span>
                   </div>
                   {discountAmount > 0 && activePromotion && (
                     <div className="flex justify-between text-sm text-green-600">

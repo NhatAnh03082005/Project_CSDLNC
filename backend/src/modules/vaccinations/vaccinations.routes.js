@@ -18,20 +18,6 @@ router.get("/", vaccinationsController.getAllVaccines);
  */
 router.post("/", vaccinationsController.createVaccine);
 
-/**
- * @route   GET /api/vaccinations/:id
- * @desc    Chi tiết vắc-xin
- * @access  Public (tạm thời)
- */
-router.get("/:id", vaccinationsController.getVaccineById);
-
-/**
- * @route   PUT /api/vaccinations/:id
- * @desc    Cập nhật thông tin vắc-xin
- * @access  Public (tạm thời)
- */
-router.put("/:id", vaccinationsController.updateVaccine);
-
 // =====================================================================
 // LOGIC GHI NHẬN & LỊCH SỬ TIÊM PHÒNG
 // =====================================================================
@@ -146,5 +132,23 @@ router.get(
   authorize(ROLES.CUSTOMER),
   vaccinationsController.getSubscriptionDetails
 );
+
+// =====================================================================
+// LOGIC QUẢN LÝ VẮC-XIN (ADMIN) - Phải đặt sau các route cụ thể
+// =====================================================================
+
+/**
+ * @route   GET /api/vaccinations/:id
+ * @desc    Chi tiết vắc-xin
+ * @access  Public (tạm thời)
+ */
+router.get("/:id", vaccinationsController.getVaccineById);
+
+/**
+ * @route   PUT /api/vaccinations/:id
+ * @desc    Cập nhật thông tin vắc-xin
+ * @access  Public (tạm thời)
+ */
+router.put("/:id", vaccinationsController.updateVaccine);
 
 module.exports = router;
