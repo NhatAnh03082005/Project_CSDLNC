@@ -1,4 +1,4 @@
-const express = require('express');
+const express = require("express");
 const router = express.Router();
 const employeeController = require('./employees.controller');
 const { authenticate, authorize } = require('../../middlewares/auth');
@@ -7,7 +7,7 @@ const { ROLES } = require('../../config/constants');
 /**
  * @route   GET /api/employees
  * @desc    Danh sách nhân viên
- * @access  Private - QUAN_TRI
+ * @access  Public (tạm thời)
  */
 // router.get('/', authenticate, authorize(ROLES.ADMIN), (req, res) => {
 //   res.json({ message: 'Get employees list' });
@@ -20,7 +20,7 @@ employeeController.getAll);
 /**
  * @route   POST /api/employees
  * @desc    Thêm nhân viên mới
- * @access  Private - QUAN_TRI
+ * @access  Public (tạm thời)
  */
 // router.post('/', authenticate, authorize(ROLES.ADMIN), (req, res) => {
 //   res.json({ message: 'Create employee' });
@@ -33,7 +33,7 @@ router.post('/',
 /**
  * @route   GET /api/employees/doctors
  * @desc    Danh sách bác sĩ (để đặt lịch)
- * @access  Private
+ * @access  Public (tạm thời)
  */
 // router.get('/doctors', authenticate, (req, res) => {
 //   res.json({ message: 'Get doctors list' });

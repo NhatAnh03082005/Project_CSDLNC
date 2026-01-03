@@ -1,8 +1,16 @@
-const express = require('express');
+const express = require("express");
 const router = express.Router();
-const { authenticate, authorize } = require('../../middlewares/auth');
-const { ROLES } = require('../../config/constants');
-const customersService = require('./customers.service');
+const { authenticate, authorize } = require("../../middlewares/auth");
+const { ROLES } = require("../../config/constants");
+const customersController = require("./customers.controller");
+const employeesController = require("../employees/employees.controller");
+
+/**
+ * @route   GET /api/customers/employees
+ * @desc    Test danh sách nhân viên (không cần auth) - Giữ từ feature/admin
+ * @access  Public
+ */
+router.get("/employees", employeesController.getAllEmployees);
 
 /**
  * @route   GET /api/customers/profile
@@ -10,22 +18,10 @@ const customersService = require('./customers.service');
  * @access  Private - KHACH_HANG
  */
 router.get(
-  '/profile',
+  "/profile",
   authenticate,
   authorize(ROLES.CUSTOMER),
-  async (req, res) => {
-    const customerId = req.user.maKhachHang;
-
-    if (!customerId) {
-      return res.status(400).json({
-        success: false,
-        message: 'Không tìm thấy mã khách hàng trong token',
-      });
-    }
-
-    const response = await customersService.getProfile(customerId);
-    return res.status(response.status || 200).json(response);
-  }
+  customersController.getProfile
 );
 
 /**
@@ -34,22 +30,10 @@ router.get(
  * @access  Private - KHACH_HANG
  */
 router.put(
-  '/profile',
+  "/profile",
   authenticate,
   authorize(ROLES.CUSTOMER),
-  async (req, res) => {
-    const customerId = req.user.maKhachHang;
-
-    if (!customerId) {
-      return res.status(400).json({
-        success: false,
-        message: 'Không tìm thấy mã khách hàng trong token',
-      });
-    }
-
-    const response = await customersService.updateProfile(customerId, req.body);
-    return res.status(response.status || 200).json(response);
-  }
+  customersController.updateProfile
 );
 
 /**
@@ -57,9 +41,15 @@ router.put(
  * @desc    Xem thông tin hạng thành viên & điểm loyalty
  * @access  Private - KHACH_HANG
  */
-router.get('/membership', authenticate, authorize(ROLES.CUSTOMER), (req, res) => {
-  res.json({ message: 'Get membership info' });
-});
+router.get(
+  "/membership",
+  authenticate,
+  authorize(ROLES.CUSTOMER),
+  (req, res) => {
+    // Nếu customersController chưa có hàm này, giữ logic callback tạm thời
+    res.json({ message: "Get membership info" });
+  }
+);
 
 /**
  * @route   GET /api/customers/appointments
@@ -67,22 +57,10 @@ router.get('/membership', authenticate, authorize(ROLES.CUSTOMER), (req, res) =>
  * @access  Private - KHACH_HANG
  */
 router.get(
-  '/appointments',
+  "/appointments",
   authenticate,
   authorize(ROLES.CUSTOMER),
-  async (req, res) => {
-    const customerId = req.user.maKhachHang;
-
-    if (!customerId) {
-      return res.status(400).json({
-        success: false,
-        message: 'Không tìm thấy mã khách hàng trong token',
-      });
-    }
-
-    const response = await customersService.getAppointments(customerId);
-    return res.status(response.status || 200).json(response);
-  }
+  customersController.getAppointments
 );
 
 /**
@@ -91,22 +69,10 @@ router.get(
  * @access  Private - KHACH_HANG
  */
 router.get(
-  '/invoices',
+  "/invoices",
   authenticate,
   authorize(ROLES.CUSTOMER),
-  async (req, res) => {
-    const customerId = req.user.maKhachHang;
-
-    if (!customerId) {
-      return res.status(400).json({
-        success: false,
-        message: 'Không tìm thấy mã khách hàng trong token',
-      });
-    }
-
-    const response = await customersService.getInvoices(customerId);
-    return res.status(response.status || 200).json(response);
-  }
+  customersController.getInvoices
 );
 
 /**
@@ -115,26 +81,70 @@ router.get(
  * @access  Private - KHACH_HANG
  */
 router.get(
-  '/invoices/:maHoaDon',
+  "/invoices/:maHoaDon",
   authenticate,
   authorize(ROLES.CUSTOMER),
-  async (req, res) => {
-    const customerId = req.user.maKhachHang;
-    const { maHoaDon } = req.params;
+  customersController.getInvoiceDetails
+);
 
-    if (!customerId) {
-      return res.status(400).json({
-        success: false,
-        message: 'Không tìm thấy mã khách hàng trong token',
-      });
-    }
+/**
+ * @route   POST /api/customers/orders
+ * @desc    Đặt mua sản phẩm (tạo đơn hàng chờ xác nhận)
+ * @access  Private - KHACH_HANG
+ */
+router.post(
+  "/orders",
+  authenticate,
+  authorize(ROLES.CUSTOMER),
+  customersController.createOrder
+);
 
-    const response = await customersService.getInvoiceDetails(
-      customerId,
-      maHoaDon
-    );
-    return res.status(response.status || 200).json(response);
-  }
+/**
+ * @route   GET /api/customers/orders
+ * @desc    Xem danh sách đơn hàng của khách hàng
+ * @access  Private - KHACH_HANG
+ */
+router.get(
+  "/orders",
+  authenticate,
+  authorize(ROLES.CUSTOMER),
+  customersController.getOrders
+);
+
+/**
+ * @route   GET /api/customers/orders/:maHoaDon
+ * @desc    Xem chi tiết đơn hàng của khách hàng
+ * @access  Private - KHACH_HANG
+ */
+router.get(
+  "/orders/:maHoaDon",
+  authenticate,
+  authorize(ROLES.CUSTOMER),
+  customersController.getOrderDetails
+);
+
+/**
+ * @route   GET /api/customers/orders/pending
+ * @desc    Xem danh sách đơn hàng chờ xác nhận (cho nhân viên)
+ * @access  Private - NHAN_VIEN, QUAN_TRI
+ */
+router.get(
+  "/orders/pending",
+  authenticate,
+  authorize(ROLES.EMPLOYEE, ROLES.ADMIN),
+  customersController.getPendingOrders
+);
+
+/**
+ * @route   PUT /api/customers/orders/:maHoaDon/confirm
+ * @desc    Xác nhận đơn hàng (cho nhân viên)
+ * @access  Private - NHAN_VIEN, QUAN_TRI
+ */
+router.put(
+  "/orders/:maHoaDon/confirm",
+  authenticate,
+  authorize(ROLES.EMPLOYEE, ROLES.ADMIN),
+  customersController.confirmOrder
 );
 
 module.exports = router;

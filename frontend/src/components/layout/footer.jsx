@@ -20,7 +20,7 @@ export default function Footer() {
           <div className="space-y-4">
             <div className="flex items-center gap-2 mb-4">
               <img
-                src="Logo.png"
+                src="logo.png"
                 alt="PetCareX Logo"
                 className="h-10 w-10 object-contain"
               />

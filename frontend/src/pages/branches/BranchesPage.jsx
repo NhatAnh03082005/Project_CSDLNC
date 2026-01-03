@@ -21,7 +21,6 @@ import {
 import { Label } from "../../components/ui/label";
 import { Input } from "../../components/ui/input";
 import {
-  Heart,
   MapPin,
   Phone,
   Clock,
@@ -33,6 +32,7 @@ import {
 } from "lucide-react";
 import { branchAPI, appointmentAPI } from "../../api/services";
 import { Pagination } from "../../components/ui/pagination";
+import Header from "../../components/layout/header";
 
 const serviceInfo = {
   exam: {
@@ -118,6 +118,49 @@ export default function BranchesPage() {
   const filteredBranches = branches;
 
   const ServiceIcon = currentService?.icon || Calendar;
+
+  // Hàm tính toán trạng thái mở/đóng cửa dựa trên thời gian thực
+  const checkIsOpen = (tgMoCua, tgDongCua) => {
+    if (!tgMoCua || !tgDongCua) return false;
+
+    const now = new Date();
+    const currentTime = now.getHours() * 60 + now.getMinutes(); // Phút trong ngày
+
+    // Parse giờ mở cửa và đóng cửa
+    const parseTime = (timeStr) => {
+      if (!timeStr) return null;
+      // Nếu là string dạng "HH:MM"
+      if (typeof timeStr === "string") {
+        const parts = timeStr.split(":");
+        if (parts.length === 2) {
+          return parseInt(parts[0]) * 60 + parseInt(parts[1]);
+        }
+      }
+      // Nếu là Date object
+      if (timeStr instanceof Date) {
+        return timeStr.getHours() * 60 + timeStr.getMinutes();
+      }
+      // Nếu là object có hours và minutes
+      if (timeStr.hours !== undefined) {
+        return timeStr.hours * 60 + (timeStr.minutes || 0);
+      }
+      return null;
+    };
+
+    const openTime = parseTime(tgMoCua);
+    const closeTime = parseTime(tgDongCua);
+
+    if (openTime === null || closeTime === null) return false;
+
+    // Nếu giờ mở cửa <= giờ đóng cửa (ví dụ: 08:00 - 21:00)
+    if (openTime <= closeTime) {
+      return currentTime >= openTime && currentTime <= closeTime;
+    }
+    // Nếu giờ mở cửa > giờ đóng cửa (qua đêm, ví dụ: 22:00 - 06:00)
+    else {
+      return currentTime >= openTime || currentTime <= closeTime;
+    }
+  };
 
   const handleBranchSelect = (branch) => {
     if (service === "products") {
@@ -205,14 +248,7 @@ export default function BranchesPage() {
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-blue-50 to-white">
-      <header className="sticky top-0 z-50 w-full border-b bg-white/95 backdrop-blur supports-[backdrop-filter]:bg-white/60">
-        <div className="container mx-auto flex h-16 items-center justify-between px-4">
-          <div className="flex items-center gap-2">
-            <Heart className="h-8 w-8 text-blue-600 fill-blue-600" />
-            <span className="text-xl font-bold text-blue-900">PetCareX</span>
-          </div>
-        </div>
-      </header>
+      <Header />
 
       <div className="container mx-auto px-4 py-12">
         <div className="mb-8">
@@ -269,12 +305,14 @@ export default function BranchesPage() {
                       <Badge
                         variant="secondary"
                         className={
-                          branch.DangMoCua
+                          checkIsOpen(branch.TGMoCua, branch.TGDongCua)
                             ? "bg-green-100 text-green-700"
                             : "bg-gray-100 text-gray-700"
                         }
                       >
-                        {branch.DangMoCua ? "Mở cửa" : "Đóng cửa"}
+                        {checkIsOpen(branch.TGMoCua, branch.TGDongCua)
+                          ? "Mở cửa"
+                          : "Đóng cửa"}
                       </Badge>
                     </CardTitle>
                     <CardDescription className="space-y-2 mt-4">

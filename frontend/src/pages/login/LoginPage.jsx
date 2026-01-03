@@ -13,6 +13,8 @@ import { Button } from "../../components/ui/button";
 import { Heart, User, Briefcase, Hash } from "lucide-react";
 import axios from "axios";
 import { useAuth } from "../../context/AuthContext";
+import { useAuthStore } from "../../store/authStore";
+
 export default function LoginPage() {
   const navigate = useNavigate();
 
@@ -21,6 +23,7 @@ export default function LoginPage() {
   const [password, setPassword] = useState("");
   const [staffCode, setStaffCode] = useState("");
   const { setUser, setIsAuthenticated } = useAuth();
+  const loginStore = useAuthStore((state) => state.login);
 
   // Trong file LoginPage.jsx
 
@@ -45,16 +48,23 @@ export default function LoginPage() {
       }
 
       if (response.data.status === 200) {
-        localStorage.setItem("token", response.data.token);
+        const token = response.data.token;
+        const userData = response.data.data;
+
+        // Lưu token vào localStorage
+        localStorage.setItem("token", token);
+
+        // Lưu thông tin user vào authStore (có persist)
+        loginStore(userData, token);
 
         // Lưu thông tin user vào context
-        setUser(response.data.data);
+        setUser(userData);
         setIsAuthenticated(true);
 
         alert("Đăng nhập thành công!");
 
         // Điều hướng dựa trên Role trả về từ Server
-        const userRole = response.data.data.Role;
+        const userRole = userData.Role;
 
         if (userRole === "customer") {
           navigate("/customer");
@@ -75,7 +85,7 @@ export default function LoginPage() {
       <div className="w-full max-w-md">
         <div className="flex items-center justify-center gap-2 mb-8">
           <img
-            src="Logo.png"
+            src="logo.png"
             alt="PetCareX Logo"
             className="h-11 w-11 object-contain"
           />
@@ -181,14 +191,14 @@ export default function LoginPage() {
                       required
                     />
                   </div>
-                  <div className="flex justify-end">
+                  {/* <div className="flex justify-end">
                     <Link
                       to="#"
                       className="text-sm text-blue-600 hover:underline"
                     >
                       Quên mật khẩu?
                     </Link>
-                  </div>
+                  </div> */}
                 </div>
               )}
 
