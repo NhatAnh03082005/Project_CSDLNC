@@ -2,7 +2,7 @@ const employeeService = require('./employees.service');
 
 class EmployeeController {
   // GET /api/employees
-  async getAll(req, res, next) {
+  async getAllEmployees(req, res, next) {
     try {
       const result = await employeeService.getAllEmployees(req.query);
       return res.status(result.status).json(result);
@@ -12,7 +12,7 @@ class EmployeeController {
   }
 
   // GET /api/employees/:id
-  async getById(req, res, next) {
+  async getEmployeeById(req, res, next) {
     try {
       const result = await employeeService.getEmployeeById(req.params.id);
       return res.status(result.status).json(result);
@@ -22,7 +22,7 @@ class EmployeeController {
   }
 
   // POST /api/employees
-  async create(req, res, next) {
+  async createEmployee(req, res, next) {
     try {
       const result = await employeeService.createEmployee(req.body);
       return res.status(result.status).json(result);
@@ -32,7 +32,7 @@ class EmployeeController {
   }
 
   // PUT /api/employees/:id
-  async update(req, res, next) {
+  async updateEmployee(req, res, next) {
     try {
       const result = await employeeService.updateEmployee(req.params.id, req.body);
       return res.status(result.status).json(result);
@@ -42,7 +42,7 @@ class EmployeeController {
   }
 
   // DELETE /api/employees/:id
-  async delete(req, res, next) {
+  async deleteEmployee(req, res, next) {
     try {
       const result = await employeeService.deleteEmployee(req.params.id);
       return res.status(result.status).json(result);

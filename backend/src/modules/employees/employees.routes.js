@@ -15,7 +15,7 @@ const { ROLES } = require('../../config/constants');
 router.get('/', 
    // authenticate, 
    // authorize(ROLES.ADMIN), 
-employeeController.getAll);
+employeeController.getAllEmployees);
 
 /**
  * @route   POST /api/employees
@@ -28,7 +28,7 @@ employeeController.getAll);
 router.post('/', 
    // authenticate, 
    // authorize(ROLES.ADMIN), 
-    employeeController.create);
+    employeeController.createEmployee);
 
 /**
  * @route   GET /api/employees/doctors
@@ -56,7 +56,7 @@ module.exports = router;
 router.get('/:id', 
   //  authenticate, 
    // authorize(ROLES.ADMIN), 
-    employeeController.getById);
+    employeeController.getEmployeeById);
 
 /**
  * @route   PUT /api/employees/:id
@@ -69,7 +69,7 @@ router.get('/:id',
 router.put('/:id', 
    // authenticate, 
     //authorize(ROLES.ADMIN), 
-    employeeController.update);
+    employeeController.updateEmployee);
 /**
  * @route   DELETE /api/employees/:id
  * @desc    Xóa nhân viên (nghỉ việc)
@@ -81,7 +81,7 @@ router.put('/:id',
 router.delete('/:id', 
    // authenticate, 
    // authorize(ROLES.ADMIN), 
-    employeeController.delete);
+    employeeController.deleteEmployee);
 
 /**
  * @route   POST /api/employees/:id/transfer
