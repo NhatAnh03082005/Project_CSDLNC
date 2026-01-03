@@ -43,14 +43,27 @@ class BranchesService {
       const conditions = [];
 
       if (service) {
-        conditions.push(`
-          EXISTS (
-            SELECT 1 
-            FROM dbo.DichVu_ChiNhanh dvcn
-            WHERE dvcn.MaChiNhanh = cn.MaChiNhanh 
-              AND dvcn.LoaiDichVu = @Service
-          )
-        `);
+        // Nếu service là "Mua hàng", kiểm tra chi nhánh có sản phẩm trong tồn kho
+        if (service === "Mua hàng") {
+          conditions.push(`
+            EXISTS (
+              SELECT 1 
+              FROM dbo.SanPham_TonKho tk
+              WHERE tk.MaChiNhanh = cn.MaChiNhanh 
+                AND tk.SoLuongTon > 0
+            )
+          `);
+        } else {
+          // Các dịch vụ khác (Khám bệnh, Tiêm phòng) kiểm tra trong bảng DichVu_ChiNhanh
+          conditions.push(`
+            EXISTS (
+              SELECT 1 
+              FROM dbo.DichVu_ChiNhanh dvcn
+              WHERE dvcn.MaChiNhanh = cn.MaChiNhanh 
+                AND dvcn.LoaiDichVu = @Service
+            )
+          `);
+        }
       }
 
       if (search) {
@@ -69,7 +82,7 @@ class BranchesService {
 
       // 1. Đếm tổng số bản ghi
       const countRequest = pool.request();
-      if (service)
+      if (service && service !== "Mua hàng")
         countRequest.input("Service", sql.NVarChar(50), service.trim());
       if (search)
         countRequest.input("Search", sql.NVarChar(255), `%${search}%`);
@@ -82,7 +95,7 @@ class BranchesService {
 
       // 2. Lấy dữ liệu phân trang
       const dataRequest = pool.request();
-      if (service)
+      if (service && service !== "Mua hàng")
         dataRequest.input("Service", sql.NVarChar(50), service.trim());
       if (search) dataRequest.input("Search", sql.NVarChar(255), `%${search}%`);
       dataRequest.input("Offset", sql.Int, offset);

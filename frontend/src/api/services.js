@@ -37,7 +37,7 @@ export const appointmentAPI = {
 };
 
 export const branchAPI = {
-  getAll: () => api.get("/branches"),
+  getAll: (params) => api.get("/branches", { params }),
   getById: (id) => api.get(`/branches/${id}`),
   create: (data) => api.post("/branches", data),
   update: (id, data) => api.put(`/branches/${id}`, data),
