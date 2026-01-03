@@ -3,7 +3,6 @@ import * as LabelPrimitive from "@radix-ui/react-label";
 
 import { cn } from "../../lib/utils";
 
-// Loại bỏ khai báo kiểu TypeScript: React.ComponentProps<typeof LabelPrimitive.Root>
 function Label({
   className,
   ...props

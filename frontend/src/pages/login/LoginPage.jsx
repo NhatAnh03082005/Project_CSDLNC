@@ -1,52 +1,105 @@
 import React, { useState } from "react";
-// 1. Thay thế Next.js hooks bằng React Router DOM hooks
-import { useNavigate } from "react-router-dom";
-// 2. Thay thế Next.js Link bằng React Router DOM Link
-import { Link } from "react-router-dom"; 
-
-// 3. Chuyển đổi imports alias (@/) sang đường dẫn tương đối (../...)
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../../components/ui/card";
+import { useNavigate, Link } from "react-router-dom";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "../../components/ui/card";
 import { Label } from "../../components/ui/label";
 import { Input } from "../../components/ui/input";
 import { Button } from "../../components/ui/button";
-import { Heart, User, Briefcase } from "lucide-react";
-
-// Xóa bỏ "use client" và import type React
+import { Heart, User, Briefcase, Hash } from "lucide-react";
+import axios from "axios";
+import { useAuth } from "../../context/AuthContext";
+import { useAuthStore } from "../../store/authStore";
 
 export default function LoginPage() {
-  // Thay thế useRouter() bằng useNavigate()
-  const navigate = useNavigate(); 
-  
-  // 4. Loại bỏ khai báo kiểu TypeScript: useState<"customer" | "staff" | null>(null)
+  const navigate = useNavigate();
+
   const [selectedRole, setSelectedRole] = useState(null);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [staffCode, setStaffCode] = useState("");
+  const { setUser, setIsAuthenticated } = useAuth();
+  const loginStore = useAuthStore((state) => state.login);
 
-  // 5. Loại bỏ khai báo kiểu TypeScript cho sự kiện: (e: React.FormEvent)
-  const handleLogin = (e) => {
+  // Trong file LoginPage.jsx
+
+  const handleLogin = async (e) => {
     e.preventDefault();
 
-    // Thay thế router.push bằng navigate()
-    if (selectedRole === "customer") {
-      navigate("/"); // Chuyển hướng đến trang chủ khách hàng
-    } else if (selectedRole === "staff") {
-      navigate("/staff/demo"); // Chuyển hướng đến khu vực nhân viên
+    try {
+      let response;
+
+      if (selectedRole === "customer") {
+        response = await axios.post("http://localhost:3000/api/auth/login", {
+          email,
+          password,
+          role: "customer",
+        });
+      } else if (selectedRole === "staff") {
+        // Gửi mã nhân viên lên server
+        response = await axios.post("http://localhost:3000/api/auth/login", {
+          staffCode,
+          role: "staff",
+        });
+      }
+
+      if (response.data.status === 200) {
+        const token = response.data.token;
+        const userData = response.data.data;
+
+        // Lưu token vào localStorage
+        localStorage.setItem("token", token);
+
+        // Lưu thông tin user vào authStore (có persist)
+        loginStore(userData, token);
+
+        // Lưu thông tin user vào context
+        setUser(userData);
+        setIsAuthenticated(true);
+
+        alert("Đăng nhập thành công!");
+
+        // Điều hướng dựa trên Role trả về từ Server
+        const userRole = userData.Role;
+
+        if (userRole === "customer") {
+          navigate("/customer");
+        } else if (userRole === "admin") {
+          navigate("/admin/demo"); // Trang dành cho Quản lý chi nhánh
+        } else if (userRole === "staff") {
+          navigate("/staff/demo"); // Trang dành cho Bác sĩ, Tiếp tân, Bán hàng
+        }
+      }
+    } catch (error) {
+      console.error("Lỗi đăng nhập:", error);
+      alert(error.response?.data?.message || "Đăng nhập thất bại!");
     }
   };
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 via-white to-green-50 p-4">
       <div className="w-full max-w-md">
-        {/* Logo */}
         <div className="flex items-center justify-center gap-2 mb-8">
-          <Heart className="h-10 w-10 text-blue-600 fill-blue-600" />
-          <h1 className="text-3xl font-bold text-gray-900">PetCare</h1>
+          <img
+            src="logo.png"
+            alt="PetCareX Logo"
+            className="h-11 w-11 object-contain"
+          />
+          <h1 className="text-3xl font-bold text-gray-900">PetCareX</h1>
         </div>
 
         <Card className="shadow-xl border-0">
           <CardHeader className="space-y-1 pb-6">
-            <CardTitle className="text-2xl font-bold text-center">Đăng nhập</CardTitle>
-            <CardDescription className="text-center">Chọn vai trò và đăng nhập vào hệ thống</CardDescription>
+            <CardTitle className="text-2xl font-bold text-center">
+              Đăng nhập
+            </CardTitle>
+            <CardDescription className="text-center">
+              Chọn vai trò và đăng nhập vào hệ thống
+            </CardDescription>
           </CardHeader>
           <CardContent className="space-y-6">
             {/* Role Selection */}
@@ -57,68 +110,98 @@ export default function LoginPage() {
                   type="button"
                   onClick={() => setSelectedRole("customer")}
                   className={`p-4 rounded-lg border-2 transition-all ${
-                    selectedRole === "customer" ? "border-blue-600 bg-blue-50" : "border-gray-200 hover:border-gray-300"
+                    selectedRole === "customer"
+                      ? "border-blue-600 bg-blue-50"
+                      : "border-gray-200 hover:border-gray-300"
                   }`}
                 >
                   <User
                     className={`h-8 w-8 mx-auto mb-2 ${
-                      selectedRole === "customer" ? "text-blue-600" : "text-gray-400"
+                      selectedRole === "customer"
+                        ? "text-blue-600"
+                        : "text-gray-400"
                     }`}
                   />
-                  <div className="text-sm font-medium text-center">Khách hàng</div>
+                  <div className="text-sm font-medium text-center">
+                    Khách hàng
+                  </div>
                 </button>
 
                 <button
                   type="button"
                   onClick={() => setSelectedRole("staff")}
                   className={`p-4 rounded-lg border-2 transition-all ${
-                    selectedRole === "staff" ? "border-blue-600 bg-blue-50" : "border-gray-200 hover:border-gray-300"
+                    selectedRole === "staff"
+                      ? "border-blue-600 bg-blue-50"
+                      : "border-gray-200 hover:border-gray-300"
                   }`}
                 >
                   <Briefcase
-                    className={`h-8 w-8 mx-auto mb-2 ${selectedRole === "staff" ? "text-blue-600" : "text-gray-400"}`}
+                    className={`h-8 w-8 mx-auto mb-2 ${
+                      selectedRole === "staff"
+                        ? "text-blue-600"
+                        : "text-gray-400"
+                    }`}
                   />
-                  <div className="text-sm font-medium text-center">Nhân viên</div>
+                  <div className="text-sm font-medium text-center">
+                    Nhân viên
+                  </div>
                 </button>
               </div>
             </div>
 
             <form onSubmit={handleLogin} className="space-y-4">
-              {/* Email */}
-              <div className="space-y-2">
-                <Label htmlFor="email">Email</Label>
-                <Input
-                  id="email"
-                  type="email"
-                  placeholder="example@petcare.vn"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  required
-                />
-              </div>
+              {selectedRole === "staff" ? (
+                <div className="space-y-2 animate-in fade-in duration-300">
+                  <Label htmlFor="staffCode">Mã số nhân viên</Label>
+                  <div className="relative">
+                    <Hash className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
+                    <Input
+                      id="staffCode"
+                      type="text"
+                      placeholder="Nhập mã nhân viên (VD: NV001)"
+                      className="pl-10"
+                      value={staffCode}
+                      onChange={(e) => setStaffCode(e.target.value)}
+                      required
+                    />
+                  </div>
+                </div>
+              ) : (
+                <div className="space-y-4 animate-in fade-in duration-300">
+                  <div className="space-y-2">
+                    <Label htmlFor="email">Email</Label>
+                    <Input
+                      id="email"
+                      type="email"
+                      placeholder="example@petcare.vn"
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
+                      required
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="password">Mật khẩu</Label>
+                    <Input
+                      id="password"
+                      type="password"
+                      placeholder="••••••••"
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                      required
+                    />
+                  </div>
+                  {/* <div className="flex justify-end">
+                    <Link
+                      to="#"
+                      className="text-sm text-blue-600 hover:underline"
+                    >
+                      Quên mật khẩu?
+                    </Link>
+                  </div> */}
+                </div>
+              )}
 
-              {/* Password */}
-              <div className="space-y-2">
-                <Label htmlFor="password">Mật khẩu</Label>
-                <Input
-                  id="password"
-                  type="password"
-                  placeholder="••••••••"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  required
-                />
-              </div>
-
-              {/* Forgot Password */}
-              <div className="flex justify-end">
-                {/* Sửa Link href -> to */}
-                <Link to="#" className="text-sm text-blue-600 hover:underline">
-                  Quên mật khẩu?
-                </Link>
-              </div>
-
-              {/* Login Button */}
               <Button
                 type="submit"
                 className="w-full bg-blue-600 hover:bg-blue-700 text-white"
@@ -128,25 +211,24 @@ export default function LoginPage() {
               </Button>
             </form>
 
-            {/* Register Link */}
             <div className="text-center text-sm">
               Chưa có tài khoản?{" "}
-              {/* Sửa Link href -> to */}
-              <Link to="/auth/register" className="text-blue-600 font-medium hover:underline">
+              <Link
+                to="/register"
+                className="text-blue-600 font-medium hover:underline"
+              >
                 Đăng ký ngay
               </Link>
             </div>
           </CardContent>
         </Card>
 
-        {/* Footer */}
         <p className="text-center text-sm text-gray-500 mt-6">
           Bằng việc đăng nhập, bạn đồng ý với{" "}
-          {/* Sửa Link href -> to */}
           <Link to="#" className="text-blue-600 hover:underline">
             Điều khoản dịch vụ
           </Link>{" "}
-          của PetCare
+          của PetCareX
         </p>
       </div>
     </div>

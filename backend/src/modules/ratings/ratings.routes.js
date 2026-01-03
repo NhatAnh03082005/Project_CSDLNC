@@ -2,15 +2,19 @@ const express = require('express');
 const router = express.Router();
 const { authenticate, authorize } = require('../../middlewares/auth');
 const { ROLES } = require('../../config/constants');
+const ratingsController = require('./ratings.controller');
 
 /**
  * @route   POST /api/ratings
- * @desc    Đánh giá dịch vụ
+ * @desc    Đánh giá dịch vụ (khám bệnh hoặc tiêm phòng)
  * @access  Private - KHACH_HANG
  */
-router.post('/', authenticate, authorize(ROLES.CUSTOMER), (req, res) => {
-  res.json({ message: 'Create rating' });
-});
+router.post(
+  '/',
+  authenticate,
+  authorize(ROLES.CUSTOMER),
+  ratingsController.createOrUpdateRating
+);
 
 /**
  * @route   GET /api/ratings/branch/:branchId
@@ -32,29 +36,39 @@ router.get('/service/:serviceId', (req, res) => {
 
 /**
  * @route   GET /api/ratings/my-ratings
- * @desc    Đánh giá của tôi
+ * @desc    Danh sách dịch vụ sức khỏe đã sử dụng để đánh giá (sắp xếp theo thời gian)
  * @access  Private - KHACH_HANG
  */
-router.get('/my-ratings', authenticate, authorize(ROLES.CUSTOMER), (req, res) => {
-  res.json({ message: 'Get my ratings' });
-});
+router.get(
+  '/my-ratings',
+  authenticate,
+  authorize(ROLES.CUSTOMER),
+  ratingsController.getRateableServices
+);
 
 /**
- * @route   PUT /api/ratings/:id
+ * @route   PUT /api/ratings/:maHoaDon/:stt
  * @desc    Cập nhật đánh giá
  * @access  Private - KHACH_HANG
  */
-router.put('/:id', authenticate, authorize(ROLES.CUSTOMER), (req, res) => {
-  res.json({ message: 'Update rating' });
-});
+router.put(
+  '/:maHoaDon/:stt',
+  authenticate,
+  authorize(ROLES.CUSTOMER),
+  ratingsController.updateRating
+);
 
 /**
- * @route   DELETE /api/ratings/:id
+ * @route   DELETE /api/ratings/:maHoaDon/:stt
  * @desc    Xóa đánh giá
  * @access  Private - KHACH_HANG
  */
-router.delete('/:id', authenticate, authorize(ROLES.CUSTOMER), (req, res) => {
-  res.json({ message: 'Delete rating' });
-});
+router.delete(
+  '/:maHoaDon/:stt',
+  authenticate,
+  authorize(ROLES.CUSTOMER),
+  ratingsController.deleteRating
+);
 
 module.exports = router;
+

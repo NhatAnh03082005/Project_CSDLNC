@@ -10,14 +10,11 @@ import { Label } from "../../components/ui/label";
 import { Input } from "../../components/ui/input";
 import { Button } from "../../components/ui/button";
 import { Heart } from "lucide-react";
-
+import axios from "axios";
 // Xóa bỏ "use client" và import type React
 
 export default function RegisterPage() {
-  // Thay thế useRouter() bằng useNavigate()
   const navigate = useNavigate();
-  
-  // Loại bỏ khai báo kiểu TypeScript cho state
   const [formData, setFormData] = useState({
     fullName: "",
     phone: "",
@@ -29,7 +26,6 @@ export default function RegisterPage() {
     confirmPassword: "",
   });
 
-  // Loại bỏ khai báo kiểu TypeScript cho sự kiện: (e: React.ChangeEvent<...>)
   const handleChange = (e) => {
     setFormData({
       ...formData,
@@ -37,17 +33,34 @@ export default function RegisterPage() {
     });
   };
 
-  // Loại bỏ khai báo kiểu TypeScript cho sự kiện: (e: React.FormEvent)
-  const handleRegister = (e) => {
-    e.preventDefault();
+  const handleRegister = async (e) => {
+  e.preventDefault();
+  // Map dữ liệu từ state React sang định dạng Backend mong đợi
+  const dataToSubmit = {
+    HoTen: formData.fullName,
+    GioiTinh: formData.gender === "male" ? "Nam" : "Nữ", // Khớp với sql.NVarChar(3)
+    SDT: formData.phone,
+    CCCD: formData.cccd,
+    Email: formData.email,
+    MatKhau: formData.password,
+    NgaySinh: formData.dateOfBirth
+  };
 
-    if (formData.password !== formData.confirmPassword) {
-      alert("Mật khẩu xác nhận không khớp!");
-      return;
+  try {
+      // 2. Loại bỏ trường confirmPassword trước khi gửi lên Backend
+      const { confirmPassword, ...dataToSubmit } = formData;
+
+      // 3. Gửi dữ liệu đến Backend
+      const response = await axios.post("http://localhost:5000/api/auth/register", dataToSubmit);
+      
+      if (response.status === 201 || response.status === 200) {
+        alert("Đăng ký thành công!");
+        navigate("/auth/login");
+      }
+    } catch (error) {
+      // Hiển thị lỗi từ backend (ví dụ: Email đã tồn tại)
+      alert(error.response?.data?.message || "Đăng ký thất bại");
     }
-
-    // Thay thế router.push bằng navigate()
-    navigate("/auth/login"); // Chuyển hướng đến trang đăng nhập sau khi đăng ký thành công
   };
 
   return (

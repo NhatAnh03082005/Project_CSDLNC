@@ -44,7 +44,7 @@ async function testConnection() {
         console.log(`    - ${t.TABLE_SCHEMA}.${t.TABLE_NAME}`);
       });
     }
-
+    
     console.log("\n✓ Database connection test completed successfully!");
     process.exit(0);
   } catch (error) {

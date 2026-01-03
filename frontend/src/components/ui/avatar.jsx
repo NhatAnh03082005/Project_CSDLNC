@@ -3,7 +3,6 @@ import * as AvatarPrimitive from "@radix-ui/react-avatar";
 
 import { cn } from "../../lib/utils";
 
-// Loại bỏ khai báo kiểu TypeScript: React.ComponentProps<typeof AvatarPrimitive.Root>
 function Avatar({
   className,
   ...props
@@ -20,7 +19,6 @@ function Avatar({
   );
 }
 
-// Loại bỏ khai báo kiểu TypeScript: React.ComponentProps<typeof AvatarPrimitive.Image>
 function AvatarImage({
   className,
   ...props
@@ -34,7 +32,6 @@ function AvatarImage({
   );
 }
 
-// Loại bỏ khai báo kiểu TypeScript: React.ComponentProps<typeof AvatarPrimitive.Fallback>
 function AvatarFallback({
   className,
   ...props

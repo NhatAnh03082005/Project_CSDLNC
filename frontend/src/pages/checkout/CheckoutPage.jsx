@@ -1,94 +1,134 @@
-import React from "react";
-// 1. Thay thế Link của 'next/link' bằng Link của 'react-router-dom'
-import { Link } from "react-router-dom"; 
-
-// 2. Chuyển đổi imports alias (@/) sang đường dẫn tương đối (../../...)
+import React, { useState, useEffect } from "react";
+import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { Button } from "../../components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../../components/ui/card";
 import { RadioGroup, RadioGroupItem } from "../../components/ui/radio-group";
 import { Label } from "../../components/ui/label";
 import { Separator } from "../../components/ui/separator";
 import { Badge } from "../../components/ui/badge";
-import { Heart, ArrowLeft, CreditCard, Banknote, Tag, Calendar } from "lucide-react";
+import { Heart, ArrowLeft, CreditCard, Banknote, Tag, Calendar, Loader2, CheckCircle2 } from "lucide-react";
+import { useCartStore } from "../../store/cartStore";
+import { orderAPI, promotionAPI } from "../../api/services";
+import Header from "../../components/layout/header";
 
 export default function CheckoutPage() {
-  const promotions = [
-    {
-      id: 1,
-      code: "PETCARE2024",
-      startDate: "2024-12-01",
-      endDate: "2024-12-31",
-      discountPercent: 10,
-    },
-    {
-      id: 2,
-      code: "NEWYEAR2025",
-      startDate: "2024-12-25",
-      endDate: "2025-01-15",
-      discountPercent: 15,
-    },
-    {
-      id: 3,
-      code: "WINTER50",
-      startDate: "2024-11-01",
-      endDate: "2025-02-28",
-      discountPercent: 5,
-    },
-  ];
+  const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const cartItems = useCartStore((state) => state.items);
+  const clearCart = useCartStore((state) => state.clearCart);
+  const [paymentMethod, setPaymentMethod] = useState("cod");
+  const [submitting, setSubmitting] = useState(false);
+  const [orderSuccess, setOrderSuccess] = useState(false);
+  const [activePromotion, setActivePromotion] = useState(null);
+  const [loadingPromotion, setLoadingPromotion] = useState(true);
+  
+  const maChiNhanh = cartItems.length > 0 && cartItems[0]?.maChiNhanh 
+    ? cartItems[0].maChiNhanh 
+    : searchParams.get("branch") || "0001";
 
-  // Loại bỏ khai báo kiểu TypeScript: (startDate: string, endDate: string)
-  const isPromotionValid = (startDate, endDate) => {
-    const now = new Date();
-    const start = new Date(startDate);
-    const end = new Date(endDate);
-    // Tính toán ngày kết thúc là cuối ngày (23:59:59)
-    end.setHours(23, 59, 59, 999); 
-    
-    return now >= start && now <= end;
-  };
+  // Fetch active promotion từ API
+  useEffect(() => {
+    const fetchActivePromotion = async () => {
+      try {
+        setLoadingPromotion(true);
+        const response = await promotionAPI.getActive();
+        if (response.data.success && response.data.data) {
+          setActivePromotion(response.data.data);
+        }
+      } catch (error) {
+        console.error("Error fetching active promotion:", error);
+        setActivePromotion(null);
+      } finally {
+        setLoadingPromotion(false);
+      }
+    };
+    fetchActivePromotion();
+  }, []);
 
-  // Áp dụng bộ lọc
-  const applicablePromotions = promotions.filter((promo) =>
-    isPromotionValid(promo.startDate, promo.endDate),
-  );
+  useEffect(() => {
+    if (cartItems.length === 0 && !orderSuccess) {
+      navigate("/branches?service=products");
+    }
+  }, [cartItems, orderSuccess, navigate]);
 
-  const totalDiscountPercent = applicablePromotions.reduce(
-    (sum, promo) => sum + promo.discountPercent,
-    0,
-  );
-
-  const cartItems = [
-    {
-      id: 1,
-      name: "Royal Canin Mini Adult",
-      type: "Thức ăn",
-      price: 450000,
-      quantity: 2,
-    },
-    {
-      id: 2,
-      name: "Nexgard Spectra",
-      type: "Thuốc",
-      price: 165000,
-      quantity: 1,
-    },
-    {
-      id: 3,
-      name: "Vòng cổ chống bọ chét",
-      type: "Phụ kiện",
-      price: 120000,
-      quantity: 1,
-    },
-  ];
+  // Debug: Log khi orderSuccess thay đổi
+  useEffect(() => {
+    console.log("orderSuccess state changed:", orderSuccess);
+  }, [orderSuccess]);
 
   const subtotal = cartItems.reduce(
-    (sum, item) => sum + item.price * item.quantity,
+    (sum, item) => sum + (item.donGia || item.price || 0) * item.soLuong,
     0,
   );
-  const shippingFee = 30000;
 
-  const discountAmount = Math.floor((subtotal * totalDiscountPercent) / 100);
-  const total = subtotal + shippingFee - discountAmount;
+  // Tính discount dựa trên active promotion (giống logic trigger)
+  const discountPercent = activePromotion ? activePromotion.TiLeGiamGia : 0;
+  const discountAmount = Math.floor((subtotal * discountPercent) / 100);
+  
+  // Tổng tiền = subtotal - discount (không có phí vận chuyển, trigger sẽ tự tính)
+  const total = subtotal - discountAmount;
+
+  const handlePlaceOrder = async () => {
+    if (cartItems.length === 0) {
+      alert("Giỏ hàng trống!");
+      return;
+    }
+
+    if (!paymentMethod) {
+      alert("Vui lòng chọn phương thức thanh toán!");
+      return;
+    }
+
+    try {
+      setSubmitting(true);
+      
+      const orderData = {
+        items: cartItems.map(item => ({
+          maSanPham: item.maSanPham,
+          soLuong: item.soLuong,
+        })),
+        paymentMethod: paymentMethod === "cod" ? "TienMat" : "ChuyenKhoan",
+        maChiNhanh: maChiNhanh,
+      };
+
+      const response = await orderAPI.create(orderData);
+      
+      console.log("Order creation response:", response);
+      console.log("Response data:", response.data);
+      console.log("Response success:", response.data?.success);
+
+      // Kiểm tra response đơn giản như code ban đầu đã thành công
+      if (response.data && response.data.success) {
+        console.log("Order created successfully, setting orderSuccess to true");
+        console.log("Response message:", response?.data?.message);
+        
+        // Set state và clear cart
+        setOrderSuccess(true);
+        clearCart();
+        
+        // Hiển thị alert để xác nhận thành công
+        alert("Đặt hàng thành công! Đơn hàng đang chờ nhân viên xác nhận.");
+        
+        // Hiển thị thông báo trong UI
+        // Tự động chuyển trang sau 3 giây để người dùng có thời gian thấy thông báo
+        setTimeout(() => {
+          console.log("Navigating to /customer");
+          navigate("/customer");
+        }, 3000);
+      } else {
+        console.error("Order creation failed:", response.data);
+        const errorMsg = response?.data?.message || response?.message || "Đặt hàng thất bại!";
+        alert(errorMsg);
+      }
+    } catch (error) {
+      console.error("Error placing order:", error);
+      console.error("Error response:", error.response?.data);
+      const errorMessage = error.response?.data?.message || error.response?.data?.error || "Đặt hàng thất bại. Vui lòng thử lại!";
+      alert(errorMessage);
+    } finally {
+      setSubmitting(false);
+    }
+  };
 
   // Loại bỏ khai báo kiểu TypeScript: (price: number)
   const formatPrice = (price) => {
@@ -110,19 +150,12 @@ export default function CheckoutPage() {
   return (
     <div className="min-h-screen bg-gradient-to-b from-blue-50 to-white">
       {/* Header */}
-      <header className="sticky top-0 z-50 w-full border-b bg-white/95 backdrop-blur supports-[backdrop-filter]:bg-white/60">
-        <div className="container mx-auto flex h-16 items-center justify-between px-4">
-          <div className="flex items-center gap-2">
-            <Heart className="h-8 w-8 text-blue-600 fill-blue-600" />
-            <span className="text-xl font-bold text-blue-900">PetCare</span>
-          </div>
-        </div>
-      </header>
+      <Header />
 
       {/* Main Content */}
       <div className="container mx-auto px-4 py-12">
         {/* Sửa Link href -> to */}
-        <Link to="/">
+        <Link to="/customer">
           <Button variant="ghost" className="gap-2 mb-6">
             <ArrowLeft className="h-4 w-4" />
             Quay lại
@@ -143,24 +176,24 @@ export default function CheckoutPage() {
               </CardHeader>
               <CardContent>
                 <div className="space-y-4">
-                  {cartItems.map((item) => (
+                  {cartItems.map((item, index) => (
                     <div
-                      key={item.id}
+                      key={item.maSanPham || index}
                       className="flex items-start justify-between py-3 border-b last:border-0"
                     >
                       <div className="flex-1">
-                        <p className="font-medium">{item.name}</p>
-                        <p className="text-sm text-gray-600">{item.type}</p>
+                        <p className="font-medium">{item.tenSanPham || item.name}</p>
+                        <p className="text-sm text-gray-600">{item.loaiSanPham || item.type}</p>
                         <p className="text-sm text-gray-600 mt-1">
-                          Số lượng: {item.quantity}
+                          Số lượng: {item.soLuong || item.quantity}
                         </p>
                       </div>
                       <div className="text-right">
                         <p className="font-semibold">
-                          {formatPrice(item.price * item.quantity)}
+                          {formatPrice((item.donGia || item.price || 0) * (item.soLuong || item.quantity))}
                         </p>
                         <p className="text-sm text-gray-600">
-                          {formatPrice(item.price)}/sp
+                          {formatPrice(item.donGia || item.price || 0)}/sp
                         </p>
                       </div>
                     </div>
@@ -176,47 +209,52 @@ export default function CheckoutPage() {
                   Khuyến mãi đang áp dụng
                 </CardTitle>
                 <CardDescription>
-                  {applicablePromotions.length > 0
-                    ? "Các khuyến mãi sau được tự động áp dụng cho đơn hàng của bạn"
+                  {activePromotion
+                    ? "Khuyến mãi được tự động áp dụng cho đơn hàng của bạn"
                     : "Hiện không có khuyến mãi nào được áp dụng"}
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                {applicablePromotions.length > 0 ? (
-                  <div className="space-y-4">
-                    {applicablePromotions.map((promo) => (
-                      <div
-                        key={promo.id}
-                        className="p-4 border rounded-lg bg-green-50 border-green-200 space-y-2"
-                      >
-                        <div className="flex items-center justify-between">
-                          <div className="flex items-center gap-2">
-                            <Badge
-                              variant="secondary"
-                              className="bg-green-600 text-white"
-                            >
-                              {promo.code}
-                            </Badge>
-                            <Badge
-                              variant="outline"
-                              className="text-green-700 border-green-600"
-                            >
-                              Giảm {promo.discountPercent}%
-                            </Badge>
-                          </div>
-                        </div>
-                        <div className="flex items-center gap-4 text-sm text-gray-600">
-                          <div className="flex items-center gap-1">
-                            <Calendar className="h-4 w-4" />
-                            <span>Từ: {formatDate(promo.startDate)}</span>
-                          </div>
-                          <div className="flex items-center gap-1">
-                            <Calendar className="h-4 w-4" />
-                            <span>Đến: {formatDate(promo.endDate)}</span>
-                          </div>
-                        </div>
+                {loadingPromotion ? (
+                  <div className="text-center py-8">
+                    <Loader2 className="h-6 w-6 mx-auto animate-spin text-blue-600" />
+                    <p className="mt-2 text-gray-500">Đang tải khuyến mãi...</p>
+                  </div>
+                ) : activePromotion ? (
+                  <div className="p-4 border rounded-lg bg-green-50 border-green-200 space-y-2">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <Badge
+                          variant="secondary"
+                          className="bg-green-600 text-white"
+                        >
+                          {activePromotion.MaKhuyenMai}
+                        </Badge>
+                        <Badge
+                          variant="outline"
+                          className="text-green-700 border-green-600"
+                        >
+                          Giảm {activePromotion.TiLeGiamGia}%
+                        </Badge>
                       </div>
-                    ))}
+                    </div>
+                    <div className="flex items-center gap-4 text-sm text-gray-600">
+                      <div className="flex items-center gap-1">
+                        <Calendar className="h-4 w-4" />
+                        <span>Từ: {formatDate(activePromotion.NgayBatDau)}</span>
+                      </div>
+                      <div className="flex items-center gap-1">
+                        <Calendar className="h-4 w-4" />
+                        <span>Đến: {formatDate(activePromotion.NgayKetThuc)}</span>
+                      </div>
+                    </div>
+                    {discountAmount > 0 && (
+                      <div className="pt-2 border-t border-green-200">
+                        <p className="text-sm font-medium text-green-700">
+                          Bạn được giảm: {formatPrice(discountAmount)}
+                        </p>
+                      </div>
+                    )}
                   </div>
                 ) : (
                   <div className="text-center py-8 text-gray-500">
@@ -233,7 +271,7 @@ export default function CheckoutPage() {
                 <CardDescription>Chọn cách thức thanh toán phù hợp</CardDescription>
               </CardHeader>
               <CardContent>
-                <RadioGroup defaultValue="cod" className="space-y-4">
+                <RadioGroup value={paymentMethod} onValueChange={setPaymentMethod} className="space-y-4">
                   <div className="flex items-start space-x-3 p-4 border rounded-lg hover:bg-gray-50 cursor-pointer">
                     <RadioGroupItem value="online" id="online" className="mt-1" />
                     <Label htmlFor="online" className="flex-1 cursor-pointer">
@@ -277,13 +315,9 @@ export default function CheckoutPage() {
                     <span className="text-gray-600">Tạm tính:</span>
                     <span>{formatPrice(subtotal)}</span>
                   </div>
-                  <div className="flex justify-between text-sm">
-                    <span className="text-gray-600">Phí vận chuyển:</span>
-                    <span>{formatPrice(shippingFee)}</span>
-                  </div>
-                  {discountAmount > 0 && (
+                  {discountAmount > 0 && activePromotion && (
                     <div className="flex justify-between text-sm text-green-600">
-                      <span>Giảm giá ({totalDiscountPercent}%):</span>
+                      <span>Giảm giá ({discountPercent}%):</span>
                       <span>-{formatPrice(discountAmount)}</span>
                     </div>
                   )}
@@ -301,9 +335,32 @@ export default function CheckoutPage() {
                   )}
                 </div>
 
-                <Button className="w-full" size="lg">
-                  Xác nhận đặt hàng
-                </Button>
+                {orderSuccess ? (
+                  <div className="w-full p-6 bg-green-50 border-2 border-green-400 rounded-lg flex flex-col items-center gap-3 shadow-lg">
+                    <CheckCircle2 className="h-10 w-10 text-green-600 animate-pulse" />
+                    <div className="text-center">
+                      <p className="text-green-700 font-bold text-xl mb-2">Đặt hàng thành công!</p>
+                      <p className="text-green-600 text-base">Đơn hàng đang chờ nhân viên xác nhận.</p>
+                      <p className="text-green-500 text-sm mt-2">Bạn sẽ được chuyển về trang chủ sau vài giây...</p>
+                    </div>
+                  </div>
+                ) : (
+                  <Button 
+                    className="w-full" 
+                    size="lg" 
+                    onClick={handlePlaceOrder}
+                    disabled={submitting || cartItems.length === 0}
+                  >
+                    {submitting ? (
+                      <>
+                        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                        Đang xử lý...
+                      </>
+                    ) : (
+                      "Xác nhận đặt hàng"
+                    )}
+                  </Button>
+                )}
 
                 <div className="text-xs text-gray-600 text-center pt-2">
                   Bằng việc đặt hàng, bạn đồng ý với{" "}

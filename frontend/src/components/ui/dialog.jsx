@@ -4,30 +4,26 @@ import { XIcon } from "lucide-react";
 
 import { cn } from "../../lib/utils";
 
-// Loại bỏ khai báo kiểu TypeScript: React.ComponentProps<typeof DialogPrimitive.Root>
 function Dialog(props) {
   return <DialogPrimitive.Root data-slot="dialog" {...props} />;
 }
 
-// Loại bỏ khai báo kiểu TypeScript: React.ComponentProps<typeof DialogPrimitive.Trigger>
 function DialogTrigger(props) {
   return <DialogPrimitive.Trigger data-slot="dialog-trigger" {...props} />;
 }
 
-// Loại bỏ khai báo kiểu TypeScript: React.ComponentProps<typeof DialogPrimitive.Portal>
 function DialogPortal(props) {
   return <DialogPrimitive.Portal data-slot="dialog-portal" {...props} />;
 }
 
-// Loại bỏ khai báo kiểu TypeScript: React.ComponentProps<typeof DialogPrimitive.Close>
 function DialogClose(props) {
   return <DialogPrimitive.Close data-slot="dialog-close" {...props} />;
 }
 
-// Loại bỏ khai báo kiểu TypeScript: React.ComponentProps<typeof DialogPrimitive.Overlay>
-function DialogOverlay({ className, ...props }) {
+const DialogOverlay = React.forwardRef(({ className, ...props }, ref) => {
   return (
     <DialogPrimitive.Overlay
+      ref={ref}
       data-slot="dialog-overlay"
       className={cn(
         "data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 fixed inset-0 z-50 bg-black/50",
@@ -36,9 +32,9 @@ function DialogOverlay({ className, ...props }) {
       {...props}
     />
   );
-}
+});
+DialogOverlay.displayName = "DialogOverlay";
 
-// Loại bỏ khai báo kiểu TypeScript: React.ComponentProps<typeof DialogPrimitive.Content> & { showCloseButton?: boolean; }
 function DialogContent({
   className,
   children,
@@ -60,9 +56,9 @@ function DialogContent({
         {showCloseButton && (
           <DialogPrimitive.Close
             data-slot="dialog-close"
-            className="ring-offset-background focus:ring-ring data-[state=open]:bg-accent data-[state=open]:text-muted-foreground absolute top-4 right-4 rounded-xs opacity-70 transition-opacity hover:opacity-100 focus:ring-2 focus:ring-offset-2 focus:outline-hidden disabled:pointer-events-none [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4"
+            className="ring-offset-background focus:ring-ring absolute top-3 right-3 rounded-xs text-black hover:text-red-600 transition-colors focus:ring-2 focus:ring-offset-2 focus:outline-hidden disabled:pointer-events-none [&_svg]:pointer-events-none [&_svg]:shrink-0"
           >
-            <XIcon />
+            <XIcon className="w-5 h-5" />
             <span className="sr-only">Close</span>
           </DialogPrimitive.Close>
         )}
@@ -71,7 +67,6 @@ function DialogContent({
   );
 }
 
-// Loại bỏ khai báo kiểu TypeScript: React.ComponentProps<"div">
 function DialogHeader({ className, ...props }) {
   return (
     <div
@@ -82,13 +77,12 @@ function DialogHeader({ className, ...props }) {
   );
 }
 
-// Loại bỏ khai báo kiểu TypeScript: React.ComponentProps<"div">
 function DialogFooter({ className, ...props }) {
   return (
     <div
       data-slot="dialog-footer"
       className={cn(
-        "flex flex-col-reverse gap-2 sm:flex-row sm:justify-end",
+        "flex flex-col-reverse gap-2 sm:flex-row sm:justify-center",
         className
       )}
       {...props}
@@ -96,7 +90,6 @@ function DialogFooter({ className, ...props }) {
   );
 }
 
-// Loại bỏ khai báo kiểu TypeScript: React.ComponentProps<typeof DialogPrimitive.Title>
 function DialogTitle({ className, ...props }) {
   return (
     <DialogPrimitive.Title
@@ -107,7 +100,6 @@ function DialogTitle({ className, ...props }) {
   );
 }
 
-// Loại bỏ khai báo kiểu TypeScript: React.ComponentProps<typeof DialogPrimitive.Description>
 function DialogDescription({ className, ...props }) {
   return (
     <DialogPrimitive.Description
