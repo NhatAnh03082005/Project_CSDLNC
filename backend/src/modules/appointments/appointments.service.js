@@ -54,7 +54,7 @@ async function createAppointment(customerId, appointmentData) {
 
   let appointmentDateStr;
   let appointmentDate;
-  
+
   if (typeof ThoiGianHen === 'string') {
     const dateParts = ThoiGianHen.split('-');
     if (dateParts.length === 3) {
@@ -71,7 +71,7 @@ async function createAppointment(customerId, appointmentData) {
     const day = String(appointmentDate.getDate()).padStart(2, '0');
     appointmentDateStr = `${year}-${month}-${day}`;
   }
-  
+
   const today = new Date();
   today.setHours(0, 0, 0, 0);
   appointmentDate.setHours(0, 0, 0, 0);
@@ -83,7 +83,7 @@ async function createAppointment(customerId, appointmentData) {
       message: "Thời gian hẹn không được nhỏ hơn ngày hiện tại",
     };
   }
-  
+
   const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
   const ngayLapStr = todayStr;
 
@@ -383,7 +383,7 @@ async function getAvailableSlots(queryParams) {
 
   try {
     const pool = await poolPromise;
-    
+
     let appointmentDateStr;
     let appointmentDate;
     if (typeof ThoiGianHen === 'string') {
@@ -599,6 +599,21 @@ async function getCustomerAppointments(customerId, options = {}) {
 
   try {
     const pool = await poolPromise;
+
+    // Tự động cập nhật trạng thái lịch hẹn đã quá hạn
+    const today = new Date();
+    const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
+
+    await pool
+      .request()
+      .input("TodayDate", sql.NVarChar(10), todayStr)
+      .query(`
+        UPDATE dbo.LichHen
+        SET TrangThai = N'Hoàn thành'
+        WHERE TrangThai = N'Đã lên lịch'
+          AND CAST(ThoiGianHen AS DATE) < CAST(@TodayDate AS DATE)
+      `);
+
     const request = pool.request();
 
     let whereClause = "WHERE lh.MaKhachHang = @MaKhachHang";
@@ -799,8 +814,8 @@ async function getAvailableDoctors(params) {
         AND CAST(ThoiGianHen AS DATE) = CAST(@ThoiGianHen AS DATE)
           AND TrangThai = N'Đã lên lịch'
         AND BacSiPhuTrach IN (${doctorIds
-          .map((_, i) => `@BacSi${i}`)
-          .join(", ")})
+        .map((_, i) => `@BacSi${i}`)
+        .join(", ")})
       GROUP BY BacSiPhuTrach
     `);
 
@@ -841,17 +856,17 @@ async function getAvailableDoctors(params) {
         CoLichLamViec: hasSchedule,
         GioLamViec: hasSchedule
           ? {
-              BatDau: formattedBatDau,
-              KetThuc: formattedKetThuc,
-            }
+            BatDau: formattedBatDau,
+            KetThuc: formattedKetThuc,
+          }
           : null,
         SoLuongConLai: availableSlots,
         TrangThai:
           hasSchedule && availableSlots > 0
             ? "Rảnh"
             : hasSchedule
-            ? "Đã đầy"
-            : "Không có lịch",
+              ? "Đã đầy"
+              : "Không có lịch",
       };
 
       return doctorInfo;
