@@ -10,11 +10,13 @@ import { Label } from "../../components/ui/label";
 import { Input } from "../../components/ui/input";
 import { Button } from "../../components/ui/button";
 import { Heart } from "lucide-react";
-import axios from "axios";
+import { authAPI } from "../../api/services";
+import { useCartStore } from "../../store/cartStore";
 // Xóa bỏ "use client" và import type React
 
 export default function RegisterPage() {
   const navigate = useNavigate();
+  const clearCart = useCartStore((state) => state.clearCart);
   const [formData, setFormData] = useState({
     fullName: "",
     phone: "",
@@ -34,28 +36,28 @@ export default function RegisterPage() {
   };
 
   const handleRegister = async (e) => {
-  e.preventDefault();
-  // Map dữ liệu từ state React sang định dạng Backend mong đợi
-  const dataToSubmit = {
-    HoTen: formData.fullName,
-    GioiTinh: formData.gender === "male" ? "Nam" : "Nữ", // Khớp với sql.NVarChar(3)
-    SDT: formData.phone,
-    CCCD: formData.cccd,
-    Email: formData.email,
-    MatKhau: formData.password,
-    NgaySinh: formData.dateOfBirth
-  };
+    e.preventDefault();
+    
+    // Map dữ liệu từ state React sang định dạng Backend mong đợi
+    const dataToSubmit = {
+      HoTen: formData.fullName,
+      GioiTinh: formData.gender === "male" ? "Nam" : "Nữ", // Khớp với sql.NVarChar(3)
+      SDT: formData.phone,
+      CCCD: formData.cccd,
+      Email: formData.email,
+      MatKhau: formData.password,
+      NgaySinh: formData.dateOfBirth
+    };
 
-  try {
-      // 2. Loại bỏ trường confirmPassword trước khi gửi lên Backend
-      const { confirmPassword, ...dataToSubmit } = formData;
-
-      // 3. Gửi dữ liệu đến Backend
-      const response = await axios.post("http://localhost:5000/api/auth/register", dataToSubmit);
+    try {
+      // Gửi dữ liệu đến Backend sử dụng authAPI
+      const response = await authAPI.register(dataToSubmit);
       
       if (response.status === 201 || response.status === 200) {
+        // Xóa giỏ hàng khi đăng ký thành công (để tránh giữ giỏ hàng từ session trước)
+        clearCart();
         alert("Đăng ký thành công!");
-        navigate("/auth/login");
+        navigate("/login");
       }
     } catch (error) {
       // Hiển thị lỗi từ backend (ví dụ: Email đã tồn tại)

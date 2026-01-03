@@ -48,6 +48,8 @@ export default function Header() {
       setUser(null);
       setIsAuthenticated(false);
       useAuthStore.getState().logout();
+      // Xóa giỏ hàng khi đăng xuất
+      useCartStore.getState().clearCart();
       navigate("/login");
     }
   };
