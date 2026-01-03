@@ -27,5 +27,12 @@ router.post('/login', authController.login);
  */
 router.post('/logout', authenticate, authController.logout);
 
+/**
+ * @route   GET /api/auth/me
+ * @desc    Lấy thông tin user hiện tại dựa trên token
+ * @access  Private
+ */
+router.get('/me', authenticate, authController.getCurrentUser);
+
 module.exports = router;
 

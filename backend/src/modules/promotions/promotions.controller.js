@@ -13,6 +13,21 @@ class PromotionsController {
     }
   }
 
+  /**
+   * Lấy khuyến mãi đang hoạt động (theo ngày hiện tại)
+   */
+  async getActivePromotion(req, res, next) {
+    try {
+      const promotion = await promotionsService.getActivePromotion();
+      res.json({
+        success: true,
+        data: promotion,
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+
   async getPromotionById(req, res, next) {
     try {
       const { id } = req.params;

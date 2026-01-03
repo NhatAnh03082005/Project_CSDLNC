@@ -12,6 +12,13 @@ const promotionsController = require("./promotions.controller");
 router.get("/", promotionsController.getAllPromotions);
 
 /**
+ * @route   GET /api/promotions/active
+ * @desc    Lấy khuyến mãi đang hoạt động (theo ngày hiện tại)
+ * @access  Public
+ */
+router.get("/active", promotionsController.getActivePromotion);
+
+/**
  * @route   POST /api/promotions
  * @desc    Thêm chương trình khuyến mãi mới
  * @access  Public (tạm thời)

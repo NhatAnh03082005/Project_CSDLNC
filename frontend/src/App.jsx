@@ -20,6 +20,8 @@ import ReviewsPage from "./pages/reviews/ReviewPage.jsx";
 import VaccinationPackagesPage from "./pages/vaccination-packages/VaccinationPackagesPage.jsx";
 import InvoiceDetailPage from "./pages/invoicesDetailPage/InvoicesDetailPage.jsx";
 import CustomerInvoicesPage from "./pages/CustomerInvoicesPage/CustomerInvoicesPage.jsx";
+import CustomerOrdersPage from "./pages/orders/CustomerOrdersPage.jsx";
+import OrderDetailPage from "./pages/orders/OrderDetailPage.jsx";
 
 // Auth Pages
 import LoginPage from "./pages/login/LoginPage.jsx";
@@ -28,6 +30,7 @@ import RegisterPage from "./pages/register/RegisterPage.jsx";
 // Staff Pages
 import StaffDemoPage from "./pages/staff/demo/StaffDemoPage.jsx";
 import CreateRecordPage from "./pages/staff/create-record/CreateRecordPage.jsx";
+import PendingOrdersPage from "./pages/staff/orders/PendingOrdersPage.jsx";
 import InvoicePage from "./pages/staff/invoice/InvoicePage.jsx";
 import WorkSchedulePage from "./pages/staff/work-schedule/WorkSchedulePage.jsx";
 import MedicalRecordsPage from "./pages/staff/medical-records/MedicalRecordsPage.jsx";
@@ -77,6 +80,8 @@ function App() {
           <Route path="/profile" element={<ProfilePage />} />
           <Route path="/invoices" element={<CustomerInvoicesPage />} />
           <Route path="/invoices/:id" element={<InvoiceDetailPage />} />
+          <Route path="/orders" element={<CustomerOrdersPage />} />
+          <Route path="/orders/:maHoaDon" element={<OrderDetailPage />} />
           <Route path="/appointments" element={<AppointmentsPage />} />
         </Route>
 
@@ -95,6 +100,7 @@ function App() {
         {/* === PHÂN KHU NHÂN VIÊN (STAFF) === */}
         <Route path="/staff/demo" element={<StaffDemoPage />} />
         <Route path="/staff/create-record" element={<CreateRecordPage />} />
+        <Route path="/staff/orders" element={<PendingOrdersPage />} />
         <Route path="/staff/invoice" element={<InvoicePage />} />
         <Route path="/staff/work-schedule" element={<WorkSchedulePage />} />
         <Route path="/staff/medical-records" element={<MedicalRecordsPage />} />

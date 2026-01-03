@@ -89,7 +89,7 @@ router.get(
 
 /**
  * @route   POST /api/customers/orders
- * @desc    Đặt mua sản phẩm (tạo hóa đơn mua hàng)
+ * @desc    Đặt mua sản phẩm (tạo đơn hàng chờ xác nhận)
  * @access  Private - KHACH_HANG
  */
 router.post(
@@ -97,6 +97,54 @@ router.post(
   authenticate,
   authorize(ROLES.CUSTOMER),
   customersController.createOrder
+);
+
+/**
+ * @route   GET /api/customers/orders
+ * @desc    Xem danh sách đơn hàng của khách hàng
+ * @access  Private - KHACH_HANG
+ */
+router.get(
+  "/orders",
+  authenticate,
+  authorize(ROLES.CUSTOMER),
+  customersController.getOrders
+);
+
+/**
+ * @route   GET /api/customers/orders/:maHoaDon
+ * @desc    Xem chi tiết đơn hàng của khách hàng
+ * @access  Private - KHACH_HANG
+ */
+router.get(
+  "/orders/:maHoaDon",
+  authenticate,
+  authorize(ROLES.CUSTOMER),
+  customersController.getOrderDetails
+);
+
+/**
+ * @route   GET /api/customers/orders/pending
+ * @desc    Xem danh sách đơn hàng chờ xác nhận (cho nhân viên)
+ * @access  Private - NHAN_VIEN, QUAN_TRI
+ */
+router.get(
+  "/orders/pending",
+  authenticate,
+  authorize(ROLES.EMPLOYEE, ROLES.ADMIN),
+  customersController.getPendingOrders
+);
+
+/**
+ * @route   PUT /api/customers/orders/:maHoaDon/confirm
+ * @desc    Xác nhận đơn hàng (cho nhân viên)
+ * @access  Private - NHAN_VIEN, QUAN_TRI
+ */
+router.put(
+  "/orders/:maHoaDon/confirm",
+  authenticate,
+  authorize(ROLES.EMPLOYEE, ROLES.ADMIN),
+  customersController.confirmOrder
 );
 
 module.exports = router;

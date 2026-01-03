@@ -8,7 +8,7 @@ import { Separator } from "../../components/ui/separator";
 import { Badge } from "../../components/ui/badge";
 import { Heart, ArrowLeft, CreditCard, Banknote, Tag, Calendar, Loader2, CheckCircle2 } from "lucide-react";
 import { useCartStore } from "../../store/cartStore";
-import { orderAPI } from "../../api/services";
+import { orderAPI, promotionAPI } from "../../api/services";
 
 export default function CheckoutPage() {
   const navigate = useNavigate();
@@ -18,54 +18,31 @@ export default function CheckoutPage() {
   const [paymentMethod, setPaymentMethod] = useState("cod");
   const [submitting, setSubmitting] = useState(false);
   const [orderSuccess, setOrderSuccess] = useState(false);
+  const [activePromotion, setActivePromotion] = useState(null);
+  const [loadingPromotion, setLoadingPromotion] = useState(true);
   
   const maChiNhanh = cartItems.length > 0 && cartItems[0]?.maChiNhanh 
     ? cartItems[0].maChiNhanh 
     : searchParams.get("branch") || "0001";
-  const promotions = [
-    {
-      id: 1,
-      code: "PETCARE2024",
-      startDate: "2024-12-01",
-      endDate: "2024-12-31",
-      discountPercent: 10,
-    },
-    {
-      id: 2,
-      code: "NEWYEAR2025",
-      startDate: "2024-12-25",
-      endDate: "2025-01-15",
-      discountPercent: 15,
-    },
-    {
-      id: 3,
-      code: "WINTER50",
-      startDate: "2024-11-01",
-      endDate: "2025-02-28",
-      discountPercent: 5,
-    },
-  ];
 
-  // Loại bỏ khai báo kiểu TypeScript: (startDate: string, endDate: string)
-  const isPromotionValid = (startDate, endDate) => {
-    const now = new Date();
-    const start = new Date(startDate);
-    const end = new Date(endDate);
-    // Tính toán ngày kết thúc là cuối ngày (23:59:59)
-    end.setHours(23, 59, 59, 999); 
-    
-    return now >= start && now <= end;
-  };
-
-  // Áp dụng bộ lọc
-  const applicablePromotions = promotions.filter((promo) =>
-    isPromotionValid(promo.startDate, promo.endDate),
-  );
-
-  const totalDiscountPercent = applicablePromotions.reduce(
-    (sum, promo) => sum + promo.discountPercent,
-    0,
-  );
+  // Fetch active promotion từ API
+  useEffect(() => {
+    const fetchActivePromotion = async () => {
+      try {
+        setLoadingPromotion(true);
+        const response = await promotionAPI.getActive();
+        if (response.data.success && response.data.data) {
+          setActivePromotion(response.data.data);
+        }
+      } catch (error) {
+        console.error("Error fetching active promotion:", error);
+        setActivePromotion(null);
+      } finally {
+        setLoadingPromotion(false);
+      }
+    };
+    fetchActivePromotion();
+  }, []);
 
   useEffect(() => {
     if (cartItems.length === 0 && !orderSuccess) {
@@ -73,14 +50,23 @@ export default function CheckoutPage() {
     }
   }, [cartItems, orderSuccess, navigate]);
 
+  // Debug: Log khi orderSuccess thay đổi
+  useEffect(() => {
+    console.log("orderSuccess state changed:", orderSuccess);
+  }, [orderSuccess]);
+
   const subtotal = cartItems.reduce(
     (sum, item) => sum + (item.donGia || item.price || 0) * item.soLuong,
     0,
   );
-  const shippingFee = 30000;
+  const shippingFee = 30000; // Phí vận chuyển 30k khi đặt hàng trên web
 
-  const discountAmount = Math.floor((subtotal * totalDiscountPercent) / 100);
-  const total = subtotal + shippingFee - discountAmount;
+  // Tính discount dựa trên active promotion (giống logic trigger)
+  const discountPercent = activePromotion ? activePromotion.TiLeGiamGia : 0;
+  const discountAmount = Math.floor((subtotal * discountPercent) / 100);
+  
+  // Tổng tiền = (subtotal - discount) + shippingFee
+  const total = (subtotal - discountAmount) + shippingFee;
 
   const handlePlaceOrder = async () => {
     if (cartItems.length === 0) {
@@ -106,19 +92,39 @@ export default function CheckoutPage() {
       };
 
       const response = await orderAPI.create(orderData);
+      
+      console.log("Order creation response:", response);
+      console.log("Response data:", response.data);
+      console.log("Response success:", response.data?.success);
 
-      if (response.data.success) {
+      // Kiểm tra response đơn giản như code ban đầu đã thành công
+      if (response.data && response.data.success) {
+        console.log("Order created successfully, setting orderSuccess to true");
+        console.log("Response message:", response?.data?.message);
+        
+        // Set state và clear cart
         setOrderSuccess(true);
         clearCart();
+        
+        // Hiển thị alert để xác nhận thành công
+        alert("Đặt hàng thành công! Đơn hàng đang chờ nhân viên xác nhận.");
+        
+        // Hiển thị thông báo trong UI
+        // Tự động chuyển trang sau 3 giây để người dùng có thời gian thấy thông báo
         setTimeout(() => {
+          console.log("Navigating to /customer");
           navigate("/customer");
-        }, 2000);
+        }, 3000);
       } else {
-        alert(response.data.message || "Đặt hàng thất bại!");
+        console.error("Order creation failed:", response.data);
+        const errorMsg = response?.data?.message || response?.message || "Đặt hàng thất bại!";
+        alert(errorMsg);
       }
     } catch (error) {
       console.error("Error placing order:", error);
-      alert(error.response?.data?.message || "Đặt hàng thất bại. Vui lòng thử lại!");
+      console.error("Error response:", error.response?.data);
+      const errorMessage = error.response?.data?.message || error.response?.data?.error || "Đặt hàng thất bại. Vui lòng thử lại!";
+      alert(errorMessage);
     } finally {
       setSubmitting(false);
     }
@@ -210,47 +216,52 @@ export default function CheckoutPage() {
                   Khuyến mãi đang áp dụng
                 </CardTitle>
                 <CardDescription>
-                  {applicablePromotions.length > 0
-                    ? "Các khuyến mãi sau được tự động áp dụng cho đơn hàng của bạn"
+                  {activePromotion
+                    ? "Khuyến mãi được tự động áp dụng cho đơn hàng của bạn"
                     : "Hiện không có khuyến mãi nào được áp dụng"}
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                {applicablePromotions.length > 0 ? (
-                  <div className="space-y-4">
-                    {applicablePromotions.map((promo) => (
-                      <div
-                        key={promo.id}
-                        className="p-4 border rounded-lg bg-green-50 border-green-200 space-y-2"
-                      >
-                        <div className="flex items-center justify-between">
-                          <div className="flex items-center gap-2">
-                            <Badge
-                              variant="secondary"
-                              className="bg-green-600 text-white"
-                            >
-                              {promo.code}
-                            </Badge>
-                            <Badge
-                              variant="outline"
-                              className="text-green-700 border-green-600"
-                            >
-                              Giảm {promo.discountPercent}%
-                            </Badge>
-                          </div>
-                        </div>
-                        <div className="flex items-center gap-4 text-sm text-gray-600">
-                          <div className="flex items-center gap-1">
-                            <Calendar className="h-4 w-4" />
-                            <span>Từ: {formatDate(promo.startDate)}</span>
-                          </div>
-                          <div className="flex items-center gap-1">
-                            <Calendar className="h-4 w-4" />
-                            <span>Đến: {formatDate(promo.endDate)}</span>
-                          </div>
-                        </div>
+                {loadingPromotion ? (
+                  <div className="text-center py-8">
+                    <Loader2 className="h-6 w-6 mx-auto animate-spin text-blue-600" />
+                    <p className="mt-2 text-gray-500">Đang tải khuyến mãi...</p>
+                  </div>
+                ) : activePromotion ? (
+                  <div className="p-4 border rounded-lg bg-green-50 border-green-200 space-y-2">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <Badge
+                          variant="secondary"
+                          className="bg-green-600 text-white"
+                        >
+                          {activePromotion.MaKhuyenMai}
+                        </Badge>
+                        <Badge
+                          variant="outline"
+                          className="text-green-700 border-green-600"
+                        >
+                          Giảm {activePromotion.TiLeGiamGia}%
+                        </Badge>
                       </div>
-                    ))}
+                    </div>
+                    <div className="flex items-center gap-4 text-sm text-gray-600">
+                      <div className="flex items-center gap-1">
+                        <Calendar className="h-4 w-4" />
+                        <span>Từ: {formatDate(activePromotion.NgayBatDau)}</span>
+                      </div>
+                      <div className="flex items-center gap-1">
+                        <Calendar className="h-4 w-4" />
+                        <span>Đến: {formatDate(activePromotion.NgayKetThuc)}</span>
+                      </div>
+                    </div>
+                    {discountAmount > 0 && (
+                      <div className="pt-2 border-t border-green-200">
+                        <p className="text-sm font-medium text-green-700">
+                          Bạn được giảm: {formatPrice(discountAmount)}
+                        </p>
+                      </div>
+                    )}
                   </div>
                 ) : (
                   <div className="text-center py-8 text-gray-500">
@@ -315,9 +326,9 @@ export default function CheckoutPage() {
                     <span className="text-gray-600">Phí vận chuyển:</span>
                     <span>{formatPrice(shippingFee)}</span>
                   </div>
-                  {discountAmount > 0 && (
+                  {discountAmount > 0 && activePromotion && (
                     <div className="flex justify-between text-sm text-green-600">
-                      <span>Giảm giá ({totalDiscountPercent}%):</span>
+                      <span>Giảm giá ({discountPercent}%):</span>
                       <span>-{formatPrice(discountAmount)}</span>
                     </div>
                   )}
@@ -336,9 +347,13 @@ export default function CheckoutPage() {
                 </div>
 
                 {orderSuccess ? (
-                  <div className="w-full p-4 bg-green-50 border border-green-200 rounded-lg flex items-center gap-2">
-                    <CheckCircle2 className="h-5 w-5 text-green-600" />
-                    <span className="text-green-700 font-medium">Đặt hàng thành công!</span>
+                  <div className="w-full p-6 bg-green-50 border-2 border-green-400 rounded-lg flex flex-col items-center gap-3 shadow-lg">
+                    <CheckCircle2 className="h-10 w-10 text-green-600 animate-pulse" />
+                    <div className="text-center">
+                      <p className="text-green-700 font-bold text-xl mb-2">Đặt hàng thành công!</p>
+                      <p className="text-green-600 text-base">Đơn hàng đang chờ nhân viên xác nhận.</p>
+                      <p className="text-green-500 text-sm mt-2">Bạn sẽ được chuyển về trang chủ sau vài giây...</p>
+                    </div>
                   </div>
                 ) : (
                   <Button 

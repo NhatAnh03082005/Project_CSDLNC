@@ -106,8 +106,11 @@ class BranchesService {
           cn.MaChiNhanh, cn.TenChiNhanh, cn.SDT, cn.TGMoCua, cn.TGDongCua,
           CONCAT(cn.SoNha, ' ', cn.TenDuong, ', ', cn.Phuong, ', ', cn.ThanhPho) AS DiaChi,
           CASE 
-            WHEN CAST(GETDATE() AS TIME) BETWEEN cn.TGMoCua AND cn.TGDongCua THEN 1
-            ELSE 0
+            WHEN cn.TGMoCua IS NULL OR cn.TGDongCua IS NULL THEN 0
+            WHEN cn.TGMoCua <= cn.TGDongCua THEN
+              CASE WHEN CAST(GETDATE() AS TIME) >= cn.TGMoCua AND CAST(GETDATE() AS TIME) <= cn.TGDongCua THEN 1 ELSE 0 END
+            ELSE
+              CASE WHEN CAST(GETDATE() AS TIME) >= cn.TGMoCua OR CAST(GETDATE() AS TIME) <= cn.TGDongCua THEN 1 ELSE 0 END
           END AS DangMoCua
         FROM dbo.ChiNhanh cn
         ${whereClause}
@@ -195,7 +198,13 @@ class BranchesService {
         .request()
         .input("MaChiNhanh", sql.NVarChar, maChiNhanh).query(`
           SELECT *,
-            CASE WHEN CAST(GETDATE() AS TIME) BETWEEN TGMoCua AND TGDongCua THEN 1 ELSE 0 END AS DangMoCua
+            CASE 
+              WHEN TGMoCua IS NULL OR TGDongCua IS NULL THEN 0
+              WHEN TGMoCua <= TGDongCua THEN
+                CASE WHEN CAST(GETDATE() AS TIME) >= TGMoCua AND CAST(GETDATE() AS TIME) <= TGDongCua THEN 1 ELSE 0 END
+              ELSE
+                CASE WHEN CAST(GETDATE() AS TIME) >= TGMoCua OR CAST(GETDATE() AS TIME) <= TGDongCua THEN 1 ELSE 0 END
+            END AS DangMoCua
           FROM ChiNhanh WHERE MaChiNhanh = @MaChiNhanh
         `);
 

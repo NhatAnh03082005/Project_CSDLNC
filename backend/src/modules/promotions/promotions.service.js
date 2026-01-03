@@ -21,6 +21,30 @@ class PromotionsService {
     }
   }
 
+  /**
+   * Lấy khuyến mãi đang hoạt động (theo ngày hiện tại)
+   * Trả về khuyến mãi có TiLeGiamGia cao nhất (giống logic trigger)
+   */
+  async getActivePromotion() {
+    try {
+      const pool = await poolPromise;
+      const result = await pool.request().query(`
+          SELECT TOP 1
+            MaKhuyenMai,
+            NgayBatDau,
+            NgayKetThuc,
+            TiLeGiamGia
+          FROM KhuyenMai
+          WHERE CAST(GETDATE() AS DATE) BETWEEN NgayBatDau AND NgayKetThuc
+          ORDER BY TiLeGiamGia DESC
+        `);
+
+      return result.recordset[0] || null;
+    } catch (error) {
+      throw error;
+    }
+  }
+
   async getPromotionById(maKhuyenMai) {
     try {
       const pool = await poolPromise;

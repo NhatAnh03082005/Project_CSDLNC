@@ -94,6 +94,7 @@ export const reportAPI = {
 
 export const promotionAPI = {
   getAll: () => api.get("/promotions"),
+  getActive: () => api.get("/promotions/active"),
   getById: (id) => api.get(`/promotions/${id}`),
   create: (data) => api.post("/promotions", data),
   update: (id, data) => api.put(`/promotions/${id}`, data),
@@ -128,4 +129,8 @@ export const ratingAPI = {
 
 export const orderAPI = {
   create: (data) => api.post("/customers/orders", data),
+  getAll: () => api.get("/customers/orders"),
+  getById: (maHoaDon) => api.get(`/customers/orders/${maHoaDon}`),
+  getPending: (maChiNhanh) => api.get("/customers/orders/pending", { params: { maChiNhanh } }),
+  confirm: (maHoaDon) => api.put(`/customers/orders/${maHoaDon}/confirm`),
 };

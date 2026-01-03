@@ -42,6 +42,18 @@ class AuthController {
       error: null,
     });
   }
+
+  /**
+   * Lấy thông tin user hiện tại dựa trên token
+   */
+  async getCurrentUser(req, res, next) {
+    try {
+      const response = await authService.getCurrentUser(req.user);
+      return res.status(response.status || 200).json(response);
+    } catch (error) {
+      next(error);
+    }
+  }
 }
 
 module.exports = new AuthController();

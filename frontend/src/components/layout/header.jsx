@@ -39,23 +39,11 @@ export default function Header() {
 
   const handleLogout = async () => {
     try {
-      const response = await authAPI.logout();
-      if (response.data.success) {
-        localStorage.removeItem("token");
-
-        setUser(null);
-        setIsAuthenticated(false);
-        useAuthStore.getState().logout();
-        navigate("/login");
-      } else {
-        localStorage.removeItem("token");
-        setUser(null);
-        setIsAuthenticated(false);
-        useAuthStore.getState().logout();
-        navigate("/login");
-      }
+      await authAPI.logout();
     } catch (error) {
       console.error("Lỗi khi đăng xuất:", error);
+    } finally {
+      // Luôn xóa thông tin đăng nhập dù API có thành công hay không
       localStorage.removeItem("token");
       setUser(null);
       setIsAuthenticated(false);

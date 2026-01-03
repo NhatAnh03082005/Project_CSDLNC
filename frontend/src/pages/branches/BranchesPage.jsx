@@ -119,6 +119,49 @@ export default function BranchesPage() {
 
   const ServiceIcon = currentService?.icon || Calendar;
 
+  // Hàm tính toán trạng thái mở/đóng cửa dựa trên thời gian thực
+  const checkIsOpen = (tgMoCua, tgDongCua) => {
+    if (!tgMoCua || !tgDongCua) return false;
+
+    const now = new Date();
+    const currentTime = now.getHours() * 60 + now.getMinutes(); // Phút trong ngày
+
+    // Parse giờ mở cửa và đóng cửa
+    const parseTime = (timeStr) => {
+      if (!timeStr) return null;
+      // Nếu là string dạng "HH:MM"
+      if (typeof timeStr === "string") {
+        const parts = timeStr.split(":");
+        if (parts.length === 2) {
+          return parseInt(parts[0]) * 60 + parseInt(parts[1]);
+        }
+      }
+      // Nếu là Date object
+      if (timeStr instanceof Date) {
+        return timeStr.getHours() * 60 + timeStr.getMinutes();
+      }
+      // Nếu là object có hours và minutes
+      if (timeStr.hours !== undefined) {
+        return timeStr.hours * 60 + (timeStr.minutes || 0);
+      }
+      return null;
+    };
+
+    const openTime = parseTime(tgMoCua);
+    const closeTime = parseTime(tgDongCua);
+
+    if (openTime === null || closeTime === null) return false;
+
+    // Nếu giờ mở cửa <= giờ đóng cửa (ví dụ: 08:00 - 21:00)
+    if (openTime <= closeTime) {
+      return currentTime >= openTime && currentTime <= closeTime;
+    }
+    // Nếu giờ mở cửa > giờ đóng cửa (qua đêm, ví dụ: 22:00 - 06:00)
+    else {
+      return currentTime >= openTime || currentTime <= closeTime;
+    }
+  };
+
   const handleBranchSelect = (branch) => {
     if (service === "products") {
       navigate(`/products-list?branch=${branch.MaChiNhanh}`);
@@ -269,12 +312,14 @@ export default function BranchesPage() {
                       <Badge
                         variant="secondary"
                         className={
-                          branch.DangMoCua
+                          checkIsOpen(branch.TGMoCua, branch.TGDongCua)
                             ? "bg-green-100 text-green-700"
                             : "bg-gray-100 text-gray-700"
                         }
                       >
-                        {branch.DangMoCua ? "Mở cửa" : "Đóng cửa"}
+                        {checkIsOpen(branch.TGMoCua, branch.TGDongCua)
+                          ? "Mở cửa"
+                          : "Đóng cửa"}
                       </Badge>
                     </CardTitle>
                     <CardDescription className="space-y-2 mt-4">

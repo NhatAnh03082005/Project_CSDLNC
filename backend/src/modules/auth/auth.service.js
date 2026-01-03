@@ -224,6 +224,107 @@ class AuthService {
       };
     }
   }
+
+  /**
+   * Lấy thông tin user hiện tại dựa trên token (cho tất cả roles)
+   * @param {object} decodedToken - Token đã được decode từ middleware
+   */
+  async getCurrentUser(decodedToken) {
+    try {
+      const pool = await poolPromise;
+      const { role, maKhachHang, maNhanVien } = decodedToken;
+
+      // Nếu là khách hàng (role trong token là "KHACH_HANG")
+      if (role === "KHACH_HANG" && maKhachHang) {
+        const result = await pool
+          .request()
+          .input("MaKhachHang", sql.Char(7), maKhachHang)
+          .query(
+            `
+            SELECT TOP 1 
+              MaKhachHang, HoTen, Email, GioiTinh, SDT, CCCD, NgaySinh, DiemLoyalty, CapHoiVien
+            FROM dbo.KhachHang
+            WHERE MaKhachHang = @MaKhachHang
+          `
+          );
+
+        if (result.recordset.length === 0) {
+          return {
+            success: false,
+            status: 404,
+            message: "Không tìm thấy thông tin khách hàng",
+          };
+        }
+
+        const customer = result.recordset[0];
+        return {
+          success: true,
+          status: 200,
+          data: {
+            ...customer,
+            Role: "customer",
+          },
+        };
+      }
+
+      // Nếu là nhân viên/admin (role trong token là "admin" hoặc "staff")
+      // Hoặc role là "NHAN_VIEN" hoặc "QUAN_TRI" (nếu có token cũ)
+      if (maNhanVien && (role === "admin" || role === "staff" || role === "NHAN_VIEN" || role === "QUAN_TRI")) {
+        const result = await pool
+          .request()
+          .input("MaNhanVien", sql.Char(5), maNhanVien)
+          .query(
+            `
+            SELECT TOP 1 
+              MaNhanVien, HoTen, ViTri, MaChiNhanh
+            FROM dbo.NhanVien
+            WHERE MaNhanVien = @MaNhanVien
+          `
+          );
+
+        if (result.recordset.length === 0) {
+          return {
+            success: false,
+            status: 404,
+            message: "Không tìm thấy thông tin nhân viên",
+          };
+        }
+
+        const staff = result.recordset[0];
+        // Xác định role dựa trên ViTri
+        let userRole = "staff";
+        if (staff.ViTri === "Quản lý chi nhánh") {
+          userRole = "admin";
+        }
+
+        return {
+          success: true,
+          status: 200,
+          data: {
+            MaNhanVien: staff.MaNhanVien,
+            HoTen: staff.HoTen,
+            ViTri: staff.ViTri,
+            MaChiNhanh: staff.MaChiNhanh,
+            Role: userRole,
+          },
+        };
+      }
+
+      return {
+        success: false,
+        status: 400,
+        message: "Thông tin token không hợp lệ",
+      };
+    } catch (error) {
+      console.error("Get current user error:", error);
+      return {
+        success: false,
+        status: 500,
+        message: "Lỗi khi lấy thông tin người dùng",
+        error: error.message,
+      };
+    }
+  }
 }
 
 module.exports = new AuthService();
