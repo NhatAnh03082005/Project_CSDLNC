@@ -1,5 +1,4 @@
 // Auth Service - Business logic cho authentication
-const bcrypt = require("bcryptjs");
 const { poolPromise, sql } = require("../../config/database");
 const jwt = require("jsonwebtoken");
 
@@ -45,10 +44,8 @@ class AuthService {
         };
       }
 
-      // Hash mật khẩu
-      const hashed = await bcrypt.hash(MatKhau, 10);
-
       // Insert (MaKhachHang sẽ được trigger tự động sinh)
+      // Lưu mật khẩu dạng plain text (không hash)
       await pool
         .request()
         .input("HoTen", sql.NVarChar(50), HoTen)
@@ -56,7 +53,7 @@ class AuthService {
         .input("SDT", sql.Char(10), SDT)
         .input("CCCD", sql.Char(12), CCCD)
         .input("Email", sql.VarChar(50), Email)
-        .input("MatKhau", sql.VarChar(100), hashed)
+        .input("MatKhau", sql.VarChar(100), MatKhau)
         .input("NgaySinh", sql.Date, NgaySinh || null)
         .input("DiemLoyalty", sql.Int, 0)
         .query(

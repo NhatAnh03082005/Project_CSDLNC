@@ -41,8 +41,21 @@ export const AuthProvider = ({ children }) => {
             return;
           }
         }
-        // Nếu admin/staff đang ở trang customer hoặc root, redirect về trang của họ
-        else if ((userRole === "admin" || userRole === "staff") && (path === '/' || path === '/customer' || path.startsWith('/customer'))) {
+        // Nếu đang ở "/" (root), redirect đến trang phù hợp theo role
+        if (path === '/') {
+          if (userRole === "customer") {
+            window.location.href = '/customer';
+            return;
+          } else if (userRole === "admin") {
+            window.location.href = '/admin/demo';
+            return;
+          } else if (userRole === "staff") {
+            window.location.href = '/staff/demo';
+            return;
+          }
+        }
+        // Nếu admin/staff đang ở trang customer, redirect về trang của họ
+        else if ((userRole === "admin" || userRole === "staff") && (path === '/customer' || path.startsWith('/customer'))) {
           if (userRole === "admin") {
             window.location.href = '/admin/demo';
             return;
@@ -101,8 +114,21 @@ export const AuthProvider = ({ children }) => {
                 return;
               }
             }
-            // Nếu admin/staff đang ở trang customer hoặc root, redirect về trang của họ
-            else if ((userRole === "admin" || userRole === "staff") && (currentPath === '/' || currentPath === '/customer' || currentPath.startsWith('/customer'))) {
+            // Nếu đang ở "/" (root), redirect đến trang phù hợp theo role
+            if (currentPath === '/') {
+              if (userRole === "customer") {
+                window.location.href = '/customer';
+                return;
+              } else if (userRole === "admin") {
+                window.location.href = '/admin/demo';
+                return;
+              } else if (userRole === "staff") {
+                window.location.href = '/staff/demo';
+                return;
+              }
+            }
+            // Nếu admin/staff đang ở trang customer, redirect về trang của họ
+            else if ((userRole === "admin" || userRole === "staff") && (currentPath === '/customer' || currentPath.startsWith('/customer'))) {
               if (userRole === "admin") {
                 window.location.href = '/admin/demo';
                 return;
@@ -151,6 +177,18 @@ export const AuthProvider = ({ children }) => {
         if (storeToken || storeUser) {
           useAuthStore.getState().logout();
         }
+        
+        // Redirect về login nếu đang ở trang chủ hoặc trang customer mà chưa đăng nhập
+        // Chỉ redirect nếu không phải đang ở trang login/register
+        const path = window.location.pathname;
+        const publicPaths = ['/login', '/register', '/branches', '/products-list', '/product-detail'];
+        const isPublicPath = publicPaths.some(publicPath => path === publicPath || path.startsWith(publicPath));
+        
+        if (!isPublicPath && (path === '/' || path === '/customer' || path.startsWith('/customer') || path.startsWith('/profile') || path.startsWith('/pets') || path.startsWith('/appointments') || path.startsWith('/invoices') || path.startsWith('/orders') || path.startsWith('/reviews') || path.startsWith('/vaccination-packages'))) {
+          window.location.href = '/login';
+          return;
+        }
+        
         if (mounted) {
           setUser(null);
           setIsAuthenticated(false);
