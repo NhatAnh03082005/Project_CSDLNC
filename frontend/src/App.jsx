@@ -66,7 +66,7 @@ function App() {
       <Routes>
         {/* === PHÂN KHU NGƯỜI DÙNG CÓ LAYOUT CHUNG === */}
         <Route element={<MainLayout />}>
-          <Route path="/" element={<CustomerHome />} />
+          <Route path="/" element={<LoginPage />} />
           <Route path="/customer" element={<CustomerHome />} />
           <Route path="/services" element={<ServicesPage />} />
           <Route path="/products" element={<ProductsPage />} />

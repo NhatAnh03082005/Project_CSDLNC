@@ -18,7 +18,7 @@ import {
   SelectValue,
 } from "../../components/ui/select";
 import { Badge } from "../../components/ui/badge";
-import { Crown, TrendingUp, Award, Loader2 } from "lucide-react";
+import { Crown, TrendingUp, Award, Loader2, ShieldCheck } from "lucide-react";
 import { useAuth } from "../../context/AuthContext";
 import { customerAPI } from "../../api/services";
 
@@ -235,7 +235,7 @@ export default function ProfilePage() {
           </div>
 
           <div className="lg:col-span-2">
-            <Card>
+            <Card className="h-full">
               <CardHeader>
                 <div className="flex items-center justify-between">
                   <div>
@@ -245,13 +245,14 @@ export default function ProfilePage() {
                     </CardDescription>
                   </div>
                   {!isEditing ? (
-                    <Button onClick={() => setIsEditing(true)}>
+                    <Button variant="premium" className="rounded-xl px-6" onClick={() => setIsEditing(true)}>
                       Chỉnh sửa
                     </Button>
                   ) : (
                     <div className="flex gap-2">
                       <Button
                         variant="outline"
+                        className="rounded-xl px-6"
                         onClick={() => {
                           setIsEditing(false);
                           setErrors({});
@@ -269,7 +270,7 @@ export default function ProfilePage() {
                       >
                         Hủy
                       </Button>
-                      <Button onClick={handleSave}>Lưu</Button>
+                      <Button variant="premium" className="rounded-xl px-6 font-semibold" onClick={handleSave}>Lưu thay đổi</Button>
                     </div>
                   )}
                 </div>
@@ -304,15 +305,35 @@ export default function ProfilePage() {
                   </div>
                 </div>
 
-                <div className="space-y-2">
-                  <Label htmlFor="Email">Email</Label>
-                  <Input
-                    name="Email"
-                    id="Email"
-                    type="email"
-                    value={profileData.Email || ""}
-                    disabled={true}
-                  />
+                <div className="grid md:grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="Email">Email</Label>
+                    <Input
+                      name="Email"
+                      id="Email"
+                      type="email"
+                      value={profileData.Email || ""}
+                      disabled={true}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="GioiTinh">Giới tính</Label>
+                    <Select
+                      id="GioiTinh"
+                      value={formData.GioiTinh}
+                      onValueChange={handleSelectChange}
+                      disabled={!isEditing}
+                    >
+                      <SelectTrigger id="GioiTinh">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="Nam">Nam</SelectItem>
+                        <SelectItem value="Nữ">Nữ</SelectItem>
+                        <SelectItem value="Other">Khác</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
                 </div>
 
                 <div className="grid md:grid-cols-2 gap-4">
@@ -345,23 +366,14 @@ export default function ProfilePage() {
                   </div>
                 </div>
 
-                <div className="space-y-2">
-                  <Label htmlFor="GioiTinh">Giới tính</Label>
-                  <Select
-                    id="GioiTinh"
-                    value={formData.GioiTinh}
-                    onValueChange={handleSelectChange}
-                    disabled={!isEditing}
-                  >
-                    <SelectTrigger id="GioiTinh">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="Nam">Nam</SelectItem>
-                      <SelectItem value="Nữ">Nữ</SelectItem>
-                      <SelectItem value="Other">Khác</SelectItem>
-                    </SelectContent>
-                  </Select>
+                <div className="bg-blue-50/50 rounded-2xl p-4 border border-blue-100/50 space-y-3">
+                  <div className="flex items-center gap-2 text-blue-700 font-bold text-sm">
+                    <ShieldCheck className="h-4 w-4" />
+                    Bảo mật thông tin định danh
+                  </div>
+                  <p className="text-xs text-slate-500 leading-relaxed font-medium">
+                    Thông tin CCCD và ngày sinh được sử dụng để xác thực quyền chủ tài khoản và đồng bộ hồ sơ y khoa cho thú cưng của bạn. PetCareX cam kết tuyệt đối không chia sẻ dữ liệu này cho bên thứ ba.
+                  </p>
                 </div>
 
                 {isEditing && (

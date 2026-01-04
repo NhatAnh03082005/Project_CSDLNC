@@ -30,20 +30,52 @@ import {
   X,
   Loader2,
   CheckCircle2,
+  ChevronRight,
+  AlertCircle,
+  History,
+  Stethoscope,
+  Syringe,
+  Sparkles,
 } from "lucide-react";
 import { appointmentAPI } from "../../api/services";
 import { Pagination } from "../../components/ui/pagination";
 
-const serviceNames = {
-  "Khám bệnh": "Khám bệnh",
-  "Tiêm phòng": "Tiêm phòng",
+const serviceConfig = {
+  "Khám bệnh": {
+    label: "Khám bệnh",
+    icon: Stethoscope,
+    color: "text-blue-600",
+    bgColor: "bg-blue-50"
+  },
+  "Tiêm phòng": {
+    label: "Tiêm phòng",
+    icon: Syringe,
+    color: "text-green-600",
+    bgColor: "bg-green-50"
+  },
 };
 
-const statusNames = {
-  "Đã lên lịch": "Đã lên lịch",
-  "Đã xác nhận": "Đã xác nhận",
-  "Đã hủy": "Đã hủy",
-  "Hoàn thành": "Hoàn thành",
+const statusConfig = {
+  "Đã lên lịch": {
+    label: "Đã lên lịch",
+    variant: "secondary",
+    className: "bg-blue-50 text-blue-700 border-blue-200"
+  },
+  "Đã xác nhận": {
+    label: "Đã xác nhận",
+    variant: "default",
+    className: "bg-indigo-50 text-indigo-700 border-indigo-200"
+  },
+  "Đã hủy": {
+    label: "Đã hủy",
+    variant: "destructive",
+    className: "bg-red-50 text-red-700 border-red-200"
+  },
+  "Hoàn thành": {
+    label: "Hoàn thành",
+    variant: "default",
+    className: "bg-green-50 text-green-700 border-green-200"
+  },
 };
 
 export default function AppointmentsPage() {
@@ -54,7 +86,6 @@ export default function AppointmentsPage() {
   const [appointments, setAppointments] = useState([]);
   const [loading, setLoading] = useState(true);
   const [cancellingId, setCancellingId] = useState(null);
-  const [cancellingAppointment, setCancellingAppointment] = useState(null);
   const [pagination, setPagination] = useState({
     page: 1,
     limit: 10,
@@ -96,261 +127,274 @@ export default function AppointmentsPage() {
     try {
       const response = await appointmentAPI.cancel(cancellingId);
       if (response.data.success) {
-        alert(response.data.message || "Hủy lịch hẹn thành công");
         fetchAppointments(pagination.page);
         setCancellingId(null);
-        setCancellingAppointment(null);
-      } else {
-        alert(response.data.message || "Hủy lịch hẹn thất bại");
       }
     } catch (error) {
       console.error("Lỗi khi hủy lịch hẹn:", error);
-      const errorMessage =
-        error.response?.data?.message ||
-        error.message ||
-        "Hủy lịch hẹn thất bại. Vui lòng thử lại!";
-      alert(errorMessage);
+      alert(error.response?.data?.message || "Hủy lịch hẹn thất bại. Vui lòng thử lại!");
     }
   };
 
-  return (
-    <div className="min-h-screen bg-gradient-to-b from-blue-50 to-white">
-      <div className="container mx-auto px-4 py-12 max-w-4xl">
-        <div className="mb-8">
-          <Link to="/customer">
-            <Button variant="ghost" className="gap-2 mb-4">
-              <ArrowLeft className="h-4 w-4" />
-              Quay lại
-            </Button>
-          </Link>
-          <h1 className="text-3xl font-bold text-blue-900 mb-2">
-            Lịch hẹn của tôi
-          </h1>
-          <p className="text-gray-600">
-            Quản lý các lịch hẹn khám bệnh và tiêm phòng
-          </p>
-        </div>
+  const formatDate = (dateStr) => {
+    let date;
+    if (typeof dateStr === "string" && dateStr.includes("T")) {
+      date = new Date(dateStr.split("T")[0]);
+    } else {
+      date = new Date(dateStr);
+    }
+    return date.toLocaleDateString("vi-VN", {
+      weekday: "long",
+      year: "numeric",
+      month: "long",
+      day: "numeric",
+    });
+  };
 
-        {showSuccess && (
-          <Card className="mb-6 border-green-200 bg-green-50">
-            <CardContent className="pt-6">
-              <div className="flex items-center justify-between gap-3">
-                <div className="flex items-center gap-3 flex-1">
-                  <div className="h-10 w-10 rounded-full bg-green-100 flex items-center justify-center flex-shrink-0">
-                    <CheckCircle2 className="h-5 w-5 text-green-600" />
-                  </div>
-                  <div className="flex-1">
-                    <p className="font-semibold text-green-900">
-                      Đặt lịch thành công!
-                    </p>
-                    <p className="text-sm text-green-700">
-                      Lịch hẹn của bạn đã được tạo và đang chờ xác nhận từ chi
-                      nhánh.
-                    </p>
-                  </div>
+  return (
+    <div className="min-h-screen bg-white">
+
+      {/* Hero Header */}
+      <section className="bg-slate-50 border-b border-slate-100 py-12 lg:py-16 overflow-hidden relative">
+        <div className="absolute top-0 right-0 w-64 h-64 bg-blue-400 opacity-5 blur-[100px] rounded-full" />
+        <div className="container mx-auto px-6 relative z-10">
+          <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
+            <div className="space-y-4">
+              <Link to="/customer" className="inline-flex items-center text-sm font-bold text-slate-500 hover:text-blue-600 transition-colors group">
+                <ArrowLeft className="mr-2 h-4 w-4 transition-transform group-hover:-translate-x-1" />
+                Quay lại trang chính
+              </Link>
+              <div className="flex items-center gap-4">
+                <div className="h-16 w-16 rounded-2xl bg-blue-600 flex items-center justify-center shadow-lg shadow-blue-200">
+                  <History className="h-8 w-8 text-white" />
                 </div>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="h-8 w-8 text-green-700 hover:text-green-900 hover:bg-green-100 flex-shrink-0"
-                  onClick={() => {
-                    const newSearchParams = new URLSearchParams(searchParams);
-                    newSearchParams.delete("success");
-                    navigate(`/appointments?${newSearchParams.toString()}`, {
-                      replace: true,
-                    });
-                  }}
-                >
-                  <X className="h-4 w-4" />
-                </Button>
+                <div>
+                  <h1 className="text-4xl lg:text-5xl font-black text-slate-900 leading-none">
+                    Lịch hẹn của tôi
+                  </h1>
+                  <p className="text-slate-500 mt-2 font-medium">
+                    Theo dõi và quản lý các cuộc hẹn chăm sóc sức khỏe thú cưng của bạn.
+                  </p>
+                </div>
               </div>
-            </CardContent>
-          </Card>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <div className="container mx-auto px-6 py-12 max-w-5xl">
+        {showSuccess && (
+          <div className="mb-10 animate-in fade-in slide-in-from-top-4 duration-500">
+            <div className="relative overflow-hidden bg-green-50 border border-green-100 rounded-[2rem] p-8 flex flex-col md:flex-row items-center gap-6 shadow-xl shadow-green-100/50">
+              <div className="absolute -right-8 -bottom-8 h-32 w-32 bg-green-200/30 rounded-full blur-2xl" />
+              <div className="h-16 w-16 rounded-2xl bg-green-500 flex items-center justify-center flex-shrink-0 text-white shadow-lg shadow-green-200">
+                <CheckCircle2 className="h-8 w-8" />
+              </div>
+              <div className="flex-1 text-center md:text-left">
+                <h3 className="text-xl font-bold text-green-900 mb-1">Đặt lịch thành công!</h3>
+                <p className="text-green-700 font-medium">Lịch hẹn của bạn đã được tiếp nhận và sẽ được xử lý sớm nhất. Chúng tôi sẽ thông báo cho bạn ngay khi có cập nhật.</p>
+              </div>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-10 w-10 text-green-700 hover:bg-green-100 rounded-full flex-shrink-0"
+                onClick={() => {
+                  const newSearchParams = new URLSearchParams(searchParams);
+                  newSearchParams.delete("success");
+                  navigate(`/appointments?${newSearchParams.toString()}`, { replace: true });
+                }}
+              >
+                <X className="h-5 w-5" />
+              </Button>
+            </div>
+          </div>
         )}
 
-        <div className="space-y-4">
+        <div className="space-y-6">
           {loading ? (
-            <div className="flex justify-center py-20">
-              <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
+            <div className="flex flex-col items-center justify-center py-24 space-y-4">
+              <Loader2 className="h-12 w-12 animate-spin text-blue-600" />
+              <p className="text-slate-400 font-bold uppercase tracking-widest text-xs">Đang tải danh sách lịch hẹn...</p>
             </div>
           ) : appointments.length > 0 ? (
-            <>
-              {appointments.map((appointment) => {
-                const isCompleted = appointment.TrangThai === "Hoàn thành";
-                const isPending = appointment.TrangThai === "Đã lên lịch";
-                const canCancel = isPending;
+            <div className="grid gap-6">
+              {appointments.map((appointment, index) => {
+                const status = statusConfig[appointment.TrangThai] || { label: appointment.TrangThai, className: "" };
+                const service = serviceConfig[appointment.LoaiDichVu] || { label: appointment.LoaiDichVu, icon: Calendar, color: "text-slate-600", bgColor: "bg-slate-50" };
+                const ServiceIcon = service.icon;
+                const canCancel = appointment.TrangThai === "Đã lên lịch";
 
                 return (
                   <Card
                     key={appointment.MaLichHen}
-                    className="hover:shadow-md transition-shadow"
+                    className="group border-slate-100 shadow-xl shadow-slate-100/50 hover:shadow-2xl transition-all duration-300 rounded-[2.5rem] overflow-hidden animate-in fade-in slide-in-from-bottom-4 duration-500"
+                    style={{ animationDelay: `${index * 100}ms` }}
                   >
-                    <CardHeader>
-                      <div className="flex items-start justify-between">
-                        <div className="space-y-1">
-                          <CardTitle className="text-xl flex items-center gap-2">
-                            {serviceNames[appointment.LoaiDichVu] ||
-                              appointment.LoaiDichVu}
-                            <Badge
-                              variant={isCompleted ? "default" : "secondary"}
-                              className={isCompleted ? "bg-green-600" : ""}
-                            >
-                              {statusNames[appointment.TrangThai] ||
-                                appointment.TrangThai}
-                            </Badge>
-                          </CardTitle>
-                          <CardDescription>
-                            {appointment.TenChiNhanh}
-                          </CardDescription>
-                        </div>
+                    <div className="md:flex h-full">
+                      <div className={`md:w-48 lg:w-56 ${service.bgColor} flex flex-col items-center justify-center p-8 border-r border-slate-50 transition-colors group-hover:bg-opacity-80`}>
+                        <ServiceIcon className={`h-12 w-12 ${service.color} mb-4`} />
+                        <span className={`text-sm font-black uppercase tracking-widest ${service.color}`}>
+                          {service.label}
+                        </span>
                       </div>
-                    </CardHeader>
-                    <CardContent>
-                      <div className="grid md:grid-cols-2 gap-4">
-                        <div className="space-y-3">
-                          <div className="flex items-center gap-2 text-sm">
-                            <Calendar className="h-4 w-4 text-gray-500" />
-                            <span className="text-gray-700">
-                              {(() => {
-                                const dateStr = appointment.ThoiGianHen;
-                                let date;
-                                if (
-                                  typeof dateStr === "string" &&
-                                  dateStr.includes("T")
-                                ) {
-                                  const dateOnly = dateStr.split("T")[0];
-                                  const [year, month, day] =
-                                    dateOnly.split("-");
-                                  date = new Date(
-                                    parseInt(year),
-                                    parseInt(month) - 1,
-                                    parseInt(day)
-                                  );
-                                } else if (typeof dateStr === "string") {
-                                  const [year, month, day] = dateStr.split("-");
-                                  date = new Date(
-                                    parseInt(year),
-                                    parseInt(month) - 1,
-                                    parseInt(day)
-                                  );
-                                } else {
-                                  date = new Date(dateStr);
-                                }
-                                return date.toLocaleDateString("vi-VN", {
-                                  weekday: "long",
-                                  year: "numeric",
-                                  month: "long",
-                                  day: "numeric",
-                                });
-                              })()}
-                            </span>
-                          </div>
-                          {appointment.TenBacSiPhuTrach && (
-                            <div className="flex items-center gap-2 text-sm">
-                              <User className="h-4 w-4 text-gray-500" />
-                              <span className="text-gray-700">
-                                BS: {appointment.TenBacSiPhuTrach}
-                              </span>
+                      
+                      <div className="flex-1 p-8">
+                        <div className="flex flex-wrap items-start justify-between gap-4 mb-6">
+                          <div className="space-y-1">
+                            <h3 className="text-2xl font-black text-slate-900 group-hover:text-blue-600 transition-colors">
+                              Lịch hẹn #{appointment.MaLichHen}
+                            </h3>
+                            <div className="flex items-center gap-2">
+                               <MapPin className="h-4 w-4 text-slate-400" />
+                               <span className="text-sm font-bold text-slate-500">{appointment.TenChiNhanh}</span>
                             </div>
-                          )}
-                        </div>
-                        <div className="space-y-3">
-                          <div className="flex items-center gap-2 text-sm">
-                            <MapPin className="h-4 w-4 text-gray-500" />
-                            <span className="text-gray-700 text-pretty">
-                              {appointment.DiaChiChiNhanh}
-                            </span>
                           </div>
-                          <div className="flex items-center gap-2 text-sm">
-                            <Clock className="h-4 w-4 text-gray-500" />
-                            <span className="text-gray-700">
-                              {appointment.SDTChiNhanh}
-                            </span>
+                          <Badge className={`px-4 py-1.5 rounded-full font-black text-xs uppercase tracking-wider border ${status.className}`}>
+                            {status.label}
+                          </Badge>
+                        </div>
+
+                        <div className="grid sm:grid-cols-2 gap-6 mb-8">
+                          <div className="space-y-4">
+                            <div className="flex items-center gap-3">
+                              <div className="h-10 w-10 rounded-xl bg-slate-50 flex items-center justify-center text-slate-400">
+                                <Calendar className="h-5 w-5" />
+                              </div>
+                              <div>
+                                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest leading-none mb-1">Thời gian</p>
+                                <p className="text-sm font-bold text-slate-700">{formatDate(appointment.ThoiGianHen)}</p>
+                              </div>
+                            </div>
+                            <div className="flex items-center gap-3">
+                              <div className="h-10 w-10 rounded-xl bg-slate-50 flex items-center justify-center text-slate-400">
+                                <User className="h-5 w-5" />
+                              </div>
+                              <div>
+                                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest leading-none mb-1">Bác sĩ phụ trách</p>
+                                <p className="text-sm font-bold text-slate-700">{appointment.TenBacSiPhuTrach || "Đang cập nhật..."}</p>
+                              </div>
+                            </div>
+                          </div>
+
+                          <div className="space-y-4">
+                            <div className="flex items-center gap-3">
+                              <div className="h-10 w-10 rounded-xl bg-slate-50 flex items-center justify-center text-slate-400">
+                                <MapPin className="h-5 w-5" />
+                              </div>
+                              <div>
+                                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest leading-none mb-1">Địa điểm</p>
+                                <p className="text-sm font-bold text-slate-700 line-clamp-1">{appointment.DiaChiChiNhanh}</p>
+                              </div>
+                            </div>
+                            <div className="flex items-center gap-3">
+                              <div className="h-10 w-10 rounded-xl bg-slate-50 flex items-center justify-center text-slate-400">
+                                <Clock className="h-5 w-5" />
+                              </div>
+                              <div>
+                                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest leading-none mb-1">Thông tin liên hệ</p>
+                                <p className="text-sm font-bold text-slate-700">{appointment.SDTChiNhanh}</p>
+                              </div>
+                            </div>
                           </div>
                         </div>
-                      </div>
-                      {canCancel &&
-                        appointment.TrangThai !== "Hoàn thành" &&
-                        appointment.TrangThai !== "Đã hủy" && (
-                          <div className="mt-6 pt-4 border-t border-gray-200">
+
+                        {canCancel && (
+                          <div className="flex justify-end pt-4 border-t border-slate-50 mt-4">
                             <Button
-                              variant="outline"
-                              className="w-full text-red-600 border-red-300 hover:bg-red-50 hover:border-red-400 hover:text-red-700 transition-all duration-200 font-medium shadow-sm hover:shadow-md"
-                              onClick={() =>
-                                setCancellingId(appointment.MaLichHen)
-                              }
+                              variant="ghost"
+                              className="text-red-500 hover:text-red-600 hover:bg-red-50 px-6 rounded-xl font-bold transition-all"
+                              onClick={() => setCancellingId(appointment.MaLichHen)}
                             >
                               <X className="h-4 w-4 mr-2" />
                               Hủy lịch hẹn
                             </Button>
                           </div>
                         )}
-                    </CardContent>
+                      </div>
+                    </div>
                   </Card>
                 );
               })}
 
               {pagination.totalPages > 1 && (
-                <Pagination
-                  currentPage={pagination.page}
-                  totalPages={pagination.totalPages}
-                  onPageChange={handlePageChange}
-                />
+                <div className="flex justify-center pt-8">
+                  <Pagination
+                    currentPage={pagination.page}
+                    totalPages={pagination.totalPages}
+                    onPageChange={handlePageChange}
+                  />
+                </div>
               )}
-            </>
+            </div>
           ) : (
-            <Card className="p-12 text-center">
-              <div className="flex flex-col items-center gap-4">
-                <div className="h-16 w-16 rounded-full bg-gray-100 flex items-center justify-center">
-                  <Calendar className="h-8 w-8 text-gray-400" />
-                </div>
-                <div>
-                  <p className="text-lg font-semibold text-gray-900 mb-1">
-                    Chưa có lịch hẹn nào
-                  </p>
-                  <p className="text-gray-600">
-                    Đặt lịch hẹn ngay để chăm sóc thú cưng của bạn
-                  </p>
-                </div>
-                <Link to="/customer">
-                  <Button className="mt-2">Đặt lịch ngay</Button>
-                </Link>
+            <Card className="p-20 text-center border-dashed border-2 rounded-[3.5rem] bg-slate-50/50">
+              <div className="h-24 w-24 bg-white shadow-sm rounded-full flex items-center justify-center mx-auto mb-8 animate-float">
+                <Calendar className="h-12 w-12 text-blue-200" />
               </div>
+              <h3 className="text-3xl font-black text-slate-900 mb-4 tracking-tight">Bạn chưa có lịch hẹn nào</h3>
+              <p className="text-slate-500 mb-10 font-medium max-w-sm mx-auto">Hãy đặt lịch ngay để người bạn nhỏ của bạn được chăm sóc bởi đội ngũ bác sĩ tốt nhất.</p>
+              <Link to="/customer">
+                <Button className="h-14 px-12 rounded-2xl bg-blue-600 hover:bg-blue-700 text-white text-lg font-black shadow-xl shadow-blue-200 transition-all hover:scale-105 active:scale-95">
+                  Đặt lịch chăm sóc ngay
+                  <ChevronRight className="ml-2 h-5 w-5" />
+                </Button>
+              </Link>
             </Card>
           )}
         </div>
       </div>
 
-      <AlertDialog
-        open={!!cancellingId}
-        onOpenChange={() => {
-          setCancellingId(null);
-          setCancellingAppointment(null);
-        }}
-      >
-        <AlertDialogContent className="bg-white border-gray-300 shadow-xl">
-          <AlertDialogHeader>
-            <AlertDialogTitle className="text-gray-900">
-              Xác nhận hủy lịch hẹn
-            </AlertDialogTitle>
-            <AlertDialogDescription className="text-gray-600">
-              Bạn có chắc chắn muốn hủy lịch hẹn này? Hành động này không thể
-              hoàn tác.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel className="border-gray-900 text-gray-900 hover:bg-gray-100 hover:border-gray-900 transition-colors">
-              Không
+      <AlertDialog open={!!cancellingId} onOpenChange={() => setCancellingId(null)}>
+        <AlertDialogContent className="max-w-md p-0 overflow-hidden rounded-[2.5rem] border-none shadow-2xl">
+          <div className="bg-gradient-to-br from-red-500 via-rose-500 to-red-600 p-8 pb-12 text-white text-center relative">
+            <div className="absolute top-0 right-0 p-8 opacity-10">
+               <AlertCircle className="h-24 w-24 rotate-12" />
+            </div>
+            <div className="relative z-10">
+              <div className="h-16 w-16 bg-white/20 backdrop-blur-md rounded-2xl flex items-center justify-center mx-auto mb-4 border border-white/30 shadow-inner">
+                <AlertCircle className="h-8 w-8 text-white" />
+              </div>
+              <AlertDialogTitle className="text-2xl font-black">Hủy lịch hẹn?</AlertDialogTitle>
+              <AlertDialogDescription className="text-red-50 mt-2 font-medium">
+                Hành động này không thể hoàn tác. Bạn có chắc chắn muốn hủy lịch hẹn này không?
+              </AlertDialogDescription>
+            </div>
+            
+            {/* Decorative Wave Divider */}
+            <div className="absolute bottom-0 left-0 right-0">
+              <svg viewBox="0 0 1440 120" className="w-full h-auto translate-y-[1px]">
+                <path 
+                  fill="#ffffff" 
+                  fillOpacity="1" 
+                  d="M0,64L80,69.3C160,75,320,85,480,80C640,75,800,53,960,48C1120,43,1280,53,1360,58.7L1440,64L1440,120L1360,120C1280,120,1120,120,960,120C800,120,640,120,480,120C320,120,160,120,80,120L0,120Z"
+                ></path>
+              </svg>
+            </div>
+          </div>
+          <div className="p-8 pt-4 bg-white flex flex-col sm:flex-row gap-4">
+            <AlertDialogCancel className="flex-1 h-14 rounded-2xl border-slate-200 text-slate-600 font-bold hover:bg-slate-50 transition-all">
+              Giữ lịch hẹn
             </AlertDialogCancel>
             <AlertDialogAction
-              className="border border-red-600 bg-white text-red-600 hover:bg-red-50 hover:border-red-700 transition-colors shadow-sm"
+              className="flex-1 h-14 rounded-2xl bg-red-600 hover:bg-red-700 text-white font-bold shadow-lg shadow-red-200 transition-all active:scale-[0.98]"
               onClick={handleCancelAppointment}
             >
-              Hủy lịch hẹn
+              Xác nhận hủy
             </AlertDialogAction>
-          </AlertDialogFooter>
+          </div>
         </AlertDialogContent>
       </AlertDialog>
+
+      <style>{`
+        @keyframes float {
+          0%, 100% { transform: translateY(0); }
+          50% { transform: translateY(-15px); }
+        }
+        .animate-float {
+          animation: float 4s ease-in-out infinite;
+        }
+      `}</style>
     </div>
   );
 }
+

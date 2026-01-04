@@ -109,7 +109,9 @@ export default function CustomerOrdersPage() {
               Đơn hàng của bạn sẽ xuất hiện tại đây sau khi bạn đặt mua sản phẩm.
             </p>
             <Link to="/branches?service=products">
-              <Button>Mua sản phẩm ngay</Button>
+              <Button variant="premium" className="px-8 py-6 rounded-xl text-lg font-semibold shadow-lg hover:shadow-blue-200 transition-all">
+                Mua sản phẩm ngay
+              </Button>
             </Link>
           </Card>
         ) : (
@@ -167,6 +169,7 @@ export default function CustomerOrdersPage() {
                     </div>
                     <Button
                       variant="outline"
+                      className="rounded-full px-6 hover:bg-blue-50 hover:text-blue-600 hover:border-blue-300 transition-colors"
                       onClick={() => navigate(`/orders/${order.maHoaDon}`)}
                     >
                       Xem chi tiết

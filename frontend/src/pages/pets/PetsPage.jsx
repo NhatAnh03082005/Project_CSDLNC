@@ -29,7 +29,7 @@ import {
 } from "../../components/ui/dropdown-menu";
 import { Avatar, AvatarFallback, AvatarImage } from "../../components/ui/avatar";
 import { Badge } from "../../components/ui/badge";
-import { Heart, ArrowLeft, Plus, Edit, Trash2, User, FolderOpen, ClipboardPlus, Star, PawPrint, Loader2 } from "lucide-react";
+import { Heart, ArrowLeft, Plus, Edit, Trash2, User, FolderOpen, ClipboardPlus, Star, PawPrint, Loader2, Info, Calendar, Activity, Dog, Type } from "lucide-react";
 import { petAPI } from "../../api/services";
 // 3. Loại bỏ interface Pet (vì đây là JSX thuần)
 // interface Pet { ... }
@@ -191,114 +191,149 @@ const handleEditPet = async () => {
 ; // Reset form khi đóng
           }}>
             <DialogTrigger asChild>
-              <Button className="gap-2 bg-black hover:bg-blue-500 text-white font-bold py-2 px-4 border border-blue-700 rounded">
-                <Plus className="h-4 w-4" />
+              <Button variant="premium" className="gap-2 rounded-xl px-6 py-5 shadow-lg hover:shadow-blue-200 transition-all font-semibold">
+                <Plus className="h-5 w-5" />
                 Thêm thú cưng
               </Button>
             </DialogTrigger>
-            <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-              <DialogHeader>
-                <DialogTitle>Thêm thú cưng mới</DialogTitle>
-                <DialogDescription>Nhập thông tin thú cưng của bạn</DialogDescription>
-              </DialogHeader>
-              {/* Form Fields - Giữ nguyên logic handleInputChange */}
-              {/* Form Fields trong Add Pet Dialog */}
-<div className="space-y-4 py-4">
-  <div className="grid md:grid-cols-2 gap-4">
-    {/* Tên thú cưng */}
-    <div className="space-y-2">
-      <Label htmlFor="add-name">Tên thú cưng</Label>
-      <Input
-        id="add-name"
-        value={formData.TenThuCung || ""}
-        onChange={(e) => handleInputChange("TenThuCung", e.target.value)}
-        placeholder="Ví dụ: Milo"
-      />
-    </div>
+            <DialogContent className="sm:max-w-[600px] p-0 overflow-hidden border-none shadow-2xl rounded-[2rem]">
+              <div className="bg-gradient-to-br from-blue-600 via-blue-500 to-indigo-600 px-8 py-10 text-white relative">
+                <div className="absolute top-0 right-0 p-8 opacity-10">
+                  <PawPrint className="h-32 w-32 rotate-12" />
+                </div>
+                <div className="flex items-center gap-6 relative z-10">
+                  <div className="p-4 bg-white/20 backdrop-blur-lg rounded-2xl border border-white/30 shadow-inner">
+                    <Plus className="h-8 w-8 text-white" />
+                  </div>
+                  <div>
+                    <DialogTitle className="text-3xl font-bold tracking-tight">Thêm thú cưng</DialogTitle>
+                    <DialogDescription className="text-blue-100/90 text-lg mt-1">
+                      Hãy tạo hồ sơ cho người bạn nhỏ của bạn
+                    </DialogDescription>
+                  </div>
+                </div>
+              </div>
 
-    {/* GIỚI TÍNH - MỤC MỚI THÊM */}
-    <div className="space-y-2">
-      <Label htmlFor="add-gender">Giới tính</Label>
-      <Select 
-        value={formData.GioiTinh || ""} 
-        onValueChange={(value) => handleInputChange("GioiTinh", value)}
-      >
-        <SelectTrigger id="add-gender">
-          <SelectValue placeholder="Chọn giới tính" />
-        </SelectTrigger>
-        <SelectContent>
-          <SelectItem value="Đực">Đực</SelectItem>
-          <SelectItem value="Cái">Cái</SelectItem>
-        </SelectContent>
-      </Select>
-    </div>
-  </div>
+              <div className="p-8 space-y-6">
+                <div className="grid md:grid-cols-2 gap-6">
+                  {/* Tên thú cưng */}
+                  <div className="space-y-2.5">
+                    <Label htmlFor="add-name" className="text-sm font-semibold text-gray-700 flex items-center gap-2">
+                      <Type className="h-4 w-4 text-blue-500" /> Tên thú cưng
+                    </Label>
+                    <Input
+                      id="add-name"
+                      className="h-11 rounded-xl border-gray-200 focus:ring-blue-500 focus:border-blue-500 bg-gray-50/50 w-full placeholder:text-gray-400/50"
+                      value={formData.TenThuCung || ""}
+                      onChange={(e) => handleInputChange("TenThuCung", e.target.value)}
+                      placeholder="Ví dụ: Milo"
+                    />
+                  </div>
 
-  <div className="grid md:grid-cols-2 gap-4">
-    {/* Loài */}
-    <div className="space-y-2">
-      <Label htmlFor="add-species">Loài</Label>
-      <Select 
-        value={formData.Loai || ""} 
-        onValueChange={(value) => handleInputChange("Loai", value)}
-      >
-        <SelectTrigger id="add-species">
-          <SelectValue placeholder="Chọn loài" />
-        </SelectTrigger>
-        <SelectContent>
-          <SelectItem value="Chó">Chó</SelectItem>
-          <SelectItem value="Mèo">Mèo</SelectItem>
-          <SelectItem value="Khác">Khác</SelectItem>
-        </SelectContent>
-      </Select>
-    </div>
+                  {/* Giới tính */}
+                  <div className="space-y-2.5">
+                    <Label htmlFor="add-gender" className="text-sm font-semibold text-gray-700 flex items-center gap-2">
+                       <Info className="h-4 w-4 text-blue-500" /> Giới tính
+                    </Label>
+                    <Select 
+                      value={formData.GioiTinh || ""} 
+                      onValueChange={(value) => handleInputChange("GioiTinh", value)}
+                    >
+                      <SelectTrigger id="add-gender" className={`h-11 rounded-xl border-gray-200 bg-gray-50/50 w-full ${!formData.GioiTinh ? "text-gray-400/60" : ""}`}>
+                        <SelectValue placeholder="Chọn giới tính" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="Đực">Đực</SelectItem>
+                        <SelectItem value="Cái">Cái</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
 
-    {/* Giống */}
-    <div className="space-y-2">
-      <Label htmlFor="add-breed">Giống</Label>
-      <Input
-        id="add-breed"
-        value={formData.Giong || ""}
-        onChange={(e) => handleInputChange("Giong", e.target.value)}
-        placeholder="Ví dụ: Poodle, Golden..."
-      />
-    </div>
-  </div>
+                  {/* Loài */}
+                  <div className="space-y-2.5">
+                    <Label htmlFor="add-species" className="text-sm font-semibold text-gray-700 flex items-center gap-2">
+                      <Dog className="h-4 w-4 text-blue-500" /> Loài
+                    </Label>
+                    <Select 
+                      value={formData.Loai || ""} 
+                      onValueChange={(value) => handleInputChange("Loai", value)}
+                    >
+                      <SelectTrigger id="add-species" className={`h-11 rounded-xl border-gray-200 bg-gray-50/50 w-full ${!formData.Loai ? "text-gray-400/60" : ""}`}>
+                        <SelectValue placeholder="Chọn loài" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="Chó">Chó</SelectItem>
+                        <SelectItem value="Mèo">Mèo</SelectItem>
+                        <SelectItem value="Khác">Khác</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
 
-  {/* Ngày sinh */}
-<div className="space-y-2">
-  <Label htmlFor="add-dob">Ngày sinh</Label>
-  <Input
-    id="add-dob"
-    type="date"
-    className={dateError ? "border-red-500" : ""} // Thêm màu viền đỏ khi có lỗi
-    value={formData.NgaySinh || ""}
-    onChange={(e) => {
-      handleInputChange("NgaySinh", e.target.value);
-      setDateError(""); // Xóa lỗi khi người dùng nhập lại
-    }}
-  />
-  {dateError && <p className="text-sm font-medium text-red-500">{dateError}</p>}
-</div>
+                  {/* Giống */}
+                  <div className="space-y-2.5">
+                    <Label htmlFor="add-breed" className="text-sm font-semibold text-gray-700 flex items-center gap-2">
+                      <FolderOpen className="h-4 w-4 text-blue-500" /> Giống
+                    </Label>
+                    <Input
+                      id="add-breed"
+                      className="h-11 rounded-xl border-gray-200 bg-gray-50/50 w-full placeholder:text-gray-400/50"
+                      value={formData.Giong || ""}
+                      onChange={(e) => handleInputChange("Giong", e.target.value)}
+                      placeholder="Ví dụ: Poodle, Golden..."
+                    />
+                  </div>
+                </div>
 
-  {/* Tình trạng sức khỏe */}
-  <div className="space-y-2">
-    <Label htmlFor="add-health">Tình trạng sức khỏe</Label>
-    <Textarea
-      id="add-health"
-      value={formData.TinhTrangSucKhoe || ""}
-      onChange={(e) => handleInputChange("TinhTrangSucKhoe", e.target.value)}
-      placeholder="Mô tả tình trạng sức khỏe hiện tại..."
-      rows={3}
-    />
-  </div>
-</div>
-              <DialogFooter>
-                <Button variant="outline" onClick={() => setIsAddDialogOpen(false)}>
-                  Hủy
-                </Button>
-                <Button onClick={handleAddPet}>Thêm thú cưng</Button>
-              </DialogFooter>
+                {/* Ngày sinh */}
+                <div className="space-y-2.5">
+                  <Label htmlFor="add-dob" className="text-sm font-semibold text-gray-700 flex items-center gap-2">
+                    <Calendar className="h-4 w-4 text-blue-500" /> Ngày sinh
+                  </Label>
+                  <Input
+                    id="add-dob"
+                    type="date"
+                    className={`rounded-xl border-gray-200 bg-gray-50/50 ${dateError ? "border-red-500 ring-1 ring-red-500" : ""}`}
+                    value={formData.NgaySinh || ""}
+                    onChange={(e) => {
+                      handleInputChange("NgaySinh", e.target.value);
+                      setDateError("");
+                    }}
+                  />
+                  {dateError && <p className="text-xs font-medium text-red-500 mt-1 ml-1">{dateError}</p>}
+                </div>
+
+                {/* Tình trạng sức khỏe */}
+                <div className="space-y-2.5">
+                  <Label htmlFor="add-health" className="text-sm font-semibold text-gray-700 flex items-center gap-2">
+                    <Activity className="h-4 w-4 text-blue-500" /> Tình trạng sức khỏe
+                  </Label>
+                  <Textarea
+                    id="add-health"
+                    className="rounded-xl border-gray-200 bg-gray-50/50 resize-none placeholder:text-gray-400/50"
+                    value={formData.TinhTrangSucKhoe || ""}
+                    onChange={(e) => handleInputChange("TinhTrangSucKhoe", e.target.value)}
+                    placeholder="Mô tả tình trạng sức khỏe hiện tại..."
+                    rows={3}
+                  />
+                </div>
+
+                <DialogFooter className="pt-4 flex gap-3">
+                  <Button 
+                    variant="ghost" 
+                    className="flex-1 rounded-xl h-12 font-semibold text-gray-600 hover:bg-gray-100" 
+                    onClick={() => setIsAddDialogOpen(false)}
+                  >
+                    Hủy bỏ
+                  </Button>
+                  <Button 
+                    variant="premium" 
+                    className="flex-1 rounded-xl h-12 font-semibold shadow-lg shadow-blue-200 transition-all hover:scale-[1.02] active:scale-[0.98]" 
+                    onClick={handleAddPet}
+                  >
+                    Lưu thông tin
+                  </Button>
+                </DialogFooter>
+              </div>
             </DialogContent>
           </Dialog>
         </div>
@@ -316,8 +351,8 @@ const handleEditPet = async () => {
                 <div>
                   <h3 className="text-lg font-semibold mb-2">Chưa có thú cưng nào</h3>
                   <p className="text-gray-600 mb-4">Thêm thú cưng của bạn để bắt đầu sử dụng dịch vụ</p>
-                  <Button onClick={() => setIsAddDialogOpen(true)} className="gap-2">
-                    <Plus className="h-4 w-4" />
+                  <Button variant="premium" onClick={() => setIsAddDialogOpen(true)} className="gap-2 rounded-xl px-6 py-5 font-semibold">
+                    <Plus className="h-5 w-5" />
                     Thêm thú cưng đầu tiên
                   </Button>
                 </div>
@@ -355,6 +390,12 @@ const handleEditPet = async () => {
       <span className="font-medium">{pet.GioiTinh}</span>
     </div>
 
+    {/* Hiển thị Giống */}
+    <div className="flex items-center justify-between text-sm">
+      <span className="text-gray-600">Giống:</span>
+      <span className="font-medium">{pet.Giong || "Chưa cập nhật"}</span>
+    </div>
+
     {/* BỔ SUNG: Hiển thị Ngày sinh */}
     <div className="flex items-center justify-between text-sm">
       <span className="text-gray-600">Ngày sinh:</span>
@@ -380,7 +421,7 @@ const handleEditPet = async () => {
                     <Button
                       variant="outline"
                       size="sm"
-                      className="flex-1 gap-2 bg-transparent"
+                      className="flex-1 gap-2 rounded-lg hover:bg-blue-50 hover:text-blue-600 hover:border-blue-200 transition-all"
                       onClick={() => openEditDialog(pet)}
                     >
                       <Edit className="h-4 w-4" />
@@ -389,7 +430,7 @@ const handleEditPet = async () => {
                     <Button
                       variant="outline"
                       size="sm"
-                      className="flex-1 gap-2 text-red-600 hover:text-red-700 bg-transparent"
+                      className="flex-1 gap-2 rounded-lg text-red-600 hover:text-white hover:bg-red-500 hover:border-red-500 transition-all"
                       onClick={() => openDeleteDialog(pet)}
                     >
                       <Trash2 className="h-4 w-4" />
@@ -404,37 +445,49 @@ const handleEditPet = async () => {
 
         {/* Edit Dialog */}
 <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
-  <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-    <DialogHeader>
-      <DialogTitle>Chỉnh sửa thú cưng</DialogTitle>
-      <DialogDescription>
-        Cập nhật thông tin thú cưng của bạn
-      </DialogDescription>
-    </DialogHeader>
+  <DialogContent className="sm:max-w-[600px] p-0 overflow-hidden border-none shadow-2xl rounded-[2rem]">
+    <div className="bg-gradient-to-br from-amber-500 via-orange-500 to-rose-500 px-8 py-10 text-white relative">
+      <div className="absolute top-0 right-0 p-8 opacity-10">
+        <Edit className="h-32 w-32 rotate-12" />
+      </div>
+      <div className="flex items-center gap-6 relative z-10">
+        <div className="p-4 bg-white/20 backdrop-blur-lg rounded-2xl border border-white/30 shadow-inner">
+          <Edit className="h-8 w-8 text-white" />
+        </div>
+        <div>
+          <DialogTitle className="text-3xl font-bold tracking-tight">Cập nhật thú cưng</DialogTitle>
+          <DialogDescription className="text-orange-50/90 text-lg mt-1">
+            Chỉnh sửa thông tin cho <strong>{formData.TenThuCung}</strong>
+          </DialogDescription>
+        </div>
+      </div>
+    </div>
 
-    <div className="space-y-4 py-4">
-      <div className="grid md:grid-cols-2 gap-4">
+    <div className="p-8 space-y-6">
+      <div className="grid md:grid-cols-2 gap-6">
         {/* Tên thú cưng */}
-        <div className="space-y-2">
-          <Label>Tên thú cưng</Label>
+        <div className="space-y-2.5">
+          <Label className="text-sm font-semibold text-gray-700 flex items-center gap-2">
+            <Type className="h-4 w-4 text-orange-500" /> Tên thú cưng
+          </Label>
           <Input
+            className="h-11 rounded-xl border-gray-200 focus:ring-orange-500 focus:border-orange-500 bg-gray-50/50 w-full placeholder:text-gray-400/50"
             value={formData.TenThuCung || ""}
-            onChange={(e) =>
-              handleInputChange("TenThuCung", e.target.value)
-            }
+            onChange={(e) => handleInputChange("TenThuCung", e.target.value)}
+            placeholder="Tên thú cưng"
           />
         </div>
 
         {/* Giới tính */}
-        <div className="space-y-2">
-          <Label>Giới tính</Label>
+        <div className="space-y-2.5">
+          <Label className="text-sm font-semibold text-gray-700 flex items-center gap-2">
+            <Info className="h-4 w-4 text-orange-500" /> Giới tính
+          </Label>
           <Select
             value={formData.GioiTinh || ""}
-            onValueChange={(value) =>
-              handleInputChange("GioiTinh", value)
-            }
+            onValueChange={(value) => handleInputChange("GioiTinh", value)}
           >
-            <SelectTrigger>
+            <SelectTrigger className={`h-11 rounded-xl border-gray-200 bg-gray-50/50 w-full ${!formData.GioiTinh ? "text-gray-400/60" : ""}`}>
               <SelectValue placeholder="Chọn giới tính" />
             </SelectTrigger>
             <SelectContent>
@@ -443,96 +496,127 @@ const handleEditPet = async () => {
             </SelectContent>
           </Select>
         </div>
-      </div>
 
-      <div className="grid md:grid-cols-2 gap-4">
         {/* Loài */}
-        <div className="space-y-2">
-          <Label>Loài</Label>
+        <div className="space-y-2.5">
+          <Label className="text-sm font-semibold text-gray-700 flex items-center gap-2">
+             <Dog className="h-4 w-4 text-orange-500" /> Loài
+          </Label>
           <Select
             value={formData.Loai || ""}
-            onValueChange={(value) =>
-              handleInputChange("Loai", value)
-            }
+            onValueChange={(value) => handleInputChange("Loai", value)}
           >
-            <SelectTrigger>
+            <SelectTrigger className={`h-11 rounded-xl border-gray-200 bg-gray-50/50 w-full ${!formData.Loai ? "text-gray-400/60" : ""}`}>
               <SelectValue placeholder="Chọn loài" />
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="Chó">Chó</SelectItem>
               <SelectItem value="Mèo">Mèo</SelectItem>
+              <SelectItem value="Khác">Khác</SelectItem>
             </SelectContent>
           </Select>
         </div>
 
         {/* Giống */}
-        <div className="space-y-2">
-          <Label>Giống</Label>
+        <div className="space-y-2.5">
+          <Label className="text-sm font-semibold text-gray-700 flex items-center gap-2">
+            <FolderOpen className="h-4 w-4 text-orange-500" /> Giống
+          </Label>
           <Input
+            className="h-11 rounded-xl border-gray-200 bg-gray-50/50 w-full placeholder:text-gray-400/50"
             value={formData.Giong || ""}
-            onChange={(e) =>
-              handleInputChange("Giong", e.target.value)
-            }
+            onChange={(e) => handleInputChange("Giong", e.target.value)}
             placeholder="Ví dụ: Poodle"
           />
         </div>
       </div>
 
       {/* Ngày sinh */}
-<div className="space-y-2">
-  <Label>Ngày sinh</Label>
-  <Input
-    type="date"
-    className={dateError ? "border-red-500" : ""}
-    value={formData.NgaySinh || ""}
-    onChange={(e) => {
-      handleInputChange("NgaySinh", e.target.value);
-      setDateError("");
-    }}
-  />
-  {dateError && <p className="text-sm font-medium text-red-500">{dateError}</p>}
-</div>
+      <div className="space-y-2.5">
+        <Label className="text-sm font-semibold text-gray-700 flex items-center gap-2">
+           <Calendar className="h-4 w-4 text-orange-500" /> Ngày sinh
+        </Label>
+        <Input
+          type="date"
+          className={`rounded-xl border-gray-200 bg-gray-50/50 ${dateError ? "border-red-500 ring-1 ring-red-500" : ""}`}
+          value={formData.NgaySinh || ""}
+          onChange={(e) => {
+            handleInputChange("NgaySinh", e.target.value);
+            setDateError("");
+          }}
+        />
+        {dateError && <p className="text-xs font-medium text-red-500 mt-1 ml-1">{dateError}</p>}
+      </div>
 
       {/* Tình trạng sức khỏe */}
-      <div className="space-y-2">
-        <Label>Tình trạng sức khỏe</Label>
+      <div className="space-y-2.5">
+        <Label className="text-sm font-semibold text-gray-700 flex items-center gap-2">
+          <Activity className="h-4 w-4 text-orange-500" /> Tình trạng sức khỏe
+        </Label>
         <Textarea
+          className="rounded-xl border-gray-200 bg-gray-50/50 resize-none placeholder:text-gray-400/50"
           rows={3}
           value={formData.TinhTrangSucKhoe || ""}
-          onChange={(e) =>
-            handleInputChange("TinhTrangSucKhoe", e.target.value)
-          }
+          onChange={(e) => handleInputChange("TinhTrangSucKhoe", e.target.value)}
+          placeholder="Mô tả tình trạng sức khỏe..."
         />
       </div>
-    </div>
 
-    <DialogFooter>
-      <Button
-        variant="outline"
-        onClick={() => setIsEditDialogOpen(false)}
-      >
-        Hủy
-      </Button>
-      <Button onClick={handleEditPet}>
-        Lưu thay đổi
-      </Button>
-    </DialogFooter>
+      <DialogFooter className="pt-4 flex gap-3">
+        <Button
+          variant="ghost"
+          className="flex-1 rounded-xl h-12 font-semibold text-gray-600 hover:bg-gray-100"
+          onClick={() => setIsEditDialogOpen(false)}
+        >
+          Hủy bỏ
+        </Button>
+        <Button 
+          variant="premium" 
+          className="flex-1 rounded-xl h-12 font-semibold shadow-lg shadow-orange-200 bg-gradient-to-r from-orange-500 to-rose-500 hover:from-orange-600 hover:to-rose-600 border-none transition-all hover:scale-[1.02] active:scale-[0.98]" 
+          onClick={handleEditPet}
+        >
+          Lưu thay đổi
+        </Button>
+      </DialogFooter>
+    </div>
   </DialogContent>
 </Dialog>
 
         {/* Delete Dialog */}
         <Dialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle>Xác nhận xóa</DialogTitle>
-              <DialogDescription>
-                Bạn có chắc chắn muốn xóa thú cưng <strong>{selectedPet?.TenThuCung}</strong>? Hành động này không thể hoàn tác.
-              </DialogDescription>
-            </DialogHeader>
-            <DialogFooter>
-              <Button variant="outline" onClick={() => setIsDeleteDialogOpen(false)}>Hủy</Button>
-              <Button variant="outline" onClick={handleDeletePet}>Xóa</Button>
-            </DialogFooter>
+          <DialogContent className="sm:max-w-[425px] p-0 overflow-hidden border-none shadow-2xl rounded-[2rem]">
+            <div className="bg-gradient-to-br from-red-500 to-rose-600 px-6 py-8 text-white relative">
+              <div className="flex items-center gap-4 relative z-10">
+                <div className="p-3 bg-white/20 backdrop-blur-lg rounded-xl border border-white/30">
+                  <Trash2 className="h-6 w-6 text-white" />
+                </div>
+                <div>
+                  <DialogTitle className="text-xl font-bold">Xác nhận xóa</DialogTitle>
+                </div>
+              </div>
+            </div>
+            <div className="p-6">
+              <p className="text-gray-600 leading-relaxed">
+                Bạn có chắc chắn muốn xóa thú cưng <strong>{selectedPet?.TenThuCung}</strong>? 
+                Hành động này không thể hoàn tác và tất cả dữ liệu liên quan sẽ bị mất.
+              </p>
+              <DialogFooter className="mt-8 flex gap-3">
+                <Button 
+                  variant="ghost" 
+                  className="flex-1 rounded-xl h-11 font-semibold text-gray-600 hover:bg-gray-100" 
+                  onClick={() => setIsDeleteDialogOpen(false)}
+                >
+                  Hủy
+                </Button>
+                <Button 
+                  variant="destructive" 
+                  className="flex-1 rounded-xl h-11 font-semibold bg-red-500 hover:bg-red-600 shadow-lg shadow-red-100 transition-all hover:scale-[1.02]" 
+                  onClick={handleDeletePet}
+                >
+                  Xác nhận xóa
+                </Button>
+              </DialogFooter>
+            </div>
           </DialogContent>
         </Dialog>
       </div>

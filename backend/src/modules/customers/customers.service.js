@@ -720,12 +720,11 @@ class CustomersService {
                 MaHoaDon, MaKhachHang, NgayLap, TongTien, HinhThucThanhToan, NhanVienLap, MaChiNhanh
               )
               VALUES (
-                NULL, @MaKhachHang, @NgayLap, @TongTien, @HinhThucThanhToan, NULL, @MaChiNhanh
+                NULL, @MaKhachHang, GETDATE(), @TongTien, @HinhThucThanhToan, NULL, @MaChiNhanh
               )
             `
             );
         } catch (insertError) {
-          await transaction.rollback();
           console.error("Error inserting HoaDon:", insertError);
           console.error("Error details:", {
             message: insertError.message,
@@ -733,6 +732,7 @@ class CustomersService {
             number: insertError.number,
             originalError: insertError.originalError
           });
+          // Do not rollback here because the outer catch will handle it
           throw insertError;
         }
 
@@ -751,7 +751,7 @@ class CustomersService {
             SELECT TOP 1 MaHoaDon, NgayLap, TongTien, MaChiNhanh, NhanVienLap, HinhThucThanhToan
             FROM dbo.HoaDon
             WHERE MaKhachHang = @MaKhachHang
-              AND NgayLap = @NgayLap
+              AND CAST(NgayLap AS DATE) = CAST(GETDATE() AS DATE)
               AND TongTien = @TongTien
               AND MaChiNhanh = @MaChiNhanh
               AND HinhThucThanhToan = @HinhThucThanhToan
@@ -777,7 +777,7 @@ class CustomersService {
               SELECT TOP 1 MaHoaDon, NgayLap, TongTien, MaChiNhanh, NhanVienLap, HinhThucThanhToan
               FROM dbo.HoaDon
               WHERE MaKhachHang = @MaKhachHang
-                AND NgayLap = @NgayLap
+                AND CAST(NgayLap AS DATE) = CAST(GETDATE() AS DATE)
                 AND TongTien = @TongTien
                 AND MaChiNhanh = @MaChiNhanh
                 AND HinhThucThanhToan = @HinhThucThanhToan
@@ -874,7 +874,18 @@ class CustomersService {
           },
         };
       } catch (error) {
-        await transaction.rollback();
+        // Safe rollback: check if transaction is still active and handle potential errors during rollback
+        try {
+          if (transaction) {
+            await transaction.rollback();
+          }
+        } catch (rollbackError) {
+          // Ignore EABORT error during rollback as it means the transaction was already aborted/rolled back
+          if (rollbackError.code !== 'EABORT') {
+            console.error("Rollback error:", rollbackError);
+          }
+        }
+
         console.error("Transaction error details:", {
           message: error.message,
           code: error.code,
@@ -882,7 +893,7 @@ class CustomersService {
           originalError: error.originalError,
           stack: error.stack
         });
-        // Re-throw để outer catch xử lý
+        // Re-throw the ORIGINAL error to outer catch
         throw error;
       }
     } catch (error) {
@@ -1327,7 +1338,15 @@ class CustomersService {
           },
         };
       } catch (error) {
-        await transaction.rollback();
+        try {
+          if (transaction) {
+            await transaction.rollback();
+          }
+        } catch (rollbackError) {
+          if (rollbackError.code !== 'EABORT') {
+            console.error("Rollback error:", rollbackError);
+          }
+        }
         throw error;
       }
     } catch (error) {
