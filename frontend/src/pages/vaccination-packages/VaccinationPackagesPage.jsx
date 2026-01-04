@@ -31,7 +31,7 @@ export default function VaccinationPackagesPage() {
   const [availablePackages, setAvailablePackages] = useState([]);
   const [loading, setLoading] = useState(true);
   const [dialogOpen, setDialogOpen] = useState(false);
-  const [registering, setRegistering] = useState(false);
+  const [registering, setRegistering] = useState(null); // Lưu LoaiGoi đang được xử lý
 
   // Fetch danh sách gói đã đăng ký
   const fetchSubscriptions = async () => {
@@ -86,13 +86,13 @@ export default function VaccinationPackagesPage() {
 
   const handleRegister = async (pkg) => {
     try {
-      setRegistering(true);
+      setRegistering(pkg.LoaiGoi); // Chỉ set LoaiGoi đang được xử lý
       const response = await vaccinationAPI.subscribe({ LoaiGoi: pkg.LoaiGoi });
       
       if (response.data.success) {
         // Refresh danh sách gói đã đăng ký
         await fetchSubscriptions();
-    setDialogOpen(false);
+        setDialogOpen(false);
         alert("Đăng ký gói tiêm phòng thành công!");
       } else {
         alert(response.data.message || "Đăng ký thất bại");
@@ -101,7 +101,7 @@ export default function VaccinationPackagesPage() {
       console.error("Lỗi khi đăng ký gói:", error);
       alert(error.response?.data?.message || "Đăng ký thất bại. Vui lòng thử lại!");
     } finally {
-      setRegistering(false);
+      setRegistering(null); // Reset về null khi xong
     }
   };
 
@@ -167,13 +167,13 @@ export default function VaccinationPackagesPage() {
                           <Button
                             size="sm"
                             onClick={() => handleRegister(pkg)}
-                              disabled={isPackageRegistered(pkg.LoaiGoi) || registering}
+                            disabled={isPackageRegistered(pkg.LoaiGoi) || registering === pkg.LoaiGoi}
                           >
-                              {registering
-                                ? "Đang xử lý..."
-                                : isPackageRegistered(pkg.LoaiGoi)
-                                ? "Đã đăng ký"
-                                : "Đăng ký"}
+                            {registering === pkg.LoaiGoi
+                              ? "Đang xử lý..."
+                              : isPackageRegistered(pkg.LoaiGoi)
+                              ? "Đã đăng ký"
+                              : "Đăng ký"}
                           </Button>
                         </div>
                       </CardHeader>
