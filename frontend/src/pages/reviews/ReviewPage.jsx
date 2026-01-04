@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { Button } from "../../components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../../components/ui/card";
 import {
@@ -26,6 +27,7 @@ import { Heart, Star, Calendar, Clock, MapPin, Loader2, Trash2, Edit, Briefcase,
 import { ratingAPI } from "../../api/services";
 
 export default function ReviewsPage() {
+  const navigate = useNavigate();
   const [services, setServices] = useState([]);
   const [loading, setLoading] = useState(true);
   const [selectedService, setSelectedService] = useState(null);
@@ -261,7 +263,11 @@ export default function ReviewsPage() {
                   <h3 className="text-2xl font-black text-slate-900 mb-2">Chưa có lịch sử dịch vụ</h3>
                   <p className="text-slate-500 font-medium">Đặt lịch khám hoặc tiêm phòng để trải nghiệm dịch vụ của chúng tôi</p>
                 </div>
-                <Button variant="premium" className="h-12 px-8 rounded-2xl bg-gradient-to-r from-orange-600 to-amber-600 shadow-lg shadow-orange-200">
+                <Button 
+                  variant="premium" 
+                  className="h-12 px-8 rounded-2xl bg-gradient-to-r from-orange-600 to-amber-600 shadow-lg shadow-orange-200"
+                  onClick={() => navigate("/customer")}
+                >
                    Đặt lịch ngay
                 </Button>
               </CardContent>
