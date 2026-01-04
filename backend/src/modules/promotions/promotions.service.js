@@ -84,8 +84,8 @@ class PromotionsService {
           VALUES (@NgayBatDau, @NgayKetThuc, @TiLeGiamGia);
             SELECT SCOPE_IDENTITY() AS MaKhuyenMai;
         `);
-      const maKhuyenMai = insertResult.recordset[0].MaKhuyenMai;
-      return await this.getPromotionById(maKhuyenMai);
+
+      return { success: true };
     } catch (error) {
       console.error("Error in createEmployee:", error);
       throw error;

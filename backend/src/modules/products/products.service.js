@@ -209,6 +209,7 @@ class ProductsService {
   /**
    * Tạo sản phẩm mới (Admin)
    * logic từ feature/admin
+   * MaSanPham sẽ được database tự động tạo thông qua trigger
    */
   async createProduct(productData) {
     try {
@@ -219,18 +220,17 @@ class ProductsService {
         throw new Error("Vui lòng điền đầy đủ thông tin bắt buộc");
       }
 
-      const insertResult = await pool
+      // Insert sản phẩm mới (MaSanPham sẽ được trigger tự động tạo)
+      await pool
         .request()
         .input("TenSanPham", sql.NVarChar, TenSanPham)
         .input("LoaiSanPham", sql.NVarChar, LoaiSanPham)
         .input("DonGia", sql.Int, DonGia).query(`
           INSERT INTO SanPham (TenSanPham, LoaiSanPham, DonGia)
           VALUES (@TenSanPham, @LoaiSanPham, @DonGia);
-          SELECT SCOPE_IDENTITY() AS MaSanPham;
         `);
 
-      const maSanPham = insertResult.recordset[0].MaSanPham;
-      return await this.getProductById(maSanPham);
+      return { success: true };
     } catch (error) {
       console.error("Error in createProduct:", error);
       throw error;

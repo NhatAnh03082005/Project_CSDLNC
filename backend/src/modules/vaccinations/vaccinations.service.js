@@ -47,23 +47,21 @@ class VaccinationsService {
   async createVaccine(vaccineData) {
     try {
       const pool = await poolPromise;
-      const { TenVacXin, HangSanXuat, GiaTien } = vaccineData;
+      const { TenVacXin, GiaTien } = vaccineData;
 
-      if (!TenVacXin || !HangSanXuat || !GiaTien) {
+      if (!TenVacXin || !GiaTien) {
         throw new Error("Vui lòng điền đầy đủ thông tin bắt buộc");
       }
 
-      const insertResult = await pool
+      await pool
         .request()
         .input("TenVacXin", sql.NVarChar, TenVacXin)
         .input("GiaTien", sql.Int, GiaTien).query(`
           INSERT INTO VacXin (TenVacXin, GiaTien)
           VALUES (@TenVacXin, @GiaTien);
-          SELECT SCOPE_IDENTITY() AS MaVacXin;
         `);
 
-      const maVacXin = insertResult.recordset[0].MaVacXin;
-      return await this.getVaccineById(maVacXin);
+      return { success: true };
     } catch (error) {
       console.error("Error in createVaccine:", error);
       throw error;

@@ -111,11 +111,7 @@ class EmployeesService {
         SELECT MaNhanVien FROM @NewId;
       `);
 
-      const maNhanVienMoi = insertResult.recordset[0].MaNhanVien;
-      return await this.getEmployeeById(maNhanVienMoi);
-
-      // return full employee (nếu bạn có hàm này)
-      return await this.getEmployeeById(maNhanVienMoi);
+      return { success: true };
     } catch (error) {
       console.error("Error in createEmployee:", error);
       throw error;

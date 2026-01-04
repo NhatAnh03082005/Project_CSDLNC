@@ -85,7 +85,7 @@ export default function LoginPage() {
       <div className="w-full max-w-md">
         <div className="flex items-center justify-center gap-2 mb-8">
           <img
-            src="logo.png"
+            src="/logo.png"
             alt="PetCareX Logo"
             className="h-11 w-11 object-contain"
           />

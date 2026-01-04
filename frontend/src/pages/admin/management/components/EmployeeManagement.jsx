@@ -69,7 +69,7 @@ export default function EmployeeManagement() {
   const POSITION_OPTIONS = [
     "Bác sĩ thú y",
     "Nhân viên bán hàng",
-    "Nhân viên lễ tân",
+    "Nhân viên tiếp tân",
     "Quản lý chi nhánh",
   ];
 

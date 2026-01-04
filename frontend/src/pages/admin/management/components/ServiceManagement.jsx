@@ -346,7 +346,7 @@ export default function ServiceManagement() {
                   </Button>
                 </DialogTrigger>
 
-                <DialogContent className="sm:max-w-[700px]">
+                <DialogContent className="sm:max-w-[520px]">
                   <DialogHeader>
                     <DialogTitle className="text-2xl font-bold bg-gradient-to-r from-blue-600 to-blue-500 bg-clip-text text-transparent">
                       Thêm dịch vụ cho chi nhánh
@@ -357,30 +357,28 @@ export default function ServiceManagement() {
                   </DialogHeader>
 
                   <div className="space-y-4 py-4">
-                    <div className="grid grid-cols-2 gap-6">
-                      <div className="space-y-2">
-                        <Label htmlFor="serviceSelect">Chọn dịch vụ</Label>
+                    <div className="space-y-2">
+                      <Label htmlFor="serviceSelect">Chọn dịch vụ</Label>
 
-                        {availableServices.length === 0 ? (
-                          <div className="text-sm text-gray-500">
-                            Chi nhánh này đã có tất cả dịch vụ trong danh mục.
-                          </div>
-                        ) : (
-                          <select
-                            id="serviceSelect"
-                            value={selectedService}
-                            onChange={(e) => setSelectedService(e.target.value)}
-                            className="w-full border rounded-lg p-2 flex h-10 border-input bg-background text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-                          >
-                            <option value="">Chọn dịch vụ</option>
-                            {availableServices.map((s) => (
-                              <option key={s.LoaiDichVu} value={s.LoaiDichVu}>
-                                {s.LoaiDichVu}
-                              </option>
-                            ))}
-                          </select>
-                        )}
-                      </div>
+                      {availableServices.length === 0 ? (
+                        <div className="text-sm text-gray-500">
+                          Chi nhánh này đã có tất cả dịch vụ trong danh mục.
+                        </div>
+                      ) : (
+                        <select
+                          id="serviceSelect"
+                          value={selectedService}
+                          onChange={(e) => setSelectedService(e.target.value)}
+                          className="w-full border rounded-lg p-2 flex h-10 border-input bg-background text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                        >
+                          <option value="">Chọn dịch vụ</option>
+                          {availableServices.map((s) => (
+                            <option key={s.LoaiDichVu} value={s.LoaiDichVu}>
+                              {s.LoaiDichVu}
+                            </option>
+                          ))}
+                        </select>
+                      )}
                     </div>
                   </div>
 
