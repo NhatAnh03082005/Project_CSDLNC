@@ -36,6 +36,7 @@ async function createAppointment(customerId, appointmentData) {
   const { MaChiNhanh, LoaiDichVu, ThoiGianHen, BacSiPhuTrach } =
     appointmentData;
 
+  // Validation cơ bản
   if (!MaChiNhanh || !LoaiDichVu || !ThoiGianHen) {
     return {
       success: false,
@@ -52,26 +53,20 @@ async function createAppointment(customerId, appointmentData) {
     };
   }
 
-  let appointmentDateStr;
+  // Parse date
   let appointmentDate;
-
   if (typeof ThoiGianHen === 'string') {
     const dateParts = ThoiGianHen.split('-');
     if (dateParts.length === 3) {
-      appointmentDateStr = ThoiGianHen;
       appointmentDate = new Date(parseInt(dateParts[0]), parseInt(dateParts[1]) - 1, parseInt(dateParts[2]));
     } else {
-      appointmentDateStr = ThoiGianHen.split('T')[0];
       appointmentDate = new Date(ThoiGianHen);
     }
   } else {
     appointmentDate = new Date(ThoiGianHen);
-    const year = appointmentDate.getFullYear();
-    const month = String(appointmentDate.getMonth() + 1).padStart(2, '0');
-    const day = String(appointmentDate.getDate()).padStart(2, '0');
-    appointmentDateStr = `${year}-${month}-${day}`;
   }
 
+  // Client-side validation: check if date is in the past
   const today = new Date();
   today.setHours(0, 0, 0, 0);
   appointmentDate.setHours(0, 0, 0, 0);
@@ -84,105 +79,38 @@ async function createAppointment(customerId, appointmentData) {
     };
   }
 
-  const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
-  const ngayLapStr = todayStr;
-
   try {
     const pool = await poolPromise;
 
-    const branchCheck = await pool
+    // GỌI STORED PROCEDURE sp_TV2_CreateAppointment
+    const result = await pool
       .request()
-      .input("MaChiNhanh", sql.Char(4), MaChiNhanh)
-      .query(
-        `
-        SELECT TOP 1 MaChiNhanh, TenChiNhanh
-        FROM dbo.ChiNhanh
-        WHERE MaChiNhanh = @MaChiNhanh
-      `
-      );
+      .input('MaKhachHang', sql.Char(7), customerId)
+      .input('MaChiNhanh', sql.Char(4), MaChiNhanh)
+      .input('LoaiDichVu', sql.NVarChar(20), LoaiDichVu)
+      .input('ThoiGianHen', sql.Date, appointmentDate)
+      .input('BacSiPhuTrach', sql.Char(5), BacSiPhuTrach || null)
+      .output('MaLichHen', sql.Char(8))
+      .output('ErrorMessage', sql.NVarChar(500))
+      .output('StatusCode', sql.Int)
+      .execute('sp_TV2_CreateAppointment');
 
-    if (branchCheck.recordset.length === 0) {
+    const { MaLichHen, ErrorMessage, StatusCode } = result.output;
+
+    if (StatusCode !== 201) {
       return {
         success: false,
-        status: 404,
-        message: "Không tìm thấy chi nhánh",
+        status: StatusCode,
+        message: ErrorMessage,
       };
     }
 
-    const serviceCheck = await pool
+    // Query để lấy thông tin chi tiết lịch hẹn vừa tạo
+    const appointmentInfo = await pool
       .request()
-      .input("MaChiNhanh", sql.Char(4), MaChiNhanh)
-      .input("LoaiDichVu", sql.NVarChar(20), LoaiDichVu)
-      .query(
-        `
-        SELECT TOP 1 1
-        FROM dbo.DichVu_ChiNhanh
-        WHERE MaChiNhanh = @MaChiNhanh AND LoaiDichVu = @LoaiDichVu
-      `
-      );
-
-    if (serviceCheck.recordset.length === 0) {
-      return {
-        success: false,
-        status: 400,
-        message: `Chi nhánh này không cung cấp dịch vụ ${LoaiDichVu}`,
-      };
-    }
-
-    if (BacSiPhuTrach) {
-      const doctorCheck = await pool
-        .request()
-        .input("BacSi", sql.Char(5), BacSiPhuTrach)
-        .input("MaChiNhanh", sql.Char(4), MaChiNhanh)
-        .query(
-          `
-          SELECT TOP 1 MaNhanVien, HoTen, ViTri, MaChiNhanh, TrangThai
-          FROM dbo.NhanVien
-          WHERE MaNhanVien = @BacSi 
-            AND ViTri = N'Bác sĩ thú y'
-            AND MaChiNhanh = @MaChiNhanh
-            AND TrangThai = 0
-        `
-        );
-
-      if (doctorCheck.recordset.length === 0) {
-        return {
-          success: false,
-          status: 404,
-          message:
-            "Không tìm thấy bác sĩ hoặc bác sĩ không thuộc chi nhánh này",
-        };
-      }
-    }
-
-    const trangThai = "Đã lên lịch";
-
-    await pool
-      .request()
-      .input("MaKhachHang", sql.Char(7), customerId)
-      .input("MaChiNhanh", sql.Char(4), MaChiNhanh)
-      .input("LoaiDichVu", sql.NVarChar(20), LoaiDichVu)
-      .input("BacSiPhuTrach", sql.Char(5), BacSiPhuTrach || null)
-      .input("ThoiGianHen", sql.NVarChar(10), appointmentDateStr)
-      .input("NgayLap", sql.NVarChar(10), ngayLapStr)
-      .input("TrangThai", sql.NVarChar(20), trangThai)
-      .query(
-        `
-        INSERT INTO dbo.LichHen
-          (MaKhachHang, MaChiNhanh, LoaiDichVu, BacSiPhuTrach, ThoiGianHen, NgayLap, TrangThai)
-        VALUES
-          (@MaKhachHang, @MaChiNhanh, @LoaiDichVu, @BacSiPhuTrach, CAST(@ThoiGianHen AS DATE), CAST(@NgayLap AS DATE), @TrangThai)
-      `
-      );
-
-    const newAppointment = await pool
-      .request()
-      .input("MaKhachHang", sql.Char(7), customerId)
-      .input("ThoiGianHen", sql.NVarChar(10), appointmentDateStr)
-      .input("NgayLap", sql.NVarChar(10), ngayLapStr)
-      .query(
-        `
-        SELECT TOP 1
+      .input('MaLichHen', sql.Char(8), MaLichHen)
+      .query(`
+        SELECT 
           lh.MaLichHen,
           lh.MaKhachHang,
           lh.MaChiNhanh,
@@ -196,14 +124,10 @@ async function createAppointment(customerId, appointmentData) {
         FROM dbo.LichHen lh
         LEFT JOIN dbo.ChiNhanh cn ON lh.MaChiNhanh = cn.MaChiNhanh
         LEFT JOIN dbo.NhanVien nvBs ON lh.BacSiPhuTrach = nvBs.MaNhanVien
-        WHERE lh.MaKhachHang = @MaKhachHang
-          AND CAST(lh.ThoiGianHen AS DATE) = CAST(@ThoiGianHen AS DATE)
-          AND CAST(lh.NgayLap AS DATE) = CAST(@NgayLap AS DATE)
-        ORDER BY lh.MaLichHen DESC
-      `
-      );
+        WHERE lh.MaLichHen = @MaLichHen
+      `);
 
-    if (newAppointment.recordset.length === 0) {
+    if (appointmentInfo.recordset.length === 0) {
       return {
         success: false,
         status: 500,
@@ -211,41 +135,18 @@ async function createAppointment(customerId, appointmentData) {
       };
     }
 
-    const appointmentInfo = newAppointment.recordset[0];
-
     return {
       success: true,
       status: 201,
-      message: "Đặt lịch hẹn thành công",
+      message: ErrorMessage,
       data: {
-        ...appointmentInfo,
-        ThoiGianHen: formatDateForResponse(appointmentInfo.ThoiGianHen),
-        NgayLap: formatDateForResponse(appointmentInfo.NgayLap),
+        ...appointmentInfo.recordset[0],
+        ThoiGianHen: formatDateForResponse(appointmentInfo.recordset[0].ThoiGianHen),
+        NgayLap: formatDateForResponse(appointmentInfo.recordset[0].NgayLap),
       },
     };
   } catch (error) {
     console.error("Error creating appointment:", error);
-
-    if (error.number === 547 || error.message.includes("FOREIGN KEY")) {
-      return {
-        success: false,
-        status: 400,
-        message:
-          "Dữ liệu không hợp lệ. Vui lòng kiểm tra lại thông tin đặt lịch.",
-        error: error.message,
-      };
-    }
-
-    if (error.number === 547 || error.message.includes("CHECK")) {
-      return {
-        success: false,
-        status: 400,
-        message:
-          "Thời gian hẹn không hợp lệ. Thời gian hẹn phải lớn hơn hoặc bằng ngày lập.",
-        error: error.message,
-      };
-    }
-
     return {
       success: false,
       status: 500,
@@ -265,85 +166,29 @@ async function cancelAppointment(customerId, maLichHen) {
   try {
     const pool = await poolPromise;
 
-    const appointmentCheck = await pool
+    // GỌI STORED PROCEDURE sp_CancelAppointment
+    const result = await pool
       .request()
-      .input("MaLichHen", sql.Char(8), maLichHen)
-      .input("MaKhachHang", sql.Char(7), customerId)
-      .query(
-        `
-        SELECT TOP 1
-          MaLichHen,
-          MaKhachHang,
-          ThoiGianHen,
-          TrangThai
-        FROM dbo.LichHen
-        WHERE MaLichHen = @MaLichHen AND MaKhachHang = @MaKhachHang
-      `
-      );
+      .input('MaKhachHang', sql.Char(7), customerId)
+      .input('MaLichHen', sql.Char(8), maLichHen)
+      .output('ErrorMessage', sql.NVarChar(500))
+      .output('StatusCode', sql.Int)
+      .execute('sp_TV9_CancelAppointment');
 
-    if (appointmentCheck.recordset.length === 0) {
+    const { ErrorMessage, StatusCode } = result.output;
+
+    if (StatusCode !== 200) {
       return {
         success: false,
-        status: 404,
-        message:
-          "Không tìm thấy lịch hẹn hoặc bạn không có quyền hủy lịch hẹn này",
-      };
-    }
-
-    const appointment = appointmentCheck.recordset[0];
-
-    if (appointment.TrangThai === "Hoàn thành") {
-      return {
-        success: false,
-        status: 400,
-        message: "Không thể hủy lịch hẹn đã hoàn thành",
-      };
-    }
-
-    if (appointment.TrangThai !== "Đã lên lịch") {
-      return {
-        success: false,
-        status: 400,
-        message: "Chỉ có thể hủy lịch hẹn ở trạng thái 'Đã lên lịch'",
-      };
-    }
-
-    const appointmentDate = new Date(appointment.ThoiGianHen);
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    appointmentDate.setHours(0, 0, 0, 0);
-
-    if (appointmentDate < today) {
-      return {
-        success: false,
-        status: 400,
-        message: "Không thể hủy lịch hẹn đã qua ngày hẹn",
-      };
-    }
-
-    const deleteResult = await pool
-      .request()
-      .input("MaLichHen", sql.Char(8), maLichHen)
-      .input("MaKhachHang", sql.Char(7), customerId)
-      .query(
-        `
-        DELETE FROM dbo.LichHen
-        WHERE MaLichHen = @MaLichHen AND MaKhachHang = @MaKhachHang
-      `
-      );
-
-    if (deleteResult.rowsAffected[0] === 0) {
-      return {
-        success: false,
-        status: 404,
-        message: "Không tìm thấy lịch hẹn để hủy",
+        status: StatusCode,
+        message: ErrorMessage,
       };
     }
 
     return {
       success: true,
       status: 200,
-      message: "Hủy lịch hẹn thành công",
+      message: ErrorMessage,
       data: null,
     };
   } catch (error) {

@@ -135,16 +135,6 @@ router.get(
   customersController.getPendingOrders
 );
 
-/**
- * @route   PUT /api/customers/orders/:maHoaDon/confirm
- * @desc    Xác nhận đơn hàng (cho nhân viên)
- * @access  Private - NHAN_VIEN, QUAN_TRI
- */
-router.put(
-  "/orders/:maHoaDon/confirm",
-  authenticate,
-  authorize(ROLES.EMPLOYEE, ROLES.ADMIN),
-  customersController.confirmOrder
-);
+
 
 module.exports = router;

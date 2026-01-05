@@ -108,13 +108,6 @@ export default function CheckoutPage() {
         
         // Hiển thị alert để xác nhận thành công
         alert("Đặt hàng thành công! Đơn hàng đang chờ nhân viên xác nhận.");
-        
-        // Hiển thị thông báo trong UI
-        // Tự động chuyển trang sau 3 giây để người dùng có thời gian thấy thông báo
-        setTimeout(() => {
-          console.log("Navigating to /customer");
-          navigate("/customer");
-        }, 3000);
       } else {
         console.error("Order creation failed:", response.data);
         const errorMsg = response?.data?.message || response?.message || "Đặt hàng thất bại!";

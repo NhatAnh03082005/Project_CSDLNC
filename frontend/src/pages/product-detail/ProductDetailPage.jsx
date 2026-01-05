@@ -364,7 +364,7 @@ export default function ProductDetailPage() {
                   ) : (
                     <div className="flex items-center gap-3">
                        <ShoppingBag className="h-6 w-6 transition-transform group-hover:rotate-12" />
-                       Xác nhận đặt hàng
+                       Thêm vào giỏ hàng
                        <ArrowRight className="h-5 w-5 opacity-0 group-hover:opacity-100 translate-x-[-10px] group-hover:translate-x-0 transition-all" />
                     </div>
                   )}
