@@ -13,6 +13,8 @@ export const customerAPI = {
   getMembership: () => api.get("/customers/membership"),
   getInvoices: () => api.get("/customers/invoices"),
   getInvoiceDetails: (id) => api.get(`/customers/invoices/${id}`),
+  // [Dương - THÊM MỚI] Lấy danh sách khách hàng (cho Staff/Admin search)
+  getAll: (params) => api.get('/customers', { params }), // api/customers?page=1&limit=10&search=abc&capHoiVien=VIP
 };
 
 export const petAPI = {
@@ -23,6 +25,7 @@ export const petAPI = {
   delete: (id) => api.delete(`/pets/${id}`),
   getMedicalHistory: (id) => api.get(`/pets/${id}/medical-history`),
   getVaccinationHistory: (id) => api.get(`/pets/${id}/vaccination-history`),
+  getByCustomer: (customerId) => api.get(`/pets/customer/${customerId}`), //Dương
 };
 
 export const appointmentAPI = {
@@ -69,10 +72,19 @@ export const productAPI = {
   delete: (id) => api.delete(`/products/${id}`),
 };
 
+
 export const invoiceAPI = {
-  create: (data) => api.post("/invoices", data),
+  create: (data) => api.post('/invoices', data),
+  
+  // Lấy danh sách hóa đơn (filter)
+  getAll: (params) => api.get('/invoices', { params }),
   getById: (id) => api.get(`/invoices/${id}`),
-  getAll: (params) => api.get("/invoices", { params }),
+  update: (id, data) => api.put(`/invoices/${id}`, data),
+  // Lấy lịch sử hóa đơn của khách (cho Staff xem)
+  getCustomerInvoices: (customerId) => api.get(`/invoices/customer/${customerId}`),
+  
+  // In hóa đơn (nếu backend hỗ trợ stream PDF, hoặc trả về URL)
+  print: (id) => api.get(`/invoices/${id}/print`),  //  Tạm thời Be chưa cài đặt
 };
 
 export const employeeAPI = {
@@ -81,17 +93,12 @@ export const employeeAPI = {
   getAll: (params) => api.get('/employees', { params }),
 
   // Lấy danh sách bác sĩ (Public - dùng cho đặt lịch)
-  getDoctors: () => api.get('/employees/doctors'),
+  getDoctors: (params) => api.get('/employees/doctors', { params }),
 
   // Lấy chi tiết nhân viên
   getById: (id) => api.get(`/employees/${id}`),
-
-  // Tạo nhân viên mới
   create: (data) => api.post('/employees', data),
-
-  // Cập nhật thông tin nhân viên
   update: (id, data) => api.put(`/employees/${id}`, data),
-
   // Xóa nhân viên (Soft delete - nghỉ việc)
   delete: (id) => api.delete(`/employees/${id}`),
 
@@ -139,6 +146,9 @@ export const vaccinationAPI = {
   getSubscriptions: () => api.get("/vaccinations/subscriptions"),
   getSubscriptionDetails: (maGoiDK) =>
     api.get(`/vaccinations/subscriptions/${maGoiDK}`),
+  // [Dương - ĐƯỜNG DẪN MỚI]
+  // Lấy gói tiêm khách đã mua để gợi ý MaGoiDK
+  getActivePackages: (customerId) => api.get(`/vaccinations/subscriptions/${customerId}`),
 };
 
 export const serviceAPI = {
@@ -151,7 +161,7 @@ export const ratingAPI = {
   update: (maHoaDon, stt, data) => api.put(`/ratings/${maHoaDon}/${stt}`, data),
   delete: (maHoaDon, stt) => api.delete(`/ratings/${maHoaDon}/${stt}`),
 };
-
+//API Orders ở phía customer
 export const orderAPI = {
   create: (data) => api.post("/customers/orders", data),
   getAll: () => api.get("/customers/orders"),
@@ -159,3 +169,4 @@ export const orderAPI = {
   getPending: (maChiNhanh) => api.get("/customers/orders/pending", { params: { maChiNhanh } }),
   confirm: (maHoaDon) => api.put(`/customers/orders/${maHoaDon}/confirm`),
 };
+

@@ -107,14 +107,15 @@ class EmployeeService {
   }
 
   // API Public cho khách hàng/nhân viên đặt lịch
-  async getDoctorsList() {
+  async getDoctorsList({ MaChiNhanh } = {}) {
     // Tận dụng hàm findAll có sẵn, fix cứng tham số
-    const { data } = await employeeRepo.findAll({
-      chucvu: 'Bác sĩ thú y',
-      trangThai: 0, // 0 là đang làm việc (Check lại logic 0 hay 1 trong DB của bạn, SQL ghi: 0 LÀ ĐANG LÀM VIỆC)
-      page: 1,
-      limit: 100 // Lấy tối đa 100 bác sĩ
-    });
+    const { data, total } = await employeeRepo.findAll({
+        viTri: 'Bác sĩ thú y', // [QUAN TRỌNG] Đổi 'chucvu' thành 'viTri' để khớp với Repository
+        trangThai: 0,          // 0 là đang làm việc
+        page: 1,
+        limit: 100,            // Lấy tối đa 100 bác sĩ
+        maChiNhanh: MaChiNhanh // [THÊM MỚI] Truyền mã chi nhánh xuống Repo - repo đang nhận camelCase
+      });
 
     // Chỉ map những thông tin cần thiết để public
     const doctors = data.map(d => ({

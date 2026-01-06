@@ -41,7 +41,6 @@ router.post('/',
 router.get('/doctors', 
    // authenticate, 
     employeeController.getDoctors);
-module.exports = router;
 
 
 
@@ -120,4 +119,4 @@ router.get('/:id/transfer-history',
     //authenticate, 
    // authorize(ROLES.ADMIN), 
     employeeController.getTransferHistory);
-
+module.exports = router;

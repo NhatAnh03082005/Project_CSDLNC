@@ -86,7 +86,7 @@ router.put('/:id',
 // });
 /**
  * @route   GET /api/invoices/:id/print
- * @desc    In hóa đơn (Placeholder logic)
+ * @desc    In hóa đơn (Placeholder logic) - có lẽ api này ko nhất thiết phải liên quan đến be, chỉ cần call get by id rồi sử dụng chức năng xuất pdf ở FE là được
  * @access  Private
  */
 router.get('/:id/print', 

@@ -54,7 +54,8 @@ class EmployeeController {
   // GET /api/employees/doctors
   async getDoctors(req, res, next) {
     try {
-      const result = await employeeService.getDoctorsList();
+      const { MaChiNhanh } = req.query;
+      const result = await employeeService.getDoctorsList({ MaChiNhanh });
       return res.status(result.status).json(result);
     } catch (error) {
       next(error);
