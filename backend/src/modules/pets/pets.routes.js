@@ -52,6 +52,19 @@ router.delete(
   petsController.deletePet
 );
 
+//Dương - thêm API mới để phục vụ nghiệp vụ lập hóa đơn
+/**
+ * @route   GET /api/pets/customer/:customerId
+ * @desc    Xem chi tiết thú cưng
+ * @access  Private - 'admin', 'staff'
+ */
+router.get(
+  '/customer/:customerId',
+  authenticate,
+  authorize(ROLES.ADMIN, ROLES.EMPLOYEE),
+  petsController.staffGetCustomerPets
+);
+
 /**
  * @route   GET /api/pets/:id/medical-history
  * @desc    Lịch sử khám bệnh của thú cưng

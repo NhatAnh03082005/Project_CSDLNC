@@ -120,7 +120,13 @@ router.get(
   authorize(ROLES.CUSTOMER),
   vaccinationsController.getCustomerSubscriptions
 );
-
+//Dương: Bổ sung lấy theo params customer id - dành cho nghiệp vụ của nhân viên
+router.get(
+  "/subscriptions/:customerId",
+  authenticate,
+  authorize(ROLES.ADMIN, ROLES.EMPLOYEE),
+  vaccinationsController.staffGetCustomerSubscriptions
+);
 /**
  * @route   GET /api/vaccinations/subscriptions/:maGoiDK
  * @desc    Chi tiết gói tiêm đã đăng ký của khách hàng (bao gồm danh sách vaccine)

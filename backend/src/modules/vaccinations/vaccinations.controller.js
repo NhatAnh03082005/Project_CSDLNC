@@ -161,6 +161,23 @@ class VaccinationsController {
       next(error);
     }
   }
+   /** Dương: Bổ sung cho nghiệp vụ của nhân viên
+   * Lấy danh sách gói tiêm đang đăng ký của khách hàng
+   * GET /api/vaccinations/subscriptions/:customerId
+   * Private: admin, staff
+   */
+  async staffGetCustomerSubscriptions(req, res, next) {
+    try {
+      const {customerId} = req.params;
+
+      const response = await vaccinationsService.getCustomerSubscriptions(
+        customerId
+      );
+      return res.status(response.status || 200).json(response);
+    } catch (error) {
+      next(error);
+    }
+  }
 
   /**
    * Lấy chi tiết gói tiêm đã đăng ký (bao gồm danh sách vaccine)

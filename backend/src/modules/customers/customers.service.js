@@ -1346,6 +1346,7 @@ class CustomersService {
    * - Nếu thiếu -> Lấy tất cả (Get All)
    * @param {Object} params - { page, limit, search, capHoiVien }
    */
+  //Nếu trích Store Procedure thì chỉ cần xét TRƯỜNG HỢP 2: GET ALL (LẤY HẾT) 
   async getAllCustomers(params = {}) {
     try {
       // 1. Kiểm tra xem Client có muốn phân trang không?
@@ -1363,7 +1364,7 @@ class CustomersService {
       let baseCondition = "WHERE 1=1";
 
       if (search) {
-        baseCondition += " AND (HoTen LIKE @search OR SDT LIKE @search OR Email LIKE @search)";
+        baseCondition += " AND (MaKhachHang LIKE @search OR HoTen LIKE @search OR SDT LIKE @search OR Email LIKE @search)";
         request.input('search', sql.NVarChar, `%${search}%`);
       }
 
@@ -1432,13 +1433,13 @@ class CustomersService {
             ? "Lấy danh sách khách hàng (phân trang) thành công" 
             : "Lấy toàn bộ danh sách khách hàng thành công",
         data: {
-          customers: resultData,
-          pagination: {
-            page: currentPage,
-            limit: currentLimit,
-            totalRecords: totalRecords,
-            totalPages: totalPages
-          }
+          customers: resultData
+          // pagination: {
+          //   page: currentPage,
+          //   limit: currentLimit,
+          //   totalRecords: totalRecords,
+          //   totalPages: totalPages
+          // }
         }
       };
 

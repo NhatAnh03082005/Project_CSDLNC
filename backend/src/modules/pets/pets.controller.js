@@ -159,6 +159,20 @@ class PetsController {
             next(error);
         }
     }
+    /**
+     * Lấy danh sách thú cưng của khách hàng - qua mã khách hàng
+     * GET api/pets/customer/:customerId
+     */
+    async staffGetCustomerPets(req, res, next) {
+        try {
+            const {customerId} = req.params;
+
+            const response = await petsService.getCustomerPets(customerId);
+            return res.status(response.status || 200).json(response);
+        } catch (error) {
+            next(error);
+        }
+    }
 }
 
 module.exports = new PetsController();
