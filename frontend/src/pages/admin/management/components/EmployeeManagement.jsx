@@ -11,6 +11,7 @@ import {
   Wallet,
   Calendar,
   Cake,
+  ArrowRightLeft, // Icon cho nút điều chuyển nhân viên
 } from "lucide-react";
 
 import AdminHeader from "../../components/AdminHeader";
@@ -43,6 +44,11 @@ export default function EmployeeManagement() {
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+
+  // [Thêm mới] State cho dialog điều chuyển
+  const [isTransferDialogOpen, setIsTransferDialogOpen] = useState(false);
+  const [transferBranchId, setTransferBranchId] = useState("");
+
   const [selectedEmployee, setSelectedEmployee] = useState(null);
 
   const [addFormData, setAddFormData] = useState({
@@ -52,7 +58,7 @@ export default function EmployeeManagement() {
     NgayVaoLam: "",
     ViTri: "",
     LuongCoBan: "",
-    TenChiNhanh: "",
+    MaChiNhanh: "",
   });
 
   const [editFormData, setEditFormData] = useState({
@@ -62,7 +68,8 @@ export default function EmployeeManagement() {
     NgayVaoLam: "",
     ViTri: "",
     LuongCoBan: "",
-    TenChiNhanh: "",
+    MaChiNhanh: "",
+  // TenChiNhanh: "",  -- ko cần Tên Chi nhánh hay mã chi nhánh ở đây vì edit chỉ chỉnh sửa thông tin cá nhân
   });
 
   const GENDER_OPTIONS = ["Nam", "Nữ"];
@@ -80,23 +87,36 @@ export default function EmployeeManagement() {
   const fetchData = async () => {
     try {
       setLoading(true);
-      const results = await Promise.allSettled([
+      // const results = await Promise.allSettled([
+      //   employeeAPI.getAll(),
+      //   branchAPI.getAll(),
+      // ]);
+      // Gọi song song cả API lấy NV và API lấy Chi nhánh
+      const [empRes, branchRes] = await Promise.all([
         employeeAPI.getAll(),
-        branchAPI.getAll(),
+        branchAPI.getAll()
       ]);
 
-      const employeesRes =
-        results[0]?.status === "fulfilled" ? results[0].value : null;
-      const branchesRes =
-        results[1]?.status === "fulfilled" ? results[1].value : null;
+      // Kiểm tra và set dữ liệu vào State
+      if (empRes.data.success) {
+        setEmployees(empRes.data.data);
+      }
+      if (branchRes.data.success) { // Giả sử branchAPI trả về cấu trúc tương tự
+        setBranches(branchRes.data.data || []);
+      }
 
-      const employeesData =
-        employeesRes?.data?.data ?? employeesRes?.data ?? [];
-      const branchesData = branchesRes?.data?.data ?? branchesRes?.data ?? [];
+      // const employeesRes =
+      //   results[0]?.status === "fulfilled" ? results[0].value : null;
+      // const branchesRes =
+      //   results[1]?.status === "fulfilled" ? results[1].value : null;
 
-      setEmployees(Array.isArray(employeesData) ? employeesData : []);
-      setBranches(Array.isArray(branchesData) ? branchesData : []);
-      setError(null);
+      // const employeesData =
+      //   employeesRes?.data?.data ?? employeesRes?.data ?? [];
+      // const branchesData = branchesRes?.data?.data ?? branchesRes?.data ?? [];
+
+      // setEmployees(Array.isArray(employeesData) ? employeesData : []);
+      // setBranches(Array.isArray(branchesData) ? branchesData : []);
+      // setError(null);
     } catch (err) {
       console.error("Error fetching data:", err);
       setError(err.response?.data?.message || "Không thể tải dữ liệu");
@@ -113,20 +133,31 @@ export default function EmployeeManagement() {
       NgayVaoLam: "",
       ViTri: "",
       LuongCoBan: "",
-      TenChiNhanh: "",
+      //TenChiNhanh: "",
+      MaChiNhanh: "",
     });
   };
 
-  const handleAdd = async () => {
+  const handleAdd = async (e) => {
+    e.preventDefault();// Chặn reload trang
     try {
-      await employeeAPI.create(addFormData);
-      await fetchData();
-      setIsAddDialogOpen(false);
-      resetAddForm();
-      alert("Thêm nhân viên thành công!");
+      // Validate cơ bản
+      if (!addFormData.MaChiNhanh) {
+        alert("Vui lòng chọn chi nhánh!");
+        return;
+      }
+
+      const res = await employeeAPI.create(addFormData);
+     if (res.data.success)
+      { 
+        await fetchData();
+        setIsAddDialogOpen(false);
+        resetAddForm();
+        alert("Thêm nhân viên thành công!");
+      }
     } catch (err) {
       console.error("Error adding employee:", err);
-      alert(err.response?.data?.message || "Không thể thêm nhân viên");
+      alert(err.response?.data?.message ?? "Không thể thêm nhân viên");
     }
   };
 
@@ -139,7 +170,7 @@ export default function EmployeeManagement() {
       NgayVaoLam: employee.NgayVaoLam?.split("T")[0] || "",
       ViTri: employee.ViTri?.trim() || "",
       LuongCoBan: employee.LuongCoBan ?? "",
-      TenChiNhanh: employee.TenChiNhanh || "",
+      MaChiNhanh: employee.MaChiNhanh || "",
     });
     setIsEditDialogOpen(true);
   };
@@ -156,7 +187,7 @@ export default function EmployeeManagement() {
       alert(err.response?.data?.message || "Không thể cập nhật nhân viên");
     }
   };
-
+  
   const handleDelete = (employee) => {
     setSelectedEmployee(employee);
     setIsDeleteDialogOpen(true);
@@ -174,6 +205,41 @@ export default function EmployeeManagement() {
       alert(err.response?.data?.message || "Không thể xóa nhân viên");
     }
   };
+
+  // [Thêm mới] Hàm mở dialog điều chuyển
+  const handleTransferClick = (employee) => {
+    setSelectedEmployee(employee);
+    setTransferBranchId(employee.MaChiNhanh || ""); // Set giá trị mặc định là chi nhánh hiện tại
+    setIsTransferDialogOpen(true);
+  };
+
+  // [Thêm mới] Hàm thực hiện điều chuyển
+  const handleTransferSubmit = async () => {
+    try {
+      if (!transferBranchId) {
+        alert("Vui lòng chọn chi nhánh mới");
+        return;
+      }
+      if (transferBranchId === selectedEmployee.MaChiNhanh) {
+         alert("Vui lòng chọn chi nhánh khác chi nhánh hiện tại");
+         return;
+      }
+
+      // Gọi API transfer (API mới)
+      // data gửi đi: { targetBranchId: "CN02" }
+      await employeeAPI.transfer(selectedEmployee.MaNhanVien, { targetBranchId: transferBranchId });
+      
+      await fetchData(); // Refresh lại list
+      setIsTransferDialogOpen(false);
+      setSelectedEmployee(null);
+      alert(`Điều chuyển nhân viên sang chi nhánh mới thành công!`);
+    } catch (err) {
+      console.error("Error transferring employee:", err);
+      // Hiển thị lỗi từ Backend (VD: Đang là Quản lý chi nhánh nên không được chuyển)
+      alert(err.response?.data?.message || "Lỗi khi điều chuyển nhân viên");
+    }
+  };
+
 
   if (loading) {
     return (
@@ -360,16 +426,16 @@ export default function EmployeeManagement() {
                     </div>
                   </div>
 
-                  {/* Row 4: Chi nhánh */}
+                  {/* Row 4: Chi nhánh - thay MaChiNhanh cho TenChiNhanh */}
                   <div className="space-y-2">
-                    <Label htmlFor="add-TenChiNhanh">Chi nhánh</Label>
+                    <Label htmlFor="add-MaChiNhanh">Chi nhánh</Label>
                     <select
-                      id="add-TenChiNhanh"
-                      value={addFormData.TenChiNhanh}
+                      id="add-MaChiNhanh"
+                      value={addFormData.MaChiNhanh}
                       onChange={(e) =>
                         setAddFormData({
                           ...addFormData,
-                          TenChiNhanh: e.target.value,
+                          MaChiNhanh: e.target.value,
                         })
                       }
                       className="w-full border rounded-lg px-3 h-10 border-input bg-background text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
@@ -410,6 +476,17 @@ export default function EmployeeManagement() {
                 >
                   {/* ACTIONS góc phải trên giống Branch */}
                   <div className="absolute top-3 right-3 flex gap-2">
+                    {/* [Thêm mới] Nút Điều Chuyển */}
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-9 w-9 bg-orange-50 text-orange-600 border border-orange-100 hover:bg-orange-600 hover:text-white hover:shadow-md rounded-lg transition-all"
+                      onClick={() => handleTransferClick(emp)}
+                      title="Điều chuyển công tác"
+                    >
+                      <ArrowRightLeft className="h-5 w-5" />
+                    </Button>
+
                     <Button
                       variant="ghost"
                       size="icon"
@@ -447,7 +524,8 @@ export default function EmployeeManagement() {
                       <div className="flex items-center gap-2 text-gray-600">
                         <Building2 className="h-4 w-4 text-gray-400" />
                         <span className="line-clamp-1">
-                          {emp.TenChiNhanh || "Chưa có chi nhánh"}
+                          {/* Logic hiển thị tên chi nhánh: Tìm trong branches state nếu API nhân viên chỉ trả về mã */}
+                          {branches.find(b => b.MaChiNhanh === emp.MaChiNhanh)?.TenChiNhanh || emp.MaChiNhanh || "Chưa có chi nhánh"}
                         </span>
                       </div>
 
@@ -645,6 +723,58 @@ export default function EmployeeManagement() {
               </DialogFooter>
             </DialogContent>
           </Dialog>
+          
+          {/* [Thêm mới] TRANSFER DIALOG */}
+          <Dialog open={isTransferDialogOpen} onOpenChange={setIsTransferDialogOpen}>
+            <DialogContent className="sm:max-w-[500px]">
+              <DialogHeader>
+                <DialogTitle className="text-2xl font-bold text-orange-600">
+                  Điều chuyển công tác
+                </DialogTitle>
+                <DialogDescription className="mt-2">
+                  Điều chuyển nhân viên <strong className="text-gray-900">{selectedEmployee?.HoTen}</strong> sang chi nhánh mới.
+                </DialogDescription>
+              </DialogHeader>
+
+              <div className="py-4 space-y-4">
+                 <div className="space-y-2">
+                    <Label>Chi nhánh hiện tại</Label>
+                    <div className="p-3 bg-gray-100 rounded-md text-gray-700">
+                       {branches.find(b => b.MaChiNhanh === selectedEmployee?.MaChiNhanh)?.TenChiNhanh || "Không xác định"}
+                    </div>
+                 </div>
+
+                 <div className="space-y-2">
+                    <Label htmlFor="transfer-branch">Chuyển đến chi nhánh</Label>
+                    <select
+                      id="transfer-branch"
+                      value={transferBranchId}
+                      onChange={(e) => setTransferBranchId(e.target.value)}
+                      className="w-full border rounded-lg px-3 h-10 border-input bg-background text-sm focus:ring-2 focus:ring-orange-500"
+                    >
+                       <option value="">-- Chọn chi nhánh đích --</option>
+                       {branches
+                         .filter(b => b.MaChiNhanh !== selectedEmployee?.MaChiNhanh) // Ẩn chi nhánh hiện tại
+                         .map((b) => (
+                           <option key={b.MaChiNhanh} value={b.MaChiNhanh}>
+                             {b.TenChiNhanh}
+                           </option>
+                       ))}
+                    </select>
+                 </div>
+              </div>
+
+              <DialogFooter>
+                <Button 
+                   onClick={handleTransferSubmit} 
+                   className="bg-orange-600 hover:bg-orange-700 text-white"
+                >
+                   Xác nhận điều chuyển
+                </Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
+
 
           {/* DELETE DIALOG */}
           <Dialog

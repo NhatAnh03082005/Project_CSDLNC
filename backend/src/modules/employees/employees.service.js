@@ -10,10 +10,10 @@ class EmployeeService {
         page = parseInt(query.page);
         limit = parseInt(query.limit);
     }
-
+    const isDeleted = query.trangThai ?? 0; //mặc định nhân viên đang làm việc
     const { data, total } = await employeeRepo.findAll({ 
       page, limit, search: query.search, chucvu: query.chucvu, 
-      trangThai: query.trangThai, maChiNhanh: query.maChiNhanh 
+      trangThai: isDeleted, maChiNhanh: query.maChiNhanh 
     });
 
     return {

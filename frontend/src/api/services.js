@@ -76,12 +76,37 @@ export const invoiceAPI = {
 };
 
 export const employeeAPI = {
-  getAll: () => api.get("/employees"),
+  // Lấy danh sách nhân viên 
+  // params: { page, limit, search, chucvu, trangThai, maChiNhanh }
+  getAll: (params) => api.get('/employees', { params }),
+
+  // Lấy danh sách bác sĩ (Public - dùng cho đặt lịch)
+  getDoctors: () => api.get('/employees/doctors'),
+
+  // Lấy chi tiết nhân viên
   getById: (id) => api.get(`/employees/${id}`),
-  create: (data) => api.post("/employees", data),
+
+  // Tạo nhân viên mới
+  create: (data) => api.post('/employees', data),
+
+  // Cập nhật thông tin nhân viên
   update: (id, data) => api.put(`/employees/${id}`, data),
+
+  // Xóa nhân viên (Soft delete - nghỉ việc)
   delete: (id) => api.delete(`/employees/${id}`),
+
+  // Điều chuyển nhân viên sang chi nhánh khác
+  // data: { targetBranchId: "CN02" }
+  transfer: (id, data) => api.post(`/employees/${id}/transfer`, data),
+
+  // Cập nhật lương
+  // data: { salary: 15000000 }
+  updateSalary: (id, data) => api.put(`/employees/${id}/salary`, data),
+
+  // Lấy lịch sử điều động
+  getTransferHistory: (id) => api.get(`/employees/${id}/transfer-history`),
 };
+
 
 export const reportAPI = {
   getRevenue: (params) => api.get("/reports/revenue", { params }),
