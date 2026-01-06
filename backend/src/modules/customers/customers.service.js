@@ -1340,6 +1340,118 @@ class CustomersService {
       };
     }
   }
+  /**
+   * Lấy danh sách khách hàng
+   * - Nếu có params.page VÀ params.limit -> Phân trang
+   * - Nếu thiếu -> Lấy tất cả (Get All)
+   * @param {Object} params - { page, limit, search, capHoiVien }
+   */
+  async getAllCustomers(params = {}) {
+    try {
+      // 1. Kiểm tra xem Client có muốn phân trang không?
+      // Điều kiện: Phải truyền ĐỦ cả page và limit
+      const isPagination = params.page && params.limit;
+
+      const search = params.search || '';
+      const capHoiVien = params.capHoiVien || '';
+
+      // 2. Lấy kết nối Pool
+      const pool = await poolPromise;
+      const request = pool.request();
+
+      // 3. Xây dựng điều kiện lọc (WHERE ...) dùng chung cho cả 2 trường hợp
+      let baseCondition = "WHERE 1=1";
+
+      if (search) {
+        baseCondition += " AND (HoTen LIKE @search OR SDT LIKE @search OR Email LIKE @search)";
+        request.input('search', sql.NVarChar, `%${search}%`);
+      }
+
+      if (capHoiVien) {
+        baseCondition += " AND CapHoiVien = @capHoiVien";
+        request.input('capHoiVien', sql.NVarChar, capHoiVien);
+      }
+
+      // --- KHỐI XỬ LÝ CHÍNH ---
+      let resultData = [];
+      let totalRecords = 0;
+      let totalPages = 1;
+      let currentPage = 1;
+      let currentLimit = 0; // 0 nghĩa là không giới hạn
+
+      if (isPagination) {
+        // === TRƯỜNG HỢP 1: CÓ PHÂN TRANG ===
+        currentPage = parseInt(params.page);
+        currentLimit = parseInt(params.limit);
+        const offset = (currentPage - 1) * currentLimit;
+
+        // Query 1: Đếm tổng
+        const countQuery = `SELECT COUNT(*) AS Total FROM KhachHang ${baseCondition}`;
+        const countResult = await request.query(countQuery);
+        totalRecords = countResult.recordset[0].Total;
+        totalPages = Math.ceil(totalRecords / currentLimit);
+
+        // Query 2: Lấy dữ liệu theo trang
+        const dataQuery = `
+          SELECT * FROM KhachHang 
+          ${baseCondition}
+          ORDER BY MaKhachHang DESC 
+          OFFSET @offset ROWS FETCH NEXT @limit ROWS ONLY
+        `;
+        
+        request.input('offset', sql.Int, offset);
+        request.input('limit', sql.Int, currentLimit);
+        
+        const result = await request.query(dataQuery);
+        resultData = result.recordset;
+
+      } else {
+        // === TRƯỜNG HỢP 2: GET ALL (LẤY HẾT) ===
+        // Không dùng OFFSET/FETCH NEXT
+        const dataQuery = `
+          SELECT * FROM KhachHang 
+          ${baseCondition}
+          ORDER BY MaKhachHang DESC
+        `;
+        
+        const result = await request.query(dataQuery);
+        resultData = result.recordset;
+        
+        // Cập nhật lại thông tin meta
+        totalRecords = resultData.length;
+        totalPages = 1;
+        currentPage = 1;
+        currentLimit = totalRecords;
+      }
+
+      // 4. Trả về kết quả
+      return {
+        success: true,
+        status: 200,
+        message: isPagination 
+            ? "Lấy danh sách khách hàng (phân trang) thành công" 
+            : "Lấy toàn bộ danh sách khách hàng thành công",
+        data: {
+          customers: resultData,
+          pagination: {
+            page: currentPage,
+            limit: currentLimit,
+            totalRecords: totalRecords,
+            totalPages: totalPages
+          }
+        }
+      };
+
+    } catch (error) {
+      console.error("CustomersService -> getAllCustomers:", error);
+      return {
+        success: false,
+        status: 500,
+        message: "Lỗi hệ thống khi lấy danh sách khách hàng",
+        error: error.message
+      };
+    }
+  }
 }
 
 module.exports = new CustomersService();

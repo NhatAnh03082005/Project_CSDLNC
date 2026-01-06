@@ -13,6 +13,18 @@ const employeesController = require("../employees/employees.controller");
 router.get("/employees", employeesController.getAllEmployees);
 
 /**
+ * @route   GET /api/customers
+ * @desc    Load toàn bộ danh sách khách hàng
+ * @access  Private - staff, admin
+ */
+router.get(
+  "/",
+  authenticate,
+  authorize(ROLES.EMPLOYEE, ROLES.ADMIN),
+  customersController.getAll
+);
+
+/**
  * @route   GET /api/customers/profile
  * @desc    Xem thông tin cá nhân khách hàng
  * @access  Private - KHACH_HANG

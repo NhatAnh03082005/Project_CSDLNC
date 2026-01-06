@@ -215,6 +215,26 @@ class CustomersController {
             next(error);
         }
     }
+    /**
+     * Lấy danh sách khách hàng (có phân trang, tìm kiếm)
+     * GET /api/customers?page=1&limit=10&search=abc&capHoiVien=VIP
+     */
+    async getAll(req, res, next) {
+        try {
+            const { page, limit, search, capHoiVien } = req.query;
+
+            const response = await customersService.getAllCustomers({ 
+                page, 
+                limit, 
+                search, 
+                capHoiVien 
+            });
+
+            return res.status(response.status || 200).json(response);
+        } catch (error) {
+            next(error);
+        }
+    }
 }
 
 module.exports = new CustomersController();
