@@ -1,6 +1,8 @@
 import React from "react";
 // 1. Thay thế Next.js Link bằng React Router DOM Link
-import { Link } from "react-router-dom"; 
+import { Link, useNavigate } from "react-router-dom";
+import { useAuthStore } from "../../../store/authStore";
+import { authAPI } from "../../../api/services";
 
 // 2. Chuyển đổi imports alias (@/) sang đường dẫn tương đối (../...)
 import { Button } from "../../../components/ui/button";
@@ -25,6 +27,30 @@ import {
 // Xóa bỏ "use client"
 
 export default function StaffDemoPage() {
+  const navigate = useNavigate();
+  const { logout, setUser, setIsAuthenticated } = useAuthStore();
+
+  const handleLogout = async () => {
+    console.log("=== LOGOUT CLICKED ===");
+    try {
+      // 1. Gọi API logout phía Server
+      await authAPI.logout();
+    } catch (error) {
+      console.error("Lỗi khi gọi API đăng xuất:", error);
+    } finally {
+      // 2. Xóa thông tin ở Local dù API thành công hay thất bại
+      localStorage.removeItem("token");
+
+      // 3. Cập nhật State trong Store
+      setUser(null);
+      setIsAuthenticated(false);
+      logout(); // Gọi hàm dọn dẹp của Zustand
+
+      // 4. Điều hướng về trang đăng nhập
+      navigate("/login");
+    }
+  };
+
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Header */}
@@ -105,6 +131,7 @@ export default function StaffDemoPage() {
               <Button
                 variant="ghost"
                 className="w-full justify-start gap-3 text-red-600 hover:text-red-700 hover:bg-red-50"
+                onClick={handleLogout}
               >
                 <LogOut className="h-4 w-4" />
                 Đăng xuất
