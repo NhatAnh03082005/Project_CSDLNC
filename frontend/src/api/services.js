@@ -37,6 +37,17 @@ export const appointmentAPI = {
     api.get("/appointments/available-slots", { params }),
   getAvailableDoctors: (params) =>
     api.get("/appointments/available-doctors", { params }),
+
+// Lấy danh sách lịch hẹn (cho nhân viên xem lịch làm việc)
+  // params: { date, branchId, doctorId }
+  getSchedule: (params) => api.get("/appointments/schedule", { params }),
+  
+  // [BỔ SUNG] Xác nhận lịch hẹn (cho nút "Xác nhận" ở UI)
+  confirm: (id) => api.put(`/appointments/${id}/confirm`),
+  // [BỔ SUNG] Hoàn thành lịch hẹn
+  complete: (id) => api.put(`/appointments/${id}/complete`),
+  // [MỚI] Cập nhật thông tin lịch hẹn (Dời lịch, đổi bác sĩ)
+  update: (id, data) => api.put(`/appointments/${id}`, data),
 };
 
 export const branchAPI = {
