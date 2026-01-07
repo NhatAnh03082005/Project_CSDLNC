@@ -52,6 +52,13 @@ export default function VaccinationPackagesPage() {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [registering, setRegistering] = useState(null); // Lưu LoaiGoi đang được xử lý
 
+  // States cho việc chọn vaccine
+  const [vaccineDialogOpen, setVaccineDialogOpen] = useState(false);
+  const [selectedPackage, setSelectedPackage] = useState(null);
+  const [availableVaccines, setAvailableVaccines] = useState([]);
+  const [selectedVaccines, setSelectedVaccines] = useState([]);
+  const [loadingVaccines, setLoadingVaccines] = useState(false);
+
   // Fetch danh sách gói đã đăng ký
   const fetchSubscriptions = async () => {
     try {
@@ -86,11 +93,27 @@ export default function VaccinationPackagesPage() {
           displayName: formatPackageName(pkg.LoaiGoi),
           duration: `${pkg.ThoiHan} tháng`,
           benefits: `Giảm ${pkg.UuDai}% chi phí tiêm phòng`,
+          ThoiHan: pkg.ThoiHan,
         }));
         setAvailablePackages(mapped);
       }
     } catch (error) {
       console.error("Lỗi khi tải danh sách gói tiêm:", error);
+    }
+  };
+
+  // Fetch danh sách vaccine
+  const fetchVaccines = async () => {
+    try {
+      setLoadingVaccines(true);
+      const response = await vaccinationAPI.getAll();
+      if (response.data.success) {
+        setAvailableVaccines(response.data.data || []);
+      }
+    } catch (error) {
+      console.error("Lỗi khi tải danh sách vaccine:", error);
+    } finally {
+      setLoadingVaccines(false);
     }
   };
 
@@ -103,15 +126,43 @@ export default function VaccinationPackagesPage() {
     loadData();
   }, []);
 
-  const handleRegister = async (pkg) => {
+  const handleSelectPackage = async (pkg) => {
+    // Mở dialog chọn vaccine
+    setSelectedPackage(pkg);
+    setSelectedVaccines([]);
+    await fetchVaccines();
+    setVaccineDialogOpen(true);
+  };
+
+  const handleRegister = async () => {
     try {
-      setRegistering(pkg.LoaiGoi); // Chỉ set LoaiGoi đang được xử lý
-      const response = await vaccinationAPI.subscribe({ LoaiGoi: pkg.LoaiGoi });
+      if (!selectedPackage || selectedVaccines.length === 0) {
+        alert("Vui lòng chọn vaccine!");
+        return;
+      }
+
+      // Kiểm tra số lượng vaccine đã chọn
+      const requiredCount = selectedPackage.ThoiHan;
+      if (selectedVaccines.length !== requiredCount) {
+        alert(
+          `Vui lòng chọn đúng ${requiredCount} vaccine cho gói ${selectedPackage.displayName}!`
+        );
+        return;
+      }
+
+      setRegistering(selectedPackage.LoaiGoi);
+      const response = await vaccinationAPI.subscribe({
+        LoaiGoi: selectedPackage.LoaiGoi,
+        vaccines: selectedVaccines,
+      });
 
       if (response.data.success) {
         // Refresh danh sách gói đã đăng ký
         await fetchSubscriptions();
         setDialogOpen(false);
+        setVaccineDialogOpen(false);
+        setSelectedPackage(null);
+        setSelectedVaccines([]);
         alert("Đăng ký gói tiêm phòng thành công!");
       } else {
         alert(response.data.message || "Đăng ký thất bại");
@@ -122,8 +173,24 @@ export default function VaccinationPackagesPage() {
         error.response?.data?.message || "Đăng ký thất bại. Vui lòng thử lại!"
       );
     } finally {
-      setRegistering(null); // Reset về null khi xong
+      setRegistering(null);
     }
+  };
+
+  const handleToggleVaccine = (maVacXin) => {
+    setSelectedVaccines((prev) => {
+      if (prev.includes(maVacXin)) {
+        return prev.filter((id) => id !== maVacXin);
+      } else {
+        // Kiểm tra số lượng tối đa
+        const maxCount = selectedPackage?.ThoiHan || 0;
+        if (prev.length >= maxCount) {
+          alert(`Bạn chỉ được chọn tối đa ${maxCount} vaccine cho gói này!`);
+          return prev;
+        }
+        return [...prev, maVacXin];
+      }
+    });
   };
 
   // Kiểm tra xem gói đã được đăng ký và đang hoạt động chưa
@@ -135,11 +202,11 @@ export default function VaccinationPackagesPage() {
   };
 
   return (
-    <div className="min-h-screen bg-[#f8fafc]">
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-cyan-50">
       {/* Dynamic Hero Section */}
-      <div className="bg-white border-b border-gray-100 relative overflow-hidden">
-        <div className="absolute top-0 right-0 -mt-20 -mr-20 w-96 h-96 bg-emerald-50 rounded-full blur-3xl opacity-50" />
-        <div className="absolute bottom-0 left-0 -mb-20 -ml-20 w-72 h-72 bg-blue-50 rounded-full blur-3xl opacity-50" />
+      <div className="bg-transparent border-b border-gray-100 relative overflow-hidden">
+        <div className="absolute top-0 right-0 -mt-20 -mr-20 w-96 h-96 bg-blue-50 rounded-full blur-3xl opacity-50" />
+        <div className="absolute bottom-0 left-0 -mb-20 -ml-20 w-72 h-72 bg-gradient-to-br from-blue-50 to-cyan-50 rounded-full blur-3xl opacity-50" />
 
         <div className="container mx-auto px-4 py-16 relative z-10 max-w-7xl">
           <div className="flex flex-col md:flex-row md:items-end justify-between gap-8">
@@ -149,9 +216,8 @@ export default function VaccinationPackagesPage() {
                 Dịch vụ tiêm chủng
               </div>
               <h1 className="text-4xl md:text-5xl font-black text-slate-900 tracking-tight">
-                Gói{" "}
                 <span className="text-transparent bg-clip-text bg-gradient-to-r from-emerald-600 to-blue-600">
-                  Tiêm phòng
+                  Gói Tiêm phòng
                 </span>
               </h1>
               <p className="text-slate-500 text-lg max-w-lg leading-relaxed">
@@ -231,15 +297,10 @@ export default function VaccinationPackagesPage() {
                               ? "bg-slate-100 text-slate-400 border-none hover:bg-slate-100"
                               : "bg-emerald-600 hover:bg-emerald-700 text-white shadow-lg shadow-emerald-100"
                           }`}
-                          onClick={() => handleRegister(pkg)}
-                          disabled={
-                            isPackageRegistered(pkg.LoaiGoi) ||
-                            registering === pkg.LoaiGoi
-                          }
+                          onClick={() => handleSelectPackage(pkg)}
+                          disabled={isPackageRegistered(pkg.LoaiGoi)}
                         >
-                          {registering === pkg.LoaiGoi ? (
-                            <Loader2 className="h-5 w-5 animate-spin" />
-                          ) : isPackageRegistered(pkg.LoaiGoi) ? (
+                          {isPackageRegistered(pkg.LoaiGoi) ? (
                             <CheckCircle2 className="h-5 w-5" />
                           ) : (
                             "Đăng ký ngay"
@@ -253,6 +314,135 @@ export default function VaccinationPackagesPage() {
                   <p className="text-center text-xs text-slate-400 font-medium">
                     * Các gói tiêm phòng được áp dụng ngay sau khi đăng ký thành
                     công.
+                  </p>
+                </div>
+              </DialogContent>
+            </Dialog>
+
+            {/* Dialog chọn vaccine */}
+            <Dialog
+              open={vaccineDialogOpen}
+              onOpenChange={setVaccineDialogOpen}
+            >
+              <DialogContent className="sm:max-w-[800px] p-0 overflow-hidden border-none shadow-2xl rounded-[2.5rem]">
+                <div className="bg-gradient-to-br from-blue-600 via-indigo-500 to-purple-600 px-8 py-8 text-white relative">
+                  <div className="absolute top-0 right-0 p-8 opacity-10">
+                    <Syringe className="h-40 w-40 rotate-12" />
+                  </div>
+                  <div className="flex items-center gap-4 relative z-10">
+                    <div className="p-3 bg-white/20 backdrop-blur-md rounded-[2rem] border border-white/30 shadow-inner">
+                      <ShieldCheck className="h-10 w-10 text-white" />
+                    </div>
+                    <div>
+                      <DialogTitle className="text-3xl font-black tracking-tight">
+                        Chọn vaccine cho {selectedPackage?.displayName}
+                      </DialogTitle>
+                      <DialogDescription className="text-blue-50/90 text-lg mt-1 font-medium">
+                        Chọn {selectedPackage?.ThoiHan} vaccine từ danh sách (
+                        {selectedVaccines.length}/
+                        {selectedPackage?.ThoiHan || 0})
+                      </DialogDescription>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="p-6 space-y-3 max-h-[60vh] overflow-y-auto custom-scrollbar bg-slate-50/50">
+                  {loadingVaccines ? (
+                    <div className="text-center py-12 space-y-3">
+                      <Loader2 className="h-12 w-12 text-blue-500 mx-auto animate-spin" />
+                      <p className="text-slate-500 font-medium">
+                        Đang tải danh sách vaccine...
+                      </p>
+                    </div>
+                  ) : availableVaccines.length === 0 ? (
+                    <div className="text-center py-12 space-y-3">
+                      <AlertCircle className="h-12 w-12 text-slate-300 mx-auto" />
+                      <p className="text-slate-500 font-medium">
+                        Hiện không có vaccine nào khả dụng
+                      </p>
+                    </div>
+                  ) : (
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                      {availableVaccines.map((vaccine) => (
+                        <div
+                          key={vaccine.MaVacXin}
+                          onClick={() => handleToggleVaccine(vaccine.MaVacXin)}
+                          className={`group relative bg-white p-4 rounded-2xl border-2 cursor-pointer transition-all duration-300 ${
+                            selectedVaccines.includes(vaccine.MaVacXin)
+                              ? "border-blue-500 shadow-lg shadow-blue-100 bg-blue-50"
+                              : "border-slate-100 hover:border-blue-200 hover:shadow-md"
+                          }`}
+                        >
+                          <div className="flex items-start gap-3">
+                            <div
+                              className={`h-10 w-10 rounded-xl flex items-center justify-center transition-colors ${
+                                selectedVaccines.includes(vaccine.MaVacXin)
+                                  ? "bg-blue-600"
+                                  : "bg-slate-100 group-hover:bg-blue-100"
+                              }`}
+                            >
+                              {selectedVaccines.includes(vaccine.MaVacXin) ? (
+                                <CheckCircle2 className="h-6 w-6 text-white" />
+                              ) : (
+                                <Syringe className="h-6 w-6 text-slate-400 group-hover:text-blue-600" />
+                              )}
+                            </div>
+                            <div className="flex-1 space-y-1">
+                              <h4
+                                className={`font-bold text-lg transition-colors ${
+                                  selectedVaccines.includes(vaccine.MaVacXin)
+                                    ? "text-blue-700"
+                                    : "text-slate-800 group-hover:text-blue-600"
+                                }`}
+                              >
+                                {vaccine.TenVacXin}
+                              </h4>
+                              <p className="text-sm text-slate-500 font-medium">
+                                Mã: {vaccine.MaVacXin}
+                              </p>
+                              {vaccine.MoTa && (
+                                <p className="text-xs text-slate-400 line-clamp-2">
+                                  {vaccine.MoTa}
+                                </p>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+
+                <div className="p-6 pt-0 bg-slate-50/50 space-y-3">
+                  <div className="flex items-center justify-between gap-4">
+                    <Button
+                      variant="outline"
+                      onClick={() => setVaccineDialogOpen(false)}
+                      className="h-12 px-6 rounded-xl font-bold"
+                    >
+                      Hủy
+                    </Button>
+                    <Button
+                      onClick={handleRegister}
+                      disabled={
+                        selectedVaccines.length !== selectedPackage?.ThoiHan ||
+                        registering
+                      }
+                      className="h-12 px-8 rounded-xl font-bold bg-blue-600 hover:bg-blue-700 text-white shadow-lg shadow-blue-100"
+                    >
+                      {registering ? (
+                        <>
+                          <Loader2 className="h-5 w-5 animate-spin mr-2" />
+                          Đang đăng ký...
+                        </>
+                      ) : (
+                        "Xác nhận đăng ký"
+                      )}
+                    </Button>
+                  </div>
+                  <p className="text-center text-xs text-slate-400 font-medium">
+                    * Bạn cần chọn đúng {selectedPackage?.ThoiHan} vaccine để
+                    tiếp tục
                   </p>
                 </div>
               </DialogContent>
@@ -296,35 +486,35 @@ export default function VaccinationPackagesPage() {
               return (
                 <div
                   key={pkg.MaGoiDK}
-                  className="group relative bg-white rounded-[2.5rem] border border-slate-100 shadow-sm hover:shadow-2xl hover:shadow-emerald-100/30 transition-all duration-500 overflow-hidden flex flex-col"
+                  className={`group relative bg-white rounded-[2.5rem] border-2 shadow-sm hover:shadow-2xl hover:shadow-emerald-100/30 transition-all duration-500 overflow-hidden flex flex-col ${
+                    isActive ? "border-emerald-200" : "border-slate-300"
+                  }`}
                 >
                   {/* Card Status Decoration */}
                   <div
                     className={`absolute top-0 right-0 w-32 h-32 -mt-16 -mr-16 rounded-full blur-2xl opacity-40 transition-colors duration-500 ${
-                      isActive ? "bg-emerald-400" : "bg-slate-300"
+                      isActive ? "bg-emerald-300" : "bg-slate-300"
                     }`}
                   />
 
                   <div className="p-8 relative z-10 space-y-8">
                     <div className="flex items-start justify-between">
-                      <div className="space-y-1">
-                        <div className="flex items-center gap-3">
-                          <h3 className="text-2xl font-black text-slate-800 tracking-tight transition-colors group-hover:text-emerald-700 capitalize">
-                            {pkg.displayName || pkg.LoaiGoi}
-                          </h3>
-                          <Badge
-                            className={`rounded-xl px-4 py-1.5 border-none font-black text-[10px] uppercase tracking-wider shadow-sm ${
-                              isActive
-                                ? "bg-emerald-100 text-emerald-700 shadow-emerald-100"
-                                : "bg-slate-100 text-slate-600 shadow-slate-100"
-                            }`}
-                          >
-                            {pkg.TrangThai}
-                          </Badge>
-                        </div>
-                        <p className="text-slate-400 font-bold text-xs uppercase tracking-widest pl-0.5">
-                          Mã: {pkg.MaGoiDK}
+                      <div className="space-y-2">
+                        <h3 className="text-2xl font-black text-slate-800 tracking-tight transition-colors group-hover:text-emerald-700 capitalize">
+                          {pkg.displayName || pkg.LoaiGoi}
+                        </h3>
+                        <p className="text-slate-400 font-bold text-xs uppercase tracking-widest">
+                          Mã gói: {pkg.MaGoiDK}
                         </p>
+                        <Badge
+                          className={`rounded-xl px-4 py-1.5 border-none font-black text-[10px] uppercase tracking-wider shadow-sm ${
+                            isActive
+                              ? "bg-emerald-100 text-emerald-600 shadow-emerald-100"
+                              : "bg-slate-100 text-slate-600 shadow-slate-100"
+                          }`}
+                        >
+                          {pkg.TrangThai}
+                        </Badge>
                       </div>
                       <div
                         className={`h-14 w-14 rounded-2xl flex items-center justify-center shadow-lg transition-transform duration-500 group-hover:scale-110 rotate-3 ${

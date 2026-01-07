@@ -140,13 +140,21 @@ class VaccinationsService {
    * Đăng ký gói tiêm phòng cho khách hàng
    */
   async subscribeToPackage(customerId, subscriptionData) {
-    const { LoaiGoi } = subscriptionData;
+    const { LoaiGoi, vaccines } = subscriptionData;
 
     if (!LoaiGoi) {
       return {
         success: false,
         status: 400,
         message: "Thiếu thông tin bắt buộc: LoaiGoi",
+      };
+    }
+
+    if (!vaccines || !Array.isArray(vaccines) || vaccines.length === 0) {
+      return {
+        success: false,
+        status: 400,
+        message: "Vui lòng chọn ít nhất một vaccine",
       };
     }
 
@@ -169,6 +177,16 @@ class VaccinationsService {
 
       const packageInfo = packageCheck.recordset[0];
       const thoiHan = packageInfo.ThoiHan;
+      const uuDai = packageInfo.UuDai;
+
+      // Kiểm tra số lượng vaccine có khớp với thời hạn không
+      if (vaccines.length !== thoiHan) {
+        return {
+          success: false,
+          status: 400,
+          message: `Gói ${thoiHan} tháng cần chọn đúng ${thoiHan} vaccine`,
+        };
+      }
 
       const today = new Date();
       today.setHours(0, 0, 0, 0);
@@ -204,11 +222,42 @@ class VaccinationsService {
         `
         );
 
+      const maGoiDK = newSubscription.recordset[0].MaGoiDK;
+
+      // Thêm các vaccine vào bảng VacXin_GoiDK
+      for (const maVacXin of vaccines) {
+        // Lấy giá gốc của vaccine
+        const vaccinePrice = await pool
+          .request()
+          .input("MaVacXin", sql.NVarChar, maVacXin)
+          .query(`SELECT GiaTien FROM dbo.VacXin WHERE MaVacXin = @MaVacXin`);
+
+        if (vaccinePrice.recordset.length > 0) {
+          const giaGoc = vaccinePrice.recordset[0].GiaTien;
+          const giaSauUuDai = Math.round(giaGoc * (1 - uuDai / 100));
+
+          await pool
+            .request()
+            .input("MaGoiDK", sql.Char(6), maGoiDK)
+            .input("MaVacXin", sql.NVarChar, maVacXin)
+            .input("GiaSauUuDai", sql.Int, giaSauUuDai)
+            .query(
+              `
+              INSERT INTO dbo.VacXin_GoiDK (MaGoiDK, MaVacXin, GiaSauUuDai)
+              VALUES (@MaGoiDK, @MaVacXin, @GiaSauUuDai)
+            `
+            );
+        }
+      }
+
       return {
         success: true,
         status: 201,
         message: "Đăng ký gói tiêm phòng thành công",
-        data: newSubscription.recordset[0],
+        data: {
+          ...newSubscription.recordset[0],
+          vaccinesCount: vaccines.length,
+        },
       };
     } catch (error) {
       console.error("Error subscribing to vaccination package:", error);

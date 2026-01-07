@@ -1,13 +1,11 @@
+// ReviewsPage.jsx ✅ Concept: "The Long Receipt" (1 khung trắng, chia section bằng dashed)
+// - Giữ nguyên toàn bộ logic fetch / create-update / delete
+// - Chỉ thay layout + UI theo receipt style (gọn, 1 khung, ngăn dashed)
+// - Vẫn giữ palette xanh (blue/cyan) như bạn đang dùng
+
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "../../components/ui/button";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "../../components/ui/card";
 import {
   Dialog,
   DialogContent,
@@ -22,24 +20,22 @@ import {
   AlertDialogCancel,
   AlertDialogContent,
   AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
   AlertDialogTitle,
 } from "../../components/ui/alert-dialog";
 import { Badge } from "../../components/ui/badge";
 import { Label } from "../../components/ui/label";
 import { Textarea } from "../../components/ui/textarea";
 import {
-  Heart,
   Star,
   Calendar,
-  Clock,
   MapPin,
   Loader2,
   Trash2,
   Edit,
   Briefcase,
   ChevronRight,
+  ChevronLeft,
+  Receipt,
 } from "lucide-react";
 import { ratingAPI } from "../../api/services";
 
@@ -47,10 +43,13 @@ export default function ReviewsPage() {
   const navigate = useNavigate();
   const [services, setServices] = useState([]);
   const [loading, setLoading] = useState(true);
+
   const [selectedService, setSelectedService] = useState(null);
   const [dialogOpen, setDialogOpen] = useState(false);
+
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [serviceToDelete, setServiceToDelete] = useState(null);
+
   const [submitting, setSubmitting] = useState(false);
 
   const [diemChatLuongDV, setDiemChatLuongDV] = useState(10);
@@ -60,6 +59,7 @@ export default function ReviewsPage() {
 
   useEffect(() => {
     fetchServices();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const fetchServices = async () => {
@@ -165,15 +165,16 @@ export default function ReviewsPage() {
 
   const ScoreSelector = ({ value, onChange, label }) => {
     return (
-      <div className="flex flex-col gap-3 bg-slate-50/50 p-4 rounded-[1.5rem] border border-slate-100 transition-all hover:bg-white hover:shadow-md hover:shadow-orange-100/30">
+      <div className="flex flex-col gap-2 bg-slate-50/70 p-3 rounded-xl border border-slate-200">
         <div className="flex items-center justify-between px-1">
-          <Label className="text-[10px] font-black uppercase text-slate-500 tracking-widest shrink-0">
+          <Label className="text-[9px] font-black uppercase text-slate-500 tracking-widest shrink-0">
             {label}
           </Label>
-          <div className="h-7 w-9 bg-white rounded-lg shadow-inner border border-slate-100 flex items-center justify-center font-bold text-xs text-orange-600">
+          <div className="h-6 w-8 bg-white rounded-md shadow-inner border border-slate-200 flex items-center justify-center font-black text-[10px] text-amber-600">
             {value}
           </div>
         </div>
+
         <div className="flex items-center justify-between w-full px-1">
           {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((num) => (
             <button
@@ -183,10 +184,10 @@ export default function ReviewsPage() {
               className="focus:outline-none transition-all hover:scale-125 active:scale-95 group/star"
             >
               <Star
-                className={`h-5 w-5 transition-colors ${
+                className={`h-3.5 w-3.5 transition-colors ${
                   num <= value
-                    ? "fill-orange-500 text-orange-500"
-                    : "text-slate-200 group-hover/star:text-orange-200"
+                    ? "fill-amber-500 text-amber-500"
+                    : "text-slate-200 group-hover/star:text-amber-200"
                 }`}
               />
             </button>
@@ -198,20 +199,20 @@ export default function ReviewsPage() {
 
   const ScoreDisplay = ({ value }) => {
     return (
-      <div className="flex items-center gap-3 bg-white px-3 py-1.5 rounded-full border border-slate-100 shadow-sm">
+      <div className="inline-flex items-center gap-2 bg-white px-3 py-1.5 rounded-full border border-slate-200 shadow-sm">
         <div className="flex gap-0.5">
           {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((num) => (
             <Star
               key={num}
-              className={`h-3 w-3 ${
+              className={`h-2.5 w-2.5 ${
                 num <= value
-                  ? "fill-orange-500 text-orange-500"
+                  ? "fill-amber-500 text-amber-500"
                   : "text-slate-100"
               }`}
             />
           ))}
         </div>
-        <div className="text-[10px] font-black text-slate-800 tracking-tighter w-8 text-center bg-slate-50 rounded-md py-0.5 border border-slate-100">
+        <div className="text-[10px] font-black text-slate-800 tracking-tighter w-10 text-center bg-slate-50 rounded-md py-0.5 border border-slate-200">
           {value}/10
         </div>
       </div>
@@ -223,413 +224,337 @@ export default function ReviewsPage() {
     const date = new Date(dateString);
     return date.toLocaleDateString("vi-VN", {
       day: "2-digit",
-      month: "long",
+      month: "2-digit",
       year: "numeric",
     });
   };
 
+  const serviceTitle = (s) => {
+    // bạn đang dùng LoaiDichVuSK để phân loại
+    if (s.LoaiDichVuSK === "Khám bệnh") return "Khám bệnh tổng quát";
+    return "Tiêm phòng định kỳ";
+  };
+
+  const totalReviewed = services.filter((s) => s.DaDanhGia).length;
+
   return (
-    <div className="min-h-screen bg-[#f8fafc] relative overflow-hidden">
-      {/* Decorative Blobs */}
-      <div className="absolute top-0 right-0 -mt-24 -mr-24 w-[600px] h-[600px] bg-orange-50 rounded-full blur-3xl opacity-60" />
-      <div className="absolute bottom-0 left-0 -mb-24 -ml-24 w-[500px] h-[500px] bg-blue-50 rounded-full blur-3xl opacity-60" />
+    <div className="min-h-screen bg-blue-50 py-10 px-4">
+      {/* NAV + ACTION */}
+      <div className="max-w-5xl mx-auto flex items-center justify-between mb-6">
+        <button
+          onClick={() => navigate(-1)}
+          className="flex items-center gap-2 text-slate-500 hover:text-blue-600 font-semibold transition-all hover:translate-x-[-4px]"
+        >
+          <ChevronLeft className="w-5 h-5" />
+          Quay lại
+        </button>
 
-      <main className="container mx-auto px-4 py-16 relative z-10">
-        <div className="max-w-5xl mx-auto">
-          <div className="flex flex-col md:flex-row md:items-end justify-between mb-12 gap-6">
-            <div className="space-y-4">
-              <div className="h-14 w-14 bg-white rounded-2xl shadow-xl shadow-orange-100 flex items-center justify-center border border-slate-50">
-                <Star className="h-7 w-7 text-orange-600 fill-orange-600" />
-              </div>
-              <div>
-                <h1 className="text-4xl font-black text-slate-900 tracking-tight">
-                  Lịch sử{" "}
-                  <span className="text-transparent bg-clip-text bg-gradient-to-r from-orange-600 to-amber-600">
-                    Đánh giá
-                  </span>
-                </h1>
-                <p className="text-slate-500 font-medium mt-2">
-                  Xem lại lịch sử sử dụng dịch vụ và chia sẻ trải nghiệm của bạn
-                </p>
-              </div>
-            </div>
+        <div className="flex items-center gap-3">
+          <Badge className="bg-white text-slate-700 border border-slate-200 rounded-full px-3 py-1 shadow-sm">
+            {services.length} dịch vụ
+          </Badge>
+          <Badge className="bg-emerald-50 text-emerald-700 border border-emerald-200 rounded-full px-3 py-1 shadow-sm">
+            {totalReviewed} đã đánh giá
+          </Badge>
+        </div>
+      </div>
 
-            <div className="bg-white/80 backdrop-blur-md rounded-3xl p-6 border border-slate-100 shadow-xl shadow-slate-200/50 flex items-center gap-6">
-              <div className="text-center">
-                <div className="text-2xl font-black text-orange-600">
-                  {services.length}
-                </div>
-                <div className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
-                  Dịch vụ
-                </div>
-              </div>
-              <div className="w-px h-8 bg-slate-100" />
-              <div className="text-center">
-                <div className="text-2xl font-black text-emerald-600">
-                  {services.filter((s) => s.DaDanhGia).length}
-                </div>
-                <div className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
-                  Đã đánh giá
-                </div>
-              </div>
-            </div>
+      {/* MAIN RECEIPT */}
+      <div className="max-w-5xl mx-auto bg-white shadow-xl rounded-3xl overflow-hidden">
+        <div className="h-2 bg-gradient-to-r from-blue-600 to-cyan-600" />
+
+        {/* HEADER */}
+        <div className="p-8 pb-6 text-center border-b border-dashed border-slate-200">
+          <div className="w-16 h-16 bg-blue-50 rounded-full flex items-center justify-center mx-auto mb-4">
+            <Receipt className="w-8 h-8 text-blue-600" />
           </div>
 
+          <h1 className="text-2xl font-black text-slate-800 uppercase tracking-wide">
+            Lịch sử đánh giá
+          </h1>
+          <p className="text-slate-500 mt-1 font-medium">
+            Xem lại dịch vụ đã sử dụng và chia sẻ trải nghiệm của bạn
+          </p>
+
+          <div className="mt-6 flex justify-center gap-6 text-sm text-slate-600">
+            <div className="flex flex-col items-center">
+              <span className="text-xs font-bold text-slate-400 uppercase">
+                Tổng dịch vụ
+              </span>
+              <span className="font-black text-slate-800 text-lg">
+                {services.length}
+              </span>
+            </div>
+            <div className="w-px h-10 bg-slate-200" />
+            <div className="flex flex-col items-center">
+              <span className="text-xs font-bold text-slate-400 uppercase">
+                Đã đánh giá
+              </span>
+              <span className="font-black text-emerald-600 text-lg">
+                {totalReviewed}
+              </span>
+            </div>
+          </div>
+        </div>
+
+        {/* BODY */}
+        <div className="p-8">
           {loading ? (
-            <div className="flex flex-col justify-center items-center py-32 space-y-4">
-              <div className="relative">
-                <div className="h-16 w-16 rounded-full border-4 border-orange-100 border-t-orange-600 animate-spin" />
-                <Star className="h-6 w-6 text-orange-600 absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 fill-orange-600" />
+            <div className="flex flex-col items-center justify-center py-16 space-y-4">
+              <div className="h-14 w-14 rounded-2xl bg-white shadow-lg border border-slate-200 flex items-center justify-center">
+                <Loader2 className="h-6 w-6 animate-spin text-blue-600" />
               </div>
-              <p className="text-slate-500 font-bold uppercase text-xs tracking-[0.2em]">
-                Đang tải dữ liệu...
+              <p className="text-slate-600 font-semibold">
+                Đang tải dữ liệu đánh giá...
               </p>
             </div>
           ) : services.length === 0 ? (
-            <Card className="rounded-[3rem] border-slate-100 bg-white/80 backdrop-blur-xl shadow-2xl shadow-slate-200/50 p-20 text-center border-2">
-              <CardContent className="space-y-6">
-                <div className="h-24 w-24 bg-slate-50 rounded-[2rem] flex items-center justify-center mx-auto mb-6">
-                  <Calendar className="h-12 w-12 text-slate-300" />
-                </div>
-                <div>
-                  <h3 className="text-2xl font-black text-slate-900 mb-2">
-                    Chưa có lịch sử dịch vụ
-                  </h3>
-                  <p className="text-slate-500 font-medium">
-                    Đặt lịch khám hoặc tiêm phòng để trải nghiệm dịch vụ của
-                    chúng tôi
-                  </p>
-                </div>
-                <Button
-                  variant="premium"
-                  className="h-12 px-8 rounded-2xl bg-gradient-to-r from-orange-600 to-amber-600 shadow-lg shadow-orange-200"
-                  onClick={() => navigate("/customer")}
-                >
-                  Đặt lịch ngay
-                </Button>
-              </CardContent>
-            </Card>
+            <div className="py-16 text-center">
+              <div className="w-16 h-16 rounded-2xl bg-slate-50 border border-slate-200 flex items-center justify-center mx-auto">
+                <Calendar className="w-7 h-7 text-slate-300" />
+              </div>
+              <h3 className="mt-5 text-xl font-black text-slate-900">
+                Chưa có lịch sử dịch vụ
+              </h3>
+              <p className="mt-2 text-slate-500 font-medium">
+                Đặt lịch khám hoặc tiêm phòng để trải nghiệm dịch vụ của chúng
+                tôi.
+              </p>
+              <Button
+                className="mt-6 h-12 px-8 rounded-2xl bg-gradient-to-r from-blue-600 to-cyan-600 text-white font-black border-none shadow-lg shadow-blue-200"
+                onClick={() => navigate("/customer")}
+              >
+                Đặt lịch ngay
+              </Button>
+            </div>
           ) : (
-            <div className="grid gap-8">
-              {services.map((service) => (
-                <Card
-                  key={`${service.MaHoaDon}-${service.STT}`}
-                  className={`rounded-[2.5rem] border-slate-100 bg-white/80 backdrop-blur-xl shadow-xl shadow-slate-200/40 transition-all duration-500 border-2 overflow-hidden group ${
-                    service.LoaiDichVuSK === "Khám bệnh"
-                      ? "hover:shadow-blue-100"
-                      : "hover:shadow-emerald-100"
-                  }`}
-                >
-                  <div
-                    className={`h-2 w-full ${
-                      service.LoaiDichVuSK === "Khám bệnh"
-                        ? "bg-blue-600"
-                        : "bg-emerald-500"
-                    }`}
-                  />
-                  <CardContent className="p-8">
-                    <div className="flex flex-col lg:flex-row gap-8">
-                      <div className="flex-1">
-                        <div className="flex items-center gap-4 mb-6 flex-wrap">
-                          <div
-                            className={`h-12 w-12 rounded-2xl flex items-center justify-center ${
-                              service.LoaiDichVuSK === "Khám bệnh"
-                                ? "bg-blue-100 text-blue-600"
-                                : "bg-emerald-100 text-emerald-600"
-                            }`}
-                          >
-                            {service.LoaiDichVuSK === "Khám bệnh" ? (
-                              <Edit className="h-6 w-6" />
-                            ) : (
-                              <Star className="h-6 w-6" />
-                            )}
-                          </div>
-                          <div>
-                            <h3 className="text-xl font-black text-slate-900 tracking-tight">
-                              {service.LoaiDichVuSK === "Khám bệnh"
-                                ? "Khám bệnh tổng quát"
-                                : "Tiêm phòng định kỳ"}
-                            </h3>
-                            <div className="flex items-center gap-2 mt-1">
-                              <Badge
-                                variant="secondary"
-                                className="bg-slate-100 text-slate-600 font-bold text-[10px] uppercase tracking-wider rounded-lg px-2 py-0.5"
-                              >
+            <div className="space-y-4">
+              <div className="text-xs font-bold text-blue-600 uppercase tracking-wider">
+                Danh sách dịch vụ
+              </div>
+
+              {/* LIST: mỗi item là 1 dòng, ngăn dashed */}
+              <div className="divide-y divide-dashed divide-blue-200 rounded-2xl border border-blue-200 overflow-hidden">
+                {services.map((service, idx) => {
+                  const key = `${service.MaHoaDon}-${service.STT}`;
+                  const reviewed = !!service.DaDanhGia;
+
+                  return (
+                    <div
+                      key={key}
+                      className="group bg-white hover:bg-blue-50/30 transition-all duration-300 hover:shadow-md cursor-pointer"
+                    >
+                      <div className="p-5 flex flex-col lg:flex-row lg:items-center gap-4">
+                        {/* LEFT: idx + title + tags */}
+                        <div className="flex items-start gap-4 flex-1 min-w-0">
+                          <span className="w-8 h-8 rounded-full bg-blue-600 text-white text-xs font-black flex items-center justify-center shrink-0 mt-0.5 group-hover:scale-110 transition-transform">
+                            {idx + 1}
+                          </span>
+
+                          <div className="min-w-0 flex-1">
+                            <div className="flex items-center gap-2 flex-wrap">
+                              <p className="text-slate-900 font-black truncate">
+                                {serviceTitle(service)}
+                              </p>
+
+                              <Badge className="bg-slate-100 text-slate-700 border-none text-[10px] uppercase tracking-wider rounded-full">
                                 #{service.MaHoaDon}-{service.STT}
                               </Badge>
-                              {service.DaDanhGia ? (
-                                <Badge className="bg-emerald-100 text-emerald-700 font-black text-[10px] uppercase tracking-wider rounded-lg px-2 py-0.5 border-none">
-                                  Đã hoàn tất đánh giá
+
+                              {reviewed ? (
+                                <Badge className="bg-emerald-50 text-emerald-700 border border-emerald-200 text-[10px] uppercase tracking-wider rounded-full">
+                                  Đã đánh giá
                                 </Badge>
                               ) : (
-                                <Badge className="bg-amber-100 text-amber-700 font-black text-[10px] uppercase tracking-wider rounded-lg px-2 py-0.5 border-none animate-pulse">
+                                <Badge className="bg-amber-50 text-amber-700 border border-amber-200 text-[10px] uppercase tracking-wider rounded-full">
                                   Chưa đánh giá
                                 </Badge>
                               )}
                             </div>
-                          </div>
-                        </div>
 
-                        <div className="grid md:grid-cols-2 gap-y-4 gap-x-8">
-                          <div className="flex items-center gap-3 group/item">
-                            <div className="h-8 w-8 rounded-xl bg-slate-50 flex items-center justify-center text-slate-400 group-hover/item:text-orange-600 transition-colors">
-                              <Calendar className="h-4 w-4" />
-                            </div>
-                            <div>
-                              <div className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
-                                Ngày sử dụng
+                            {/* meta row */}
+                            <div className="mt-2 grid grid-cols-1 sm:grid-cols-3 gap-2 text-sm">
+                              <div className="flex items-center gap-2 text-slate-600 min-w-0 group-hover:text-blue-600 transition-colors">
+                                <Calendar className="w-4 h-4 text-slate-400 group-hover:text-blue-500 transition-colors" />
+                                <span className="font-semibold truncate">
+                                  {formatDate(service.NgayLap)}
+                                </span>
                               </div>
-                              <div className="text-sm font-black text-slate-700">
-                                {formatDate(service.NgayLap)}
-                              </div>
-                            </div>
-                          </div>
 
-                          <div className="flex items-center gap-3 group/item">
-                            <div className="h-8 w-8 rounded-xl bg-slate-50 flex items-center justify-center text-slate-400 group-hover/item:text-orange-600 transition-colors">
-                              <MapPin className="h-4 w-4" />
-                            </div>
-                            <div>
-                              <div className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
-                                Chi nhánh
+                              <div className="flex items-center gap-2 text-slate-600 min-w-0 group-hover:text-blue-600 transition-colors">
+                                <MapPin className="w-4 h-4 text-slate-400 group-hover:text-blue-500 transition-colors" />
+                                <span className="font-semibold truncate">
+                                  {service.TenChiNhanh || "Chi nhánh PetCare"}
+                                </span>
                               </div>
-                              <div className="text-sm font-black text-slate-700">
-                                {service.TenChiNhanh || "Chi nhánh PetCare"}
-                              </div>
-                            </div>
-                          </div>
 
-                          {service.TenThuCung && (
-                            <div className="flex items-center gap-3 group/item">
-                              <div className="h-8 w-8 rounded-xl bg-pink-50 flex items-center justify-center text-pink-400 group-hover/item:bg-pink-100 transition-all">
-                                <Heart className="h-4 w-4 fill-current" />
+                              <div className="flex items-center gap-2 text-slate-600 min-w-0 group-hover:text-blue-600 transition-colors">
+                                <Briefcase className="w-4 h-4 text-slate-400 group-hover:text-blue-500 transition-colors" />
+                                <span className="font-black text-blue-600 truncate">
+                                  {service.ThanhTien?.toLocaleString("vi-VN")} đ
+                                </span>
                               </div>
-                              <div>
-                                <div className="text-[10px] font-bold text-pink-400 uppercase tracking-widest">
-                                  Thú cưng
-                                </div>
-                                <div className="text-sm font-black text-slate-700">
-                                  {service.TenThuCung}{" "}
-                                  <span className="text-slate-400 font-medium font-sans">
-                                    ({service.LoaiThuCung})
+                            </div>
+
+                            {/* quick score preview (nếu đã đánh giá) */}
+                            {reviewed && service.DanhGia ? (
+                              <div className="mt-3 flex flex-wrap gap-3">
+                                <div className="flex items-center gap-2">
+                                  <span className="text-[10px] font-black text-slate-400 uppercase tracking-wider">
+                                    Tổng thể
                                   </span>
+                                  <ScoreDisplay
+                                    value={service.DanhGia.DiemTongThe || 10}
+                                  />
                                 </div>
                               </div>
-                            </div>
-                          )}
-
-                          <div className="flex items-center gap-3 group/item">
-                            <div className="h-8 w-8 rounded-xl bg-slate-50 flex items-center justify-center text-slate-400 group-hover/item:text-orange-600 transition-colors">
-                              <Briefcase className="h-4 w-4" />
-                            </div>
-                            <div>
-                              <div className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
-                                Chi phí dịch vụ
-                              </div>
-                              <div className="text-sm font-black text-orange-600">
-                                {service.ThanhTien?.toLocaleString("vi-VN")}{" "}
-                                <span className="text-xs uppercase ml-0.5">
-                                  vnđ
-                                </span>
-                              </div>
-                            </div>
+                            ) : null}
                           </div>
                         </div>
 
-                        {service.DaDanhGia && service.DanhGia && (
-                          <div className="mt-8 p-6 bg-slate-50/50 rounded-[2rem] border border-slate-100/50 backdrop-blur-sm relative overflow-hidden group/review hover:bg-white transition-all duration-500">
-                            <div className="absolute top-0 right-0 p-4">
-                              <Star className="h-12 w-12 text-orange-100 opacity-50 -mr-4 -mt-4 transition-transform group-hover/review:scale-125" />
-                            </div>
-                            <div className="flex items-center gap-3 mb-4 relative z-10">
-                              <div className="h-8 w-8 bg-orange-600 rounded-lg flex items-center justify-center text-white">
-                                <Star className="h-4 w-4 fill-current" />
-                              </div>
-                              <span className="font-black text-slate-800 uppercase text-xs tracking-widest">
-                                Đánh giá của bạn
-                              </span>
-                            </div>
-
-                            <div className="space-y-4 relative z-10">
-                              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 py-3 border-b border-slate-100">
-                                <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">
-                                  Chất lượng dịch vụ
-                                </span>
-                                <ScoreDisplay
-                                  value={service.DanhGia.DiemChatLuongDV}
-                                />
-                              </div>
-                              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 py-3 border-b border-slate-100">
-                                <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">
-                                  Thái độ nhân viên
-                                </span>
-                                <ScoreDisplay
-                                  value={service.DanhGia.DiemThaiDoNV}
-                                />
-                              </div>
-                              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 py-3">
-                                <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">
-                                  Đánh giá tổng thể
-                                </span>
-                                <ScoreDisplay
-                                  value={service.DanhGia.DiemTongThe}
-                                />
-                              </div>
-
-                              {service.DanhGia.BinhLuan && (
-                                <div className="mt-4 p-4 bg-white rounded-2xl border-l-4 border-orange-500 shadow-sm italic text-slate-600 text-sm leading-relaxed">
-                                  "{service.DanhGia.BinhLuan}"
-                                </div>
-                              )}
-                            </div>
-                          </div>
-                        )}
-                      </div>
-
-                      <div className="flex flex-col sm:flex-row lg:flex-col gap-3 min-w-[180px]">
-                        <Button
-                          variant="premium"
-                          className={`flex-1 h-14 rounded-2xl font-black text-xs uppercase tracking-widest shadow-xl transition-all active:scale-[0.98] ${
-                            service.DaDanhGia
-                              ? "bg-white text-slate-900 border border-slate-100 hover:bg-slate-50 shadow-slate-200"
-                              : "bg-gradient-to-r from-orange-600 to-amber-600 text-white shadow-orange-200 hover:shadow-orange-400 border-none"
-                          }`}
-                          onClick={() => handleOpenDialog(service)}
-                        >
-                          {service.DaDanhGia ? (
-                            <div className="flex items-center gap-2">
-                              <Edit className="h-4 w-4" />
-                              Sửa cảm nghĩ
-                            </div>
-                          ) : (
-                            <div className="flex items-center gap-2">
-                              <Star className="h-4 w-4 fill-current" />
-                              Tạo đánh giá
-                            </div>
-                          )}
-                        </Button>
-
-                        {service.DaDanhGia && (
+                        {/* RIGHT: actions */}
+                        <div className="flex items-center gap-2 justify-end">
                           <Button
-                            variant="outline"
-                            className="flex-1 h-14 rounded-2xl border-2 border-red-50 font-black text-xs uppercase tracking-widest text-red-500 hover:bg-red-50 hover:border-red-100 transition-all active:scale-[0.98]"
-                            onClick={() => handleDeleteClick(service)}
+                            className={`h-11 rounded-2xl font-black text-xs uppercase tracking-widest px-4 shadow-sm transition-all active:scale-[0.98] ${
+                              reviewed
+                                ? "bg-white text-slate-800 border border-slate-200 hover:bg-slate-50 hover:border-blue-300"
+                                : "bg-gradient-to-r from-blue-600 to-cyan-600 text-white border-none shadow-blue-200 hover:shadow-blue-300 hover:scale-105"
+                            }`}
+                            onClick={() => handleOpenDialog(service)}
                           >
-                            <Trash2 className="h-4 w-4 mr-2" />
-                            Xóa bỏ
+                            {reviewed ? (
+                              <span className="flex items-center gap-2">
+                                <Edit className="w-4 h-4" />
+                                Sửa
+                              </span>
+                            ) : (
+                              <span className="flex items-center gap-2">
+                                <Star className="w-4 h-4 fill-current" />
+                                Đánh giá
+                              </span>
+                            )}
                           </Button>
-                        )}
+
+                          {reviewed ? (
+                            <Button
+                              variant="outline"
+                              className="h-11 rounded-2xl border border-red-200 text-red-600 hover:bg-red-600 hover:text-white hover:scale-105 font-black text-xs uppercase tracking-widest px-3 transition-all"
+                              onClick={() => handleDeleteClick(service)}
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </Button>
+                          ) : null}
+                        </div>
                       </div>
                     </div>
-                  </CardContent>
-                </Card>
-              ))}
+                  );
+                })}
+              </div>
             </div>
           )}
         </div>
-      </main>
+      </div>
 
+      {/* ====== DIALOG: CREATE/UPDATE ====== */}
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-        <DialogContent className="max-w-2xl rounded-[3rem] p-0 overflow-hidden border-none shadow-2xl">
-          <div className="h-2 bg-gradient-to-r from-orange-500 to-amber-500" />
-          <DialogHeader className="p-8 pb-0">
-            <div className="flex items-center gap-4 mb-4">
-              <div className="h-12 w-12 bg-orange-100 rounded-2xl flex items-center justify-center text-orange-600">
-                <Star className="h-6 w-6 fill-current" />
+        <DialogContent className="max-w-xl rounded-[1.5rem] p-0 overflow-hidden border-none shadow-2xl">
+          <div className="h-1.5 bg-gradient-to-r from-blue-600 to-cyan-600" />
+
+          <DialogHeader className="p-5 pb-0">
+            <div className="flex items-center gap-3 mb-3">
+              <div className="h-9 w-9 bg-blue-50 rounded-xl flex items-center justify-center text-blue-600 border border-blue-100 group-hover:scale-110 transition-transform">
+                <Star className="h-4 w-4 fill-current group-hover:rotate-12 transition-transform" />
               </div>
               <div>
-                <DialogTitle className="text-2xl font-black text-slate-900 tracking-tight">
+                <DialogTitle className="text-lg font-black text-slate-900 tracking-tight">
                   {selectedService?.DaDanhGia
                     ? "Cập nhật đánh giá"
                     : "Gửi đánh giá dịch vụ"}
                 </DialogTitle>
-                <DialogDescription className="text-xs font-bold text-slate-400 uppercase tracking-widest mt-1">
-                  {selectedService?.LoaiDichVuSK} •{" "}
+                <DialogDescription className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-0.5">
+                  #{selectedService?.MaHoaDon}-{selectedService?.STT} •{" "}
                   {selectedService?.TenChiNhanh}
                 </DialogDescription>
               </div>
             </div>
           </DialogHeader>
-          <div className="p-8 pt-2 space-y-4">
-            <div className="grid gap-3">
-              <ScoreSelector
-                value={diemChatLuongDV}
-                onChange={setDiemChatLuongDV}
-                label="Chất lượng dịch vụ"
-              />
-              <ScoreSelector
-                value={diemThaiDoNV}
-                onChange={setDiemThaiDoNV}
-                label="Thái độ nhân viên"
-              />
-              <ScoreSelector
-                value={diemTongThe}
-                onChange={setDiemTongThe}
-                label="Đánh giá tổng thể"
-              />
-              <div className="space-y-3 bg-slate-50/50 p-4 rounded-[1.5rem] border border-slate-100">
-                <div className="flex items-center justify-between ml-1">
-                  <Label
-                    htmlFor="binhLuan"
-                    className="text-[10px] font-black uppercase text-slate-500 tracking-widest"
-                  >
-                    Bình luận chi tiết
-                  </Label>
-                  <div className="text-[9px] font-black text-slate-400 uppercase tracking-widest bg-white px-2 py-0.5 rounded-md border border-slate-100">
-                    {binhLuan.length}/100 ký tự
-                  </div>
+
+          <div className="p-5 pt-2 space-y-3">
+            <ScoreSelector
+              value={diemChatLuongDV}
+              onChange={setDiemChatLuongDV}
+              label="Chất lượng dịch vụ"
+            />
+            <ScoreSelector
+              value={diemThaiDoNV}
+              onChange={setDiemThaiDoNV}
+              label="Thái độ nhân viên"
+            />
+            <ScoreSelector
+              value={diemTongThe}
+              onChange={setDiemTongThe}
+              label="Đánh giá tổng thể"
+            />
+
+            <div className="space-y-2 bg-slate-50/70 p-3 rounded-xl border border-slate-200">
+              <div className="flex items-center justify-between px-1">
+                <Label
+                  htmlFor="binhLuan"
+                  className="text-[9px] font-black uppercase text-slate-500 tracking-widest"
+                >
+                  Bình luận chi tiết
+                </Label>
+                <div className="text-[8px] font-black text-slate-400 uppercase tracking-widest bg-white px-1.5 py-0.5 rounded border border-slate-200">
+                  {binhLuan.length}/100
                 </div>
-                <Textarea
-                  id="binhLuan"
-                  placeholder="Chia sẻ cảm nhận của bạn về chất lượng phục vụ..."
-                  className="h-24 rounded-xl border-none bg-white shadow-inner transition-all focus:ring-2 focus:ring-orange-500/20 p-4 text-sm font-medium resize-none placeholder:text-slate-400/50"
-                  value={binhLuan}
-                  onChange={(e) => setBinhLuan(e.target.value)}
-                  maxLength={100}
-                />
               </div>
+              <Textarea
+                id="binhLuan"
+                placeholder="Chia sẻ cảm nhận của bạn..."
+                className="h-20 rounded-lg border border-slate-200 bg-white shadow-inner focus:ring-2 focus:ring-blue-500/20 p-3 text-xs font-medium resize-none placeholder:text-slate-400/70"
+                value={binhLuan}
+                onChange={(e) => setBinhLuan(e.target.value)}
+                maxLength={100}
+              />
             </div>
           </div>
-          <DialogFooter className="p-8 pt-0 flex gap-3">
+
+          <DialogFooter className="p-5 pt-0 flex gap-2">
             <Button
               variant="outline"
-              className="h-14 rounded-2xl flex-1 font-black uppercase text-xs tracking-widest border-2 border-slate-100 text-slate-500"
+              className="h-10 rounded-xl flex-1 font-black uppercase text-[10px] tracking-widest border border-slate-200 text-slate-600 hover:bg-slate-50 hover:border-slate-300 transition-all"
               onClick={() => setDialogOpen(false)}
               disabled={submitting}
             >
               Để sau
             </Button>
             <Button
-              variant="premium"
-              className="h-14 rounded-2xl flex-[2] font-black uppercase text-xs tracking-widest bg-gradient-to-r from-orange-600 to-amber-600 border-none shadow-xl shadow-orange-200"
+              className="h-10 rounded-xl flex-[2] font-black uppercase text-[10px] tracking-widest bg-gradient-to-r from-blue-600 to-cyan-600 border-none shadow-lg shadow-blue-200 hover:shadow-blue-300 hover:scale-105 transition-all"
               onClick={handleSubmitReview}
               disabled={submitting}
             >
               {submitting ? (
-                <div className="flex items-center gap-2">
-                  <Loader2 className="h-4 w-4 animate-spin" />
+                <span className="flex items-center gap-1.5">
+                  <Loader2 className="h-3.5 w-3.5 animate-spin" />
                   Đang ghi nhận...
-                </div>
+                </span>
               ) : (
-                <div className="flex items-center gap-2">
-                  <span>
-                    {selectedService?.DaDanhGia
-                      ? "Lưu thay đổi"
-                      : "Xác nhận gửi"}
-                  </span>
-                  <ChevronRight className="h-4 w-4" />
-                </div>
+                <span className="flex items-center gap-1.5 text-white">
+                  {selectedService?.DaDanhGia ? "Lưu thay đổi" : "Xác nhận gửi"}
+                  <ChevronRight className="h-3.5 w-3.5" />
+                </span>
               )}
             </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
 
+      {/* ====== ALERT: DELETE ====== */}
       <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
-        <AlertDialogContent className="max-w-[400px] rounded-[2.5rem] p-0 overflow-hidden border-none shadow-2xl bg-white">
+        <AlertDialogContent className="max-w-[420px] rounded-[2rem] p-0 overflow-hidden border-none shadow-2xl bg-white">
           <div className="h-2 bg-red-500" />
           <div className="p-8 text-center space-y-6">
-            <div className="h-20 w-20 bg-red-50 rounded-[2rem] flex items-center justify-center mx-auto transition-transform hover:scale-110 duration-500">
+            <div className="h-20 w-20 bg-red-50 rounded-[1.75rem] border border-red-100 flex items-center justify-center mx-auto">
               <Trash2 className="h-10 w-10 text-red-500" />
             </div>
 
@@ -637,7 +562,7 @@ export default function ReviewsPage() {
               <AlertDialogTitle className="text-2xl font-black text-slate-900 tracking-tight">
                 Xác nhận xóa
               </AlertDialogTitle>
-              <AlertDialogDescription className="text-sm font-medium text-slate-500 px-4">
+              <AlertDialogDescription className="text-sm font-medium text-slate-500 px-3">
                 Hành động này sẽ xóa vĩnh viễn đánh giá của bạn. Bạn có chắc
                 chắn muốn tiếp tục?
               </AlertDialogDescription>
@@ -645,23 +570,24 @@ export default function ReviewsPage() {
 
             <div className="flex gap-3 pt-2">
               <AlertDialogCancel
-                className="flex-1 h-14 rounded-2xl border-2 border-slate-100 font-black uppercase text-xs tracking-widest text-slate-400 hover:bg-slate-50 hover:text-slate-600 transition-all"
+                className="flex-1 h-12 rounded-2xl border border-slate-200 font-black uppercase text-xs tracking-widest text-slate-600 hover:bg-slate-50 hover:border-slate-300 hover:scale-105 transition-all"
                 disabled={submitting}
               >
-                Hủy bỏ
+                Hủy
               </AlertDialogCancel>
+
               <AlertDialogAction
                 onClick={handleConfirmDelete}
                 disabled={submitting}
-                className="flex-[1.5] h-14 rounded-2xl bg-gradient-to-r from-red-600 to-rose-600 text-white font-black uppercase text-xs tracking-widest shadow-xl shadow-red-100 hover:shadow-red-200 hover:scale-[1.02] active:scale-[0.98] transition-all border-none"
+                className="flex-[1.5] h-12 rounded-2xl bg-gradient-to-r from-red-600 to-rose-600 text-white font-black uppercase text-xs tracking-widest shadow-lg shadow-red-100 hover:shadow-red-200 hover:scale-105 transition-all border-none"
               >
                 {submitting ? (
-                  <div className="flex items-center gap-2">
+                  <span className="flex items-center gap-2">
                     <Loader2 className="h-4 w-4 animate-spin" />
-                    <span>Đang xóa...</span>
-                  </div>
+                    Đang xóa...
+                  </span>
                 ) : (
-                  "Xác nhận xóa"
+                  "Xóa đánh giá"
                 )}
               </AlertDialogAction>
             </div>
