@@ -58,29 +58,34 @@ router.get(
 /**
  * @route   GET /api/appointments/schedule
  * @desc    Lịch hẹn theo chi nhánh/bác sĩ/ngày
- * @access  Private - NHAN_VIEN
+ * @access  Private - NHAN_VIEN, ADMIN
  */
-router.get('/schedule', authenticate, authorize(ROLES.EMPLOYEE, ROLES.ADMIN), (req, res) => {
-  res.json({ message: 'Get schedule' });
-});
+router.get('/schedule', 
+  authenticate, 
+  authorize(ROLES.EMPLOYEE, ROLES.ADMIN), 
+  appointmentsController.getSchedule
+);
 
 /**
  * @route   GET /api/appointments/:id
  * @desc    Chi tiết lịch hẹn
- * @access  Private
+ * @access  Private (Staff/Admin xem chi tiết)
  */
-router.get('/:id', authenticate, (req, res) => {
-  res.json({ message: 'Get appointment details' });
-});
+router.get('/:id', 
+  authenticate, 
+  appointmentsController.getById
+);
 
 /**
  * @route   PUT /api/appointments/:id
- * @desc    Cập nhật lịch hẹn
- * @access  Private
+ * @desc    Cập nhật lịch hẹn (Dời lịch, đổi bác sĩ)
+ * @access  Private (Thường là Staff/Admin)
  */
-router.put('/:id', authenticate, (req, res) => {
-  res.json({ message: 'Update appointment' });
-});
+router.put('/:id', 
+  authenticate, 
+  //authorize(ROLES.EMPLOYEE, ROLES.ADMIN), // Thêm authorize nếu muốn chặn khách tự sửa
+  appointmentsController.update
+);
 
 /**
  * @route   PUT /api/appointments/:id/cancel
@@ -99,18 +104,22 @@ router.put(
  * @desc    Xác nhận lịch hẹn
  * @access  Private - NHAN_VIEN
  */
-router.put('/:id/confirm', authenticate, authorize(ROLES.EMPLOYEE, ROLES.ADMIN), (req, res) => {
-  res.json({ message: 'Confirm appointment' });
-});
+router.put('/:id/confirm', 
+  authenticate, 
+  authorize(ROLES.EMPLOYEE, ROLES.ADMIN), 
+  appointmentsController.confirm
+);
 
 /**
  * @route   PUT /api/appointments/:id/complete
  * @desc    Hoàn thành lịch hẹn
  * @access  Private - NHAN_VIEN
  */
-router.put('/:id/complete', authenticate, authorize(ROLES.EMPLOYEE, ROLES.ADMIN), (req, res) => {
-  res.json({ message: 'Complete appointment' });
-});
+router.put('/:id/complete', 
+  authenticate, 
+  authorize(ROLES.EMPLOYEE, ROLES.ADMIN), 
+  appointmentsController.complete
+);
 
 module.exports = router;
 

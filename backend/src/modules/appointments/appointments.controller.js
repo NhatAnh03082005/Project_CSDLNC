@@ -106,6 +106,79 @@ class AppointmentsController {
             next(error);
         }
     }
+// ---------------------- API cho staff and admin - DƯƠNG ----
+    // GET /api/appointments/schedule
+  async getSchedule(req, res, next) {
+    try {
+      // Lấy các tham số filter từ query param
+      const { branchId, doctorId, date, status } = req.query;
+      
+      const result = await appointmentsService.getStaffSchedule({ 
+        branchId, 
+        doctorId, 
+        date, 
+        status 
+      });
+      
+      return res.json(result);
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  // GET /api/appointments/:id
+  async getById(req, res, next) {
+    try {
+      const { id } = req.params;
+      const result = await appointmentsService.getAppointmentDetail(id);
+      
+      if (!result.success) {
+        return res.status(404).json(result);
+      }
+      return res.json(result);
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  // PUT /api/appointments/:id
+  async update(req, res, next) {
+    try {
+      const { id } = req.params;
+      const data = req.body; // { ThoiGianHen, BacSiPhuTrach, ... }
+      
+      const result = await appointmentsService.updateAppointment(id, data);
+      
+      if (!result.success) {
+        return res.status(400).json(result);
+      }
+      return res.json(result);
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  // PUT /api/appointments/:id/confirm
+  async confirm(req, res, next) {
+    try {
+      const { id } = req.params;
+      const result = await appointmentsService.confirmAppointment(id);
+      return res.json(result);
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  // PUT /api/appointments/:id/complete
+  async complete(req, res, next) {
+    try {
+      const { id } = req.params;
+      const result = await appointmentsService.completeAppointment(id);
+      return res.json(result);
+    } catch (error) {
+      next(error);
+    }
+  }
 }
 
 module.exports = new AppointmentsController();

@@ -75,7 +75,6 @@ async function createAppointment(customerId, appointmentData) {
   const today = new Date();
   today.setHours(0, 0, 0, 0);
   appointmentDate.setHours(0, 0, 0, 0);
-
   if (appointmentDate < today) {
     return {
       success: false,
@@ -894,6 +893,195 @@ async function getAvailableDoctors(params) {
     };
   }
 }
+// --- CÁC HÀM DÀNH CHO NHÂN VIÊN / ADMIN --- DƯƠNG
+
+/**
+ * Lấy lịch hẹn theo filter (Chi nhánh, Bác sĩ, Ngày)
+ */
+async function getStaffSchedule({ branchId, doctorId, date, status }) {
+  try {
+    const pool = await poolPromise;
+    const request = pool.request();
+
+    // Query cơ bản join với Khách hàng và Bác sĩ để lấy tên
+    let query = `
+      SELECT 
+        lh.MaLichHen,
+        lh.ThoiGianHen,
+        lh.LoaiDichVu,
+        lh.TrangThai,
+        lh.MaChiNhanh,
+        kh.MaKhachHang,
+        kh.HoTen AS TenKhachHang,
+        kh.SDT AS SDTKhachHang,
+        nv.HoTen AS TenBacSi
+      FROM dbo.LichHen lh
+      LEFT JOIN dbo.KhachHang kh ON lh.MaKhachHang = kh.MaKhachHang
+      LEFT JOIN dbo.NhanVien nv ON lh.BacSiPhuTrach = nv.MaNhanVien
+      WHERE 1=1
+    `;
+
+    // Filter theo Chi nhánh
+    if (branchId) {
+      query += ` AND lh.MaChiNhanh = @MaChiNhanh`;
+      request.input('MaChiNhanh', sql.Char(4), branchId);
+    }
+
+    // Filter theo Bác sĩ
+    if (doctorId) {
+      query += ` AND lh.BacSiPhuTrach = @BacSiPhuTrach`;
+      request.input('BacSiPhuTrach', sql.Char(5), doctorId);
+    }
+
+    // Filter theo Ngày
+    if (date) {
+      query += ` AND lh.ThoiGianHen = @ThoiGianHen`;
+      request.input('ThoiGianHen', sql.Date, date);
+    }
+
+    // Filter theo Trạng thái (nếu cần)
+    if (status) {
+      query += ` AND lh.TrangThai = @TrangThai`;
+      request.input('TrangThai', sql.NVarChar(20), status);
+    }
+
+    query += ` ORDER BY lh.ThoiGianHen ASC`;
+
+    const result = await request.query(query);
+    
+    // Format lại ngày tháng trước khi trả về
+    const data = result.recordset.map(item => ({
+        ...item,
+        ThoiGianHen: formatDateForResponse(item.ThoiGianHen)
+    }));
+
+    return { success: true, data };
+  } catch (error) {
+    console.error("Error getStaffSchedule:", error);
+    throw error;
+  }
+}
+
+/**
+ * Lấy chi tiết lịch hẹn
+ */
+async function getAppointmentDetail(id) {
+  try {
+    const pool = await poolPromise;
+    const result = await pool.request()
+      .input('MaLichHen', sql.Char(8), id)
+      .query(`
+        SELECT 
+          lh.*,
+          kh.HoTen AS TenKhachHang,
+          kh.SDT AS SDTKhachHang,
+          nv.HoTen AS TenBacSi,
+       -- nl.HoTen AS TenNhanVienLap, đang bị sai ở đây
+          cn.TenChiNhanh
+        FROM dbo.LichHen lh
+        LEFT JOIN dbo.KhachHang kh ON lh.MaKhachHang = kh.MaKhachHang
+        LEFT JOIN dbo.NhanVien nv ON lh.BacSiPhuTrach = nv.MaNhanVien
+     --LEFT JOIN dbo.NhanVien nl ON lh.NhanVienLap = nl.MaNhanVien câu query này bị sai vì lịch hẹn không có nhân viên lập
+        LEFT JOIN dbo.ChiNhanh cn ON lh.MaChiNhanh = cn.MaChiNhanh
+        WHERE lh.MaLichHen = @MaLichHen
+      `);
+
+    if (result.recordset.length === 0) {
+      return { success: false, message: "Lịch hẹn không tồn tại" };
+    }
+
+    const data = result.recordset[0];
+    data.ThoiGianHen = formatDateForResponse(data.ThoiGianHen);
+    data.NgayLap = formatDateForResponse(data.NgayLap);
+
+    return { success: true, data };
+  } catch (error) {
+    console.error("Error getAppointmentDetail:", error);
+    throw error;
+  }
+}
+
+/**
+ * Cập nhật thông tin lịch hẹn (Dời lịch, đổi bác sĩ)
+ */
+async function updateAppointment(id, data) {
+  try {
+    const pool = await poolPromise;
+    
+    // Kiểm tra tồn tại
+    const check = await pool.request()
+        .input('MaLichHen', sql.Char(8), id)
+        .query("SELECT TrangThai FROM dbo.LichHen WHERE MaLichHen = @MaLichHen");
+    
+    if(check.recordset.length === 0) return { success: false, message: "Không tìm thấy lịch hẹn" };
+    if(check.recordset[0].TrangThai === 'Hoàn thành') return { success: false, message: "Không thể cập nhật lịch hẹn đã hoàn thành" };
+
+    const request = pool.request()
+      .input('MaLichHen', sql.Char(8), id);
+
+    let query = `UPDATE dbo.LichHen SET `;
+    const updates = [];
+
+    if (data.ThoiGianHen) {
+      updates.push(`ThoiGianHen = @ThoiGianHen`);
+      request.input('ThoiGianHen', sql.Date, data.ThoiGianHen);
+    }
+    if (data.BacSiPhuTrach) {
+      updates.push(`BacSiPhuTrach = @BacSiPhuTrach`);
+      request.input('BacSiPhuTrach', sql.Char(5), data.BacSiPhuTrach);
+    }
+    if (data.LoaiDichVu) {
+      updates.push(`LoaiDichVu = @LoaiDichVu`);
+      request.input('LoaiDichVu', sql.NVarChar(20), data.LoaiDichVu);
+    }
+
+    if (updates.length === 0) return { success: false, message: "Không có dữ liệu cập nhật" };
+
+    query += updates.join(", ");
+    query += ` WHERE MaLichHen = @MaLichHen`;
+
+    await request.query(query);
+    return { success: true, message: "Cập nhật thành công" };
+  } catch (error) {
+    console.error("Error updateAppointment:", error);
+    throw error;
+  }
+}
+
+/**
+ * Xác nhận lịch hẹn (Chuyển trạng thái 'Đã lên lịch')
+ */
+async function confirmAppointment(id) {
+  try {
+    const pool = await poolPromise;
+    // Vì DB chỉ có 'Đã lên lịch' và 'Hoàn thành', ta đảm bảo trạng thái là 'Đã lên lịch'
+    await pool.request()
+      .input('MaLichHen', sql.Char(8), id)
+      .query(`UPDATE dbo.LichHen SET TrangThai = N'Đã xác nhận' WHERE MaLichHen = @MaLichHen`);
+      
+    return { success: true, message: "Đã xác nhận lịch hẹn" };
+  } catch (error) {
+    console.error("Error confirmAppointment:", error);
+    throw error;
+  }
+}
+
+/**
+ * Hoàn thành lịch hẹn
+ */
+async function completeAppointment(id) {
+  try {
+    const pool = await poolPromise;
+    await pool.request()
+      .input('MaLichHen', sql.Char(8), id)
+      .query(`UPDATE dbo.LichHen SET TrangThai = N'Hoàn thành' WHERE MaLichHen = @MaLichHen`);
+
+    return { success: true, message: "Lịch hẹn đã hoàn thành" };
+  } catch (error) {
+    console.error("Error completeAppointment:", error);
+    throw error;
+  }
+}
 
 module.exports = {
   createAppointment,
@@ -901,4 +1089,11 @@ module.exports = {
   getAvailableSlots,
   getCustomerAppointments,
   getAvailableDoctors,
+
+  // Hàm của Nhân viên/Admin (Mới thêm)
+  getStaffSchedule,
+  getAppointmentDetail,
+  updateAppointment,
+  confirmAppointment,
+  completeAppointment
 };
