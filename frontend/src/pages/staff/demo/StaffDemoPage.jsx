@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { Link, useLocation } from "react-router-dom"; 
+import { Link, useLocation, useNavigate } from "react-router-dom"; 
 import { Button } from "../../../components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../../../components/ui/card";
 import { Badge } from "../../../components/ui/badge";
@@ -38,13 +38,35 @@ import {
   Phone,
   Info
 } from "lucide-react";
+import { authAPI } from "../../../api/services";
+import { useAuthStore } from "../../../store/authStore";
 
 export default function StaffDemoPage() {
   const location = useLocation();
+  const navigate = useNavigate();
   const [searchTerm, setSearchTerm] = useState("");
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [selectedApp, setSelectedApp] = useState(null);
   const [notifications, setNotifications] = useState(3);
+
+  // Hàm xử lý đăng xuất
+  const handleLogout = async () => {
+    try {
+      // 1. Gọi API logout phía Server
+      await authAPI.logout();
+    } catch (error) {
+      console.error("Lỗi khi gọi API đăng xuất:", error);
+    } finally {
+      // 2. Xóa thông tin ở Local dù API thành công hay thất bại
+      localStorage.removeItem("token");
+
+      // 3. Cập nhật State trong Store
+      useAuthStore.getState().logout();
+
+      // 4. Điều hướng về trang đăng nhập
+      navigate("/login");
+    }
+  };
 
   // Mock dữ liệu lịch hẹn
 const [appointments, setAppointments] = useState([
@@ -157,7 +179,13 @@ const [appointments, setAppointments] = useState([
               <Button variant="ghost" className="w-full justify-start gap-3"><Syringe className="h-4 w-4" />Cập nhật hồ sơ tiêm phòng</Button>
             </Link>
             <div className="pt-4 border-t">
-              <Button variant="ghost" className="w-full justify-start gap-3 text-red-600 hover:bg-red-50"><LogOut className="h-4 w-4" />Đăng xuất</Button>
+              <Button 
+                variant="ghost" 
+                className="w-full justify-start gap-3 text-red-600 hover:bg-red-50"
+                onClick={handleLogout}
+              >
+                <LogOut className="h-4 w-4" />Đăng xuất
+              </Button>
             </div>
           </nav>
         </aside>

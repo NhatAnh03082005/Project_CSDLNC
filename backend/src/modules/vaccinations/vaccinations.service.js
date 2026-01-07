@@ -373,6 +373,509 @@ class VaccinationsService {
       };
     }
   }
+
+  // =====================================================================
+  // LOGIC HỒ SƠ TIÊM PHÒNG CHO NHÂN VIÊN
+  // =====================================================================
+
+  /**
+   * Kiểm tra nhân viên có phải bác sĩ thú y không
+   * @param {string} maNhanVien
+   */
+  async checkIsDoctor(maNhanVien) {
+    try {
+      const pool = await poolPromise;
+      const result = await pool
+        .request()
+        .input("MaNhanVien", sql.Char(5), maNhanVien)
+        .query(
+          `
+          SELECT TOP 1 MaNhanVien, ViTri
+          FROM dbo.NhanVien
+          WHERE MaNhanVien = @MaNhanVien
+            AND TrangThai = 0
+        `
+        );
+
+      if (result.recordset.length === 0) {
+        return false;
+      }
+
+      return result.recordset[0].ViTri === "Bác sĩ thú y";
+    } catch (error) {
+      console.error("Error checking doctor:", error);
+      return false;
+    }
+  }
+
+  /**
+   * Ghi nhận tiêm phòng (tạo HoaDon + CTHD + CTHD_DVSucKhoe + CTHD_TiemPhong)
+   * NhanVienLap = NULL, các trường trong CTHD_TiemPhong = NULL (trừ MaThuCung)
+   * @param {object} recordData - { MaKhachHang, MaChiNhanh, MaThuCung, MaDichVu }
+   */
+  async createVaccinationRecord(recordData) {
+    const { MaKhachHang, MaChiNhanh, MaThuCung, MaDichVu } = recordData;
+
+    if (!MaKhachHang || !MaChiNhanh || !MaThuCung || !MaDichVu) {
+      return {
+        success: false,
+        status: 400,
+        message: "Thiếu thông tin bắt buộc: MaKhachHang, MaChiNhanh, MaThuCung, MaDichVu",
+      };
+    }
+
+    try {
+      const pool = await poolPromise;
+      const transaction = new sql.Transaction(pool);
+
+      await transaction.begin();
+
+      try {
+        // Kiểm tra khách hàng
+        const customerCheck = await transaction
+          .request()
+          .input("MaKhachHang", sql.Char(7), MaKhachHang)
+          .query(
+            `SELECT TOP 1 MaKhachHang FROM dbo.KhachHang WHERE MaKhachHang = @MaKhachHang`
+          );
+
+        if (customerCheck.recordset.length === 0) {
+          await transaction.rollback();
+          return {
+            success: false,
+            status: 404,
+            message: "Không tìm thấy khách hàng",
+          };
+        }
+
+        // Kiểm tra thú cưng
+        const petCheck = await transaction
+          .request()
+          .input("MaThuCung", sql.Char(5), MaThuCung)
+          .input("MaKhachHang", sql.Char(7), MaKhachHang)
+          .query(
+            `
+            SELECT TOP 1 MaThuCung
+            FROM dbo.ThuCung
+            WHERE MaThuCung = @MaThuCung
+              AND MaKhachHang = @MaKhachHang
+          `
+          );
+
+        if (petCheck.recordset.length === 0) {
+          await transaction.rollback();
+          return {
+            success: false,
+            status: 404,
+            message: "Không tìm thấy thú cưng hoặc thú cưng không thuộc khách hàng này",
+          };
+        }
+
+        // Kiểm tra dịch vụ
+        const serviceCheck = await transaction
+          .request()
+          .input("MaDichVu", sql.Char(5), MaDichVu)
+          .query(
+            `SELECT TOP 1 MaDichVu, GiaTien FROM dbo.DichVu WHERE MaDichVu = @MaDichVu`
+          );
+
+        if (serviceCheck.recordset.length === 0) {
+          await transaction.rollback();
+          return {
+            success: false,
+            status: 404,
+            message: "Không tìm thấy dịch vụ",
+          };
+        }
+
+        const giaTien = parseFloat(serviceCheck.recordset[0].GiaTien || 0);
+
+        // Tạo hóa đơn với NhanVienLap = NULL
+        await transaction
+          .request()
+          .input("MaKhachHang", sql.Char(7), MaKhachHang)
+          .input("MaChiNhanh", sql.Char(4), MaChiNhanh)
+          .input("TongTien", sql.Int, Math.round(giaTien))
+          .query(
+            `
+            INSERT INTO dbo.HoaDon (MaKhachHang, MaChiNhanh, TongTien, NhanVienLap, MaKhuyenMai, TiLeGiamGia)
+            VALUES (@MaKhachHang, @MaChiNhanh, @TongTien, NULL, NULL, 0)
+          `
+          );
+
+        // Lấy MaHoaDon vừa tạo (trigger tự động tạo MaHoaDon)
+        const invoiceResult = await transaction
+          .request()
+          .input("MaKhachHang", sql.Char(7), MaKhachHang)
+          .input("MaChiNhanh", sql.Char(4), MaChiNhanh)
+          .query(
+            `
+            SELECT TOP 1 MaHoaDon
+            FROM dbo.HoaDon
+            WHERE MaKhachHang = @MaKhachHang
+              AND MaChiNhanh = @MaChiNhanh
+              AND NhanVienLap IS NULL
+            ORDER BY NgayLap DESC, MaHoaDon DESC
+          `
+          );
+
+        if (invoiceResult.recordset.length === 0) {
+          await transaction.rollback();
+          return {
+            success: false,
+            status: 500,
+            message: "Lỗi khi tạo hóa đơn: Không thể lấy mã hóa đơn",
+          };
+        }
+
+        const maHoaDon = invoiceResult.recordset[0].MaHoaDon;
+
+        // Tạo CTHD
+        await transaction
+          .request()
+          .input("MaHoaDon", sql.Char(8), maHoaDon)
+          .input("STT", sql.Int, 1)
+          .input("LoaiDichVu", sql.NVarChar(50), "Dịch vụ sức khỏe")
+          .input("ThanhTien", sql.Int, Math.round(giaTien))
+          .query(
+            `
+            INSERT INTO dbo.CTHD (MaHoaDon, STT, LoaiDichVu, ThanhTien)
+            VALUES (@MaHoaDon, @STT, @LoaiDichVu, @ThanhTien)
+          `
+          );
+
+        // Tạo CTHD_DVSucKhoe
+        await transaction
+          .request()
+          .input("MaHoaDon", sql.Char(8), maHoaDon)
+          .input("STT", sql.Int, 1)
+          .input("MaDichVu", sql.Char(5), MaDichVu)
+          .input("MaThuCung", sql.Char(5), MaThuCung)
+          .query(
+            `
+            INSERT INTO dbo.CTHD_DVSucKhoe (MaHoaDon, STT, MaDichVu, MaThuCung)
+            VALUES (@MaHoaDon, @STT, @MaDichVu, @MaThuCung)
+          `
+          );
+
+        // Tạo CTHD_TiemPhong với các trường = NULL (trừ MaThuCung)
+        await transaction
+          .request()
+          .input("MaHoaDon", sql.Char(8), maHoaDon)
+          .input("STT", sql.Int, 1)
+          .input("MaThuCung", sql.Char(5), MaThuCung)
+          .query(
+            `
+            INSERT INTO dbo.CTHD_TiemPhong (MaHoaDon, STT, MaThuCung, BacSi, MaVacXin, MaGoiDK)
+            VALUES (@MaHoaDon, @STT, @MaThuCung, NULL, NULL, NULL)
+          `
+          );
+
+        await transaction.commit();
+
+        return {
+          success: true,
+          status: 201,
+          message: "Ghi nhận tiêm phòng thành công",
+          data: {
+            maHoaDon,
+            maThuCung: MaThuCung,
+            trangThai: "Chờ cập nhật",
+          },
+        };
+      } catch (error) {
+        await transaction.rollback();
+        throw error;
+      }
+    } catch (error) {
+      console.error("Error creating vaccination record:", error);
+      return {
+        success: false,
+        status: 500,
+        message: "Lỗi khi ghi nhận tiêm phòng",
+        error: error.message,
+      };
+    }
+  }
+
+  /**
+   * Cập nhật hồ sơ tiêm phòng (chọn vaccine, bác sĩ)
+   * Chỉ bác sĩ thú y mới được cập nhật
+   * @param {string} maHoaDon
+   * @param {string} stt
+   * @param {string} maNhanVien
+   * @param {object} updateData - { MaVacXin, MaGoiDK? }
+   */
+  async updateVaccinationRecord(maHoaDon, stt, maNhanVien, updateData) {
+    const { MaVacXin, MaGoiDK } = updateData;
+
+    // Kiểm tra nhân viên có phải bác sĩ không
+    const isDoctor = await this.checkIsDoctor(maNhanVien);
+    if (!isDoctor) {
+      return {
+        success: false,
+        status: 403,
+        message: "Chỉ bác sĩ thú y mới được cập nhật hồ sơ tiêm phòng",
+      };
+    }
+
+    if (!MaVacXin) {
+      return {
+        success: false,
+        status: 400,
+        message: "Thiếu thông tin bắt buộc: MaVacXin",
+      };
+    }
+
+    try {
+      const pool = await poolPromise;
+
+      // Kiểm tra vaccine tồn tại
+      const vaccineCheck = await pool
+        .request()
+        .input("MaVacXin", sql.NVarChar, MaVacXin)
+        .query(
+          `SELECT TOP 1 MaVacXin FROM dbo.VacXin WHERE MaVacXin = @MaVacXin`
+        );
+
+      if (vaccineCheck.recordset.length === 0) {
+        return {
+          success: false,
+          status: 404,
+          message: "Không tìm thấy vaccine",
+        };
+      }
+
+      // Kiểm tra hồ sơ tồn tại
+      const recordCheck = await pool
+        .request()
+        .input("MaHoaDon", sql.Char(8), maHoaDon)
+        .input("STT", sql.Int, stt)
+        .query(
+          `
+          SELECT TOP 1 MaHoaDon, STT
+          FROM dbo.CTHD_TiemPhong
+          WHERE MaHoaDon = @MaHoaDon
+            AND STT = @STT
+        `
+        );
+
+      if (recordCheck.recordset.length === 0) {
+        return {
+          success: false,
+          status: 404,
+          message: "Không tìm thấy hồ sơ tiêm phòng",
+        };
+      }
+
+      // Cập nhật hồ sơ
+      const updateFields = [];
+      const request = pool.request();
+
+      request.input("MaHoaDon", sql.Char(8), maHoaDon);
+      request.input("STT", sql.Int, stt);
+      request.input("BacSi", sql.Char(5), maNhanVien);
+      request.input("MaVacXin", sql.NVarChar, MaVacXin);
+
+      updateFields.push("BacSi = @BacSi");
+      updateFields.push("MaVacXin = @MaVacXin");
+
+      if (MaGoiDK !== undefined && MaGoiDK !== null) {
+        updateFields.push("MaGoiDK = @MaGoiDK");
+        request.input("MaGoiDK", sql.Char(6), MaGoiDK);
+      }
+
+      await request.query(
+        `
+        UPDATE dbo.CTHD_TiemPhong
+        SET ${updateFields.join(", ")}
+        WHERE MaHoaDon = @MaHoaDon
+          AND STT = @STT
+      `
+      );
+
+      return {
+        success: true,
+        status: 200,
+        message: "Cập nhật hồ sơ tiêm phòng thành công",
+      };
+    } catch (error) {
+      console.error("Error updating vaccination record:", error);
+      return {
+        success: false,
+        status: 500,
+        message: "Lỗi khi cập nhật hồ sơ tiêm phòng",
+        error: error.message,
+      };
+    }
+  }
+
+  /**
+   * Lấy danh sách hồ sơ tiêm phòng chờ cập nhật
+   * (lịch hẹn đã xác nhận nhưng chưa chọn vaccine)
+   * @param {string} maChiNhanh
+   */
+  async getPendingVaccinationRecords(maChiNhanh) {
+    try {
+      const pool = await poolPromise;
+
+      const result = await pool
+        .request()
+        .input("MaChiNhanh", sql.Char(4), maChiNhanh)
+        .query(
+          `
+          SELECT DISTINCT
+            tp.MaHoaDon,
+            tp.STT,
+            tp.MaThuCung,
+            tc.TenThuCung,
+            kh.MaKhachHang,
+            kh.HoTen AS TenKhachHang,
+            hd.NgayLap,
+            dvsk.MaDichVu,
+            dv.TenDichVu,
+            lh.ThoiGianHen,
+            lh.TrangThai AS TrangThaiLichHen
+          FROM dbo.CTHD_TiemPhong tp
+          INNER JOIN dbo.CTHD cthd ON tp.MaHoaDon = cthd.MaHoaDon AND tp.STT = cthd.STT
+          INNER JOIN dbo.CTHD_DVSucKhoe dvsk ON tp.MaHoaDon = dvsk.MaHoaDon AND tp.STT = dvsk.STT
+          INNER JOIN dbo.DichVu dv ON dvsk.MaDichVu = dv.MaDichVu
+          INNER JOIN dbo.ThuCung tc ON tp.MaThuCung = tc.MaThuCung
+          INNER JOIN dbo.KhachHang kh ON tc.MaKhachHang = kh.MaKhachHang
+          INNER JOIN dbo.HoaDon hd ON tp.MaHoaDon = hd.MaHoaDon
+          LEFT JOIN dbo.LichHen lh ON lh.MaKhachHang = kh.MaKhachHang
+            AND lh.MaThuCung = tp.MaThuCung
+            AND lh.LoaiDichVu = N'Tiêm phòng'
+            AND lh.TrangThai = N'DaXacNhan'
+          WHERE hd.MaChiNhanh = @MaChiNhanh
+            AND tp.MaVacXin IS NULL
+            AND hd.NhanVienLap IS NULL
+          ORDER BY hd.NgayLap DESC, lh.ThoiGianHen ASC
+        `
+        );
+
+      const records = result.recordset.map((record) => ({
+        maHoaDon: record.MaHoaDon,
+        stt: record.STT,
+        maThuCung: record.MaThuCung,
+        tenThuCung: record.TenThuCung,
+        khachHang: {
+          maKhachHang: record.MaKhachHang,
+          tenKhachHang: record.TenKhachHang,
+        },
+        dichVu: {
+          maDichVu: record.MaDichVu,
+          tenDichVu: record.TenDichVu,
+        },
+        ngayLap: record.NgayLap
+          ? record.NgayLap.toISOString().split("T")[0]
+          : null,
+        thoiGianHen: record.ThoiGianHen
+          ? record.ThoiGianHen.toISOString()
+          : null,
+        trangThai: "Chờ cập nhật",
+      }));
+
+      return {
+        success: true,
+        status: 200,
+        count: records.length,
+        data: records,
+      };
+    } catch (error) {
+      console.error("Error fetching pending vaccination records:", error);
+      return {
+        success: false,
+        status: 500,
+        message: "Lỗi khi lấy danh sách hồ sơ tiêm phòng chờ cập nhật",
+        error: error.message,
+      };
+    }
+  }
+
+  /**
+   * Lấy danh sách vaccine có tồn kho > 0 tại chi nhánh
+   * @param {string} maChiNhanh
+   */
+  async getAvailableVaccines(maChiNhanh) {
+    try {
+      const pool = await poolPromise;
+
+      if (!maChiNhanh) {
+        return {
+          success: false,
+          status: 400,
+          message: "Mã chi nhánh không được để trống",
+        };
+      }
+
+      const maChiNhanhFormatted = String(maChiNhanh).trim();
+
+      const branchCheck = await pool
+        .request()
+        .input("MaChiNhanh", sql.Char(4), maChiNhanhFormatted)
+        .query(
+          `
+          SELECT TOP 1 MaChiNhanh, TenChiNhanh
+          FROM dbo.ChiNhanh
+          WHERE MaChiNhanh = @MaChiNhanh
+        `
+        );
+
+      if (branchCheck.recordset.length === 0) {
+        return {
+          success: false,
+          status: 404,
+          message: `Không tìm thấy chi nhánh với mã: ${maChiNhanh}`,
+        };
+      }
+
+      const result = await pool
+        .request()
+        .input("MaChiNhanh", sql.Char(4), maChiNhanhFormatted)
+        .query(
+          `
+          SELECT 
+            vx.MaVacXin,
+            vx.TenVacXin,
+            vx.GiaTien,
+            tk.SoLuongTon AS SoLuongTonKho
+          FROM dbo.VacXin vx
+          INNER JOIN dbo.VacXin_TonKho tk 
+            ON vx.MaVacXin = tk.MaVacXin AND tk.MaChiNhanh = @MaChiNhanh
+          WHERE tk.SoLuongTon > 0
+          ORDER BY vx.TenVacXin ASC
+        `
+        );
+
+      const vaccines = result.recordset.map((item) => ({
+        maVacXin: item.MaVacXin,
+        tenVacXin: item.TenVacXin,
+        giaTien: parseFloat(item.GiaTien),
+        soLuongTonKho: item.SoLuongTonKho || 0,
+      }));
+
+      return {
+        success: true,
+        status: 200,
+        data: {
+          chiNhanh: {
+            maChiNhanh: branchCheck.recordset[0].MaChiNhanh,
+            tenChiNhanh: branchCheck.recordset[0].TenChiNhanh,
+          },
+          vaccines,
+        },
+      };
+    } catch (error) {
+      console.error("Error fetching available vaccines:", error);
+      return {
+        success: false,
+        status: 500,
+        message: "Lỗi khi lấy danh sách vaccine",
+        error: error.message,
+      };
+    }
+  }
 }
 
 module.exports = new VaccinationsService();

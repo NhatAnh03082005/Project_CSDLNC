@@ -112,6 +112,174 @@ class EmployeesController {
       next(error);
     }
   }
+
+  /**
+   * Lấy danh sách toàn bộ khách hàng hệ thống
+   * GET /api/employees/customers
+   */
+  async getAllCustomers(req, res, next) {
+    try {
+      const { page, limit, search } = req.query;
+      const response = await employeesService.getAllCustomers({
+        page: parseInt(page) || 1,
+        limit: parseInt(limit) || 20,
+        search: search || null,
+      });
+      return res.status(response.status || 200).json(response);
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  /**
+   * Tìm kiếm khách hàng theo tên, SĐT, CCCD
+   * GET /api/employees/customers/search
+   */
+  async searchCustomers(req, res, next) {
+    try {
+      const { name, phone, cccd } = req.query;
+      const response = await employeesService.searchCustomers({ name, phone, cccd });
+      return res.status(response.status || 200).json(response);
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  /**
+   * Lấy danh sách thú cưng của khách hàng
+   * GET /api/employees/customers/:maKhachHang/pets
+   */
+  async getCustomerPets(req, res, next) {
+    try {
+      const { maKhachHang } = req.params;
+      const response = await employeesService.getCustomerPets(maKhachHang);
+      return res.status(response.status || 200).json(response);
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  /**
+   * Lấy danh sách sản phẩm có tồn kho > 0 tại chi nhánh
+   * GET /api/employees/products/branch/:maChiNhanh
+   */
+  async getProductsByBranch(req, res, next) {
+    try {
+      const { maChiNhanh } = req.params;
+      const response = await employeesService.getProductsByBranch(maChiNhanh);
+      return res.status(response.status || 200).json(response);
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  /**
+   * Lấy thông tin nhân viên hiện tại
+   * GET /api/employees/profile
+   */
+  async getProfile(req, res, next) {
+    try {
+      const maNhanVien = req.user.maNhanVien;
+      if (!maNhanVien) {
+        return res.status(401).json({
+          success: false,
+          message: "Không tìm thấy thông tin nhân viên",
+        });
+      }
+      const response = await employeesService.getEmployeeProfile(maNhanVien);
+      return res.status(response.status || 200).json(response);
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  /**
+   * Lấy thông tin chi nhánh của nhân viên hiện tại
+   * GET /api/employees/branch
+   */
+  async getBranch(req, res, next) {
+    try {
+      const maNhanVien = req.user.maNhanVien;
+      if (!maNhanVien) {
+        return res.status(401).json({
+          success: false,
+          message: "Không tìm thấy thông tin nhân viên",
+        });
+      }
+      const response = await employeesService.getEmployeeBranch(maNhanVien);
+      return res.status(response.status || 200).json(response);
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  /**
+   * Lấy lịch làm việc của nhân viên
+   * GET /api/employees/work-schedule
+   */
+  async getWorkSchedule(req, res, next) {
+    try {
+      const maNhanVien = req.user.maNhanVien;
+      if (!maNhanVien) {
+        return res.status(401).json({
+          success: false,
+          message: "Không tìm thấy thông tin nhân viên",
+        });
+      }
+      const response = await employeesService.getWorkSchedule(maNhanVien);
+      return res.status(response.status || 200).json(response);
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  /**
+   * Đăng ký lịch làm việc mới
+   * POST /api/employees/work-schedule
+   */
+  async createWorkSchedule(req, res, next) {
+    try {
+      const maNhanVien = req.user.maNhanVien;
+      if (!maNhanVien) {
+        return res.status(401).json({
+          success: false,
+          message: "Không tìm thấy thông tin nhân viên",
+        });
+      }
+      const scheduleData = req.body;
+      const response = await employeesService.createWorkSchedule(
+        maNhanVien,
+        scheduleData
+      );
+      return res.status(response.status || 200).json(response);
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  /**
+   * Xóa lịch làm việc
+   * DELETE /api/employees/work-schedule/:id
+   */
+  async deleteWorkSchedule(req, res, next) {
+    try {
+      const maNhanVien = req.user.maNhanVien;
+      if (!maNhanVien) {
+        return res.status(401).json({
+          success: false,
+          message: "Không tìm thấy thông tin nhân viên",
+        });
+      }
+      const { id } = req.params;
+      const response = await employeesService.deleteWorkSchedule(
+        maNhanVien,
+        id
+      );
+      return res.status(response.status || 200).json(response);
+    } catch (error) {
+      next(error);
+    }
+  }
 }
 
 module.exports = new EmployeesController();
