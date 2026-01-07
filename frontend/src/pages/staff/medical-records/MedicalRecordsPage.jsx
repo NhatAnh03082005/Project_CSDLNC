@@ -80,9 +80,8 @@ export default function MedicalRecordsPage() {
       <div className="max-w-6xl mx-auto space-y-6">
         {/* Sửa Link href -> to */}
         <Link to="/staff/demo">
-          <Button variant="ghost" className="gap-2">
-            <ArrowLeft className="h-4 w-4" />
-            Quay lại
+          <Button variant="ghost" className="gap-2 text-slate-500 hover:bg-white hover:shadow-sm transition-all">
+            <ArrowLeft className="h-4 w-4" /> Quay lại
           </Button>
         </Link>
 
@@ -208,12 +207,23 @@ export default function MedicalRecordsPage() {
                 />
               </div>
 
-              <div className="flex gap-3 pt-4">
-                <Button type="submit" className="gap-2">
+              {/* Action Buttons - Đã căn chỉnh trực quan và thu gọn */}
+              <div className="flex items-center justify-start gap-3 pt-6 border-t border-gray-100 mt-6 ml-4">
+                {/* Nút Chính: Lưu hồ sơ - Nổi bật và bo góc đồng bộ */}
+                <Button 
+                  className="flex-none px-6 h-10 bg-blue-600 hover:bg-blue-700 text-white text-sm font-bold rounded-xl shadow-md shadow-blue-100 gap-2 transition-all active:scale-95"
+                >
                   <Save className="h-4 w-4" />
                   Lưu hồ sơ khám bệnh
                 </Button>
-                <Button type="button" variant="outline" onClick={() => setShowForm(false)}>
+
+                {/* Nút Phụ: Hủy - Dạng ghost/outline để giảm sự chú ý, nhỏ gọn hơn */}
+                <Button 
+                  type="button" 
+                  variant="ghost" 
+                  onClick={() => setShowForm(false)}
+                  className="text-gray-500 hover:bg-gray-100 px-4 h-10 text-sm font-medium rounded-xl"
+                >
                   Hủy
                 </Button>
               </div>
