@@ -1,5 +1,7 @@
 import React, { useState } from "react";
-import { Link, useLocation, useNavigate } from "react-router-dom"; 
+import { Link, useLocation, useNavigate } from "react-router-dom";
+import { useAuthStore } from "../../../store/authStore";
+import { authAPI } from "../../../api/services";
 import { Button } from "../../../components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../../../components/ui/card";
 import { Badge } from "../../../components/ui/badge";
@@ -38,9 +40,6 @@ import {
   Phone,
   Info
 } from "lucide-react";
-import { authAPI } from "../../../api/services";
-import { useAuthStore } from "../../../store/authStore";
-
 export default function StaffDemoPage() {
   const location = useLocation();
   const navigate = useNavigate();
@@ -69,7 +68,7 @@ export default function StaffDemoPage() {
   };
 
   // Mock dữ liệu lịch hẹn
-const [appointments, setAppointments] = useState([
+  const [appointments, setAppointments] = useState([
     { id: 1, time: "09:00", duration: "30 phút", customer: "Trần Thị B", pet: "Mèo Miu", status: "waiting", service: "Khám bệnh", phone: "0912345678", detail: "Mèo kém ăn, uể oải 2 ngày" },
     { id: 2, time: "10:30", duration: "45 phút", customer: "Lê Văn C", pet: "Chó Lulu", status: "confirmed", service: "Tiêm phòng", phone: "0987654321", detail: "Tiêm vaccine 5 bệnh" },
     { id: 3, time: "14:00", duration: "30 phút", customer: "Phạm Thị D", pet: "Chó Golden", status: "completed", service: "Khám bệnh", phone: "0901223344", detail: "Đã khám xong lúc 14:25" },
