@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { ArrowLeft, Plus, MapPin, Syringe, Wallet } from "lucide-react";
+import { ArrowLeft, Plus, MapPin, Syringe, Wallet, Search } from "lucide-react";
 
 import AdminHeader from "../../components/AdminHeader";
 import { Button } from "../../../../components/ui/button";
@@ -30,6 +30,7 @@ export default function VaccinestockManagement() {
 
   const [localQty, setLocalQty] = useState({});
   const [updatingQuantities, setUpdatingQuantities] = useState({});
+  const [searchTerm, setSearchTerm] = useState("");
 
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -43,6 +44,20 @@ export default function VaccinestockManagement() {
     const stockIds = new Set((vaccinesStock || []).map((v) => v.MaVacXin));
     return (allVaccines || []).filter((v) => !stockIds.has(v.MaVacXin));
   }, [vaccinesStock, allVaccines]);
+
+  // Filter vaccines stock based on search term
+  const filteredVaccinesStock = useMemo(() => {
+    if (!searchTerm.trim()) return vaccinesStock;
+
+    const searchLower = searchTerm.toLowerCase();
+    return (vaccinesStock || []).filter((vaccine) => {
+      const matchName = vaccine.TenVacXin?.toLowerCase().includes(searchLower);
+      const matchPrice = vaccine.GiaTien?.toString().includes(searchTerm);
+      const matchQty = vaccine.SoLuongTon?.toString().includes(searchTerm);
+
+      return matchName || matchPrice || matchQty;
+    });
+  }, [vaccinesStock, searchTerm]);
 
   // Fetch danh sách chi nhánh + vaccine khi mount
   useEffect(() => {
@@ -171,109 +186,127 @@ export default function VaccinestockManagement() {
       <main className="w-full">
         <div className="max-w-[1920px] mx-auto px-6 py-8 space-y-6">
           {/* PAGE HEADER */}
-          <div className="flex items-center justify-between bg-white rounded-xl shadow-md p-6 border border-blue-100">
-            <div className="flex items-center gap-4">
-              <Button
-                variant="outline"
-                size="icon"
-                className="bg-blue-50 text-blue-600 border-blue-200 hover:bg-blue-600 hover:text-white transition-colors"
-                onClick={
-                  selectedBranch ? handleBackToBranches : onBackToManagement
-                }
-              >
-                <ArrowLeft className="h-4 w-4" />
-              </Button>
+          <div className="bg-white rounded-xl shadow-md p-6 border border-blue-100 space-y-4">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-4">
+                <Button
+                  variant="outline"
+                  size="icon"
+                  className="bg-blue-50 text-blue-600 border-blue-200 hover:bg-blue-600 hover:text-white transition-colors"
+                  onClick={
+                    selectedBranch ? handleBackToBranches : onBackToManagement
+                  }
+                >
+                  <ArrowLeft className="h-4 w-4" />
+                </Button>
 
-              <div>
-                <h1 className="text-3xl font-bold bg-gradient-to-r from-blue-600 to-teal-600 bg-clip-text text-transparent">
-                  {selectedBranch
-                    ? `Kho vắc-xin - ${selectedBranch.TenChiNhanh}`
-                    : "Quản lý kho vắc-xin"}
-                </h1>
-                <p className="text-gray-600 mt-1">
-                  {selectedBranch
-                    ? "Quản lý số lượng tồn kho vắc-xin theo từng chi nhánh"
-                    : "Chọn chi nhánh để xem và quản lý tồn kho vắc-xin"}
-                </p>
+                <div>
+                  <h1 className="text-3xl font-bold bg-gradient-to-r from-blue-600 to-teal-600 bg-clip-text text-transparent">
+                    {selectedBranch
+                      ? `Kho vắc-xin - ${selectedBranch.TenChiNhanh}`
+                      : "Quản lý kho vắc-xin"}
+                  </h1>
+                  <p className="text-gray-600 mt-1">
+                    {selectedBranch
+                      ? "Quản lý số lượng tồn kho vắc-xin theo từng chi nhánh"
+                      : "Chọn chi nhánh để xem và quản lý tồn kho vắc-xin"}
+                  </p>
+                </div>
               </div>
-            </div>
 
-            {/* ACTIONS */}
-            {selectedBranch && (
-              <Dialog
-                open={isAddVaccineDialogOpen}
-                onOpenChange={setIsAddVaccineDialogOpen}
-              >
-                <DialogTrigger asChild>
-                  <Button className="h-10 gap-2 bg-blue-600 text-white hover:bg-blue-700 transition-colors shadow-md">
-                    <Plus className="h-4 w-4" />
-                    Thêm vắc-xin
-                  </Button>
-                </DialogTrigger>
+              {/* ACTIONS */}
+              {selectedBranch && (
+                <Dialog
+                  open={isAddVaccineDialogOpen}
+                  onOpenChange={setIsAddVaccineDialogOpen}
+                >
+                  <DialogTrigger asChild>
+                    <Button className="h-10 gap-2 bg-blue-600 text-white hover:bg-blue-700 transition-colors shadow-md">
+                      <Plus className="h-4 w-4" />
+                      Thêm vắc-xin
+                    </Button>
+                  </DialogTrigger>
 
-                <DialogContent className="sm:max-w-[700px]">
-                  <DialogHeader>
-                    <DialogTitle className="text-2xl font-bold bg-gradient-to-r from-blue-600 to-blue-500 bg-clip-text text-transparent">
-                      Thêm vắc-xin vào kho
-                    </DialogTitle>
-                    <DialogDescription className="text-gray-500 mt-2">
-                      Chỉ hiển thị các vắc-xin chưa có trong kho chi nhánh.
-                    </DialogDescription>
-                  </DialogHeader>
+                  <DialogContent className="sm:max-w-[700px]">
+                    <DialogHeader>
+                      <DialogTitle className="text-2xl font-bold bg-gradient-to-r from-blue-600 to-blue-500 bg-clip-text text-transparent">
+                        Thêm vắc-xin vào kho
+                      </DialogTitle>
+                      <DialogDescription className="text-gray-500 mt-2">
+                        Chỉ hiển thị các vắc-xin chưa có trong kho chi nhánh.
+                      </DialogDescription>
+                    </DialogHeader>
 
-                  <div className="space-y-4 py-4">
-                    <div className="grid grid-cols-2 gap-6">
-                      <div className="space-y-2">
-                        <Label htmlFor="vaccineSelect">Chọn vắc-xin</Label>
-                        {availableVaccines.length === 0 ? (
-                          <div className="text-sm text-gray-500">
-                            Chi nhánh này đã có tất cả vắc-xin trong danh mục.
-                          </div>
-                        ) : (
-                          <select
-                            id="vaccineSelect"
-                            value={selectedVaccine}
-                            onChange={(e) => setSelectedVaccine(e.target.value)}
-                            className="w-full border rounded-lg p-2 flex h-10 border-input bg-background text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-                          >
-                            <option value="">Chọn vắc-xin</option>
-                            {availableVaccines.map((v) => (
-                              <option key={v.MaVacXin} value={v.MaVacXin}>
-                                {v.TenVacXin}
-                              </option>
-                            ))}
-                          </select>
-                        )}
-                      </div>
+                    <div className="space-y-4 py-4">
+                      <div className="grid grid-cols-2 gap-6">
+                        <div className="space-y-2">
+                          <Label htmlFor="vaccineSelect">Chọn vắc-xin</Label>
+                          {availableVaccines.length === 0 ? (
+                            <div className="text-sm text-gray-500">
+                              Chi nhánh này đã có tất cả vắc-xin trong danh mục.
+                            </div>
+                          ) : (
+                            <select
+                              id="vaccineSelect"
+                              value={selectedVaccine}
+                              onChange={(e) =>
+                                setSelectedVaccine(e.target.value)
+                              }
+                              className="w-full border rounded-lg p-2 flex h-10 border-input bg-background text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                            >
+                              <option value="">Chọn vắc-xin</option>
+                              {availableVaccines.map((v) => (
+                                <option key={v.MaVacXin} value={v.MaVacXin}>
+                                  {v.TenVacXin}
+                                </option>
+                              ))}
+                            </select>
+                          )}
+                        </div>
 
-                      <div className="space-y-2">
-                        <Label htmlFor="initialQuantity">
-                          Số lượng ban đầu
-                        </Label>
-                        <Input
-                          id="initialQuantity"
-                          type="number"
-                          min="0"
-                          placeholder="0"
-                          value={initialQuantity}
-                          onChange={(e) => setInitialQuantity(e.target.value)}
-                          className="h-10"
-                        />
+                        <div className="space-y-2">
+                          <Label htmlFor="initialQuantity">
+                            Số lượng ban đầu
+                          </Label>
+                          <Input
+                            id="initialQuantity"
+                            type="number"
+                            min="0"
+                            placeholder="0"
+                            value={initialQuantity}
+                            onChange={(e) => setInitialQuantity(e.target.value)}
+                            className="h-10"
+                          />
+                        </div>
                       </div>
                     </div>
-                  </div>
 
-                  <DialogFooter className="gap-2">
-                    <Button
-                      onClick={handleAddVaccineToStock}
-                      className="h-10 bg-blue-600 text-white hover:bg-blue-700 transition-colors"
-                      disabled={availableVaccines.length === 0}
-                    >
-                      Thêm vào kho
-                    </Button>
-                  </DialogFooter>
-                </DialogContent>
-              </Dialog>
+                    <DialogFooter className="gap-2">
+                      <Button
+                        onClick={handleAddVaccineToStock}
+                        className="h-10 bg-blue-600 text-white hover:bg-blue-700 transition-colors"
+                        disabled={availableVaccines.length === 0}
+                      >
+                        Thêm vào kho
+                      </Button>
+                    </DialogFooter>
+                  </DialogContent>
+                </Dialog>
+              )}
+            </div>
+
+            {/* Search Bar - chỉ hiện khi đã chọn chi nhánh */}
+            {selectedBranch && (
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
+                <Input
+                  type="text"
+                  placeholder="Tìm kiếm theo tên, giá tiền hoặc số lượng tồn..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="pl-10 h-10 border-gray-300 focus:border-blue-500 focus:ring-blue-500 placeholder:text-gray-400"
+                />
+              </div>
             )}
           </div>
 
@@ -328,10 +361,12 @@ export default function VaccinestockManagement() {
                 </Card>
               ))}
             </div>
-          ) : vaccinesStock.length === 0 ? (
+          ) : filteredVaccinesStock.length === 0 ? (
             <Card>
               <CardContent className="p-10 text-center text-gray-500">
-                Chưa có vắc-xin nào trong kho
+                {searchTerm.trim()
+                  ? "Không tìm thấy vắc-xin nào phù hợp"
+                  : "Chưa có vắc-xin nào trong kho"}
               </CardContent>
             </Card>
           ) : (
@@ -339,7 +374,7 @@ export default function VaccinestockManagement() {
             // Trong 1 chi nhánh (card grid 1 dòng 5 cột)
             // =========================
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
-              {vaccinesStock.map((v) => (
+              {filteredVaccinesStock.map((v) => (
                 <Card
                   key={v.MaVacXin}
                   className="relative bg-white rounded-xl shadow-md hover:shadow-xl transition-all duration-300 hover:-translate-y-1 border border-sky-600"

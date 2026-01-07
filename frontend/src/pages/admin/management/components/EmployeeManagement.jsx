@@ -11,6 +11,7 @@ import {
   Wallet,
   Calendar,
   Cake,
+  Search,
 } from "lucide-react";
 
 import AdminHeader from "../../components/AdminHeader";
@@ -35,6 +36,7 @@ export default function EmployeeManagement() {
   const navigate = useNavigate();
   const onBack = () => navigate("/admin/management");
 
+  const [searchTerm, setSearchTerm] = useState("");
   const [employees, setEmployees] = useState([]);
   const [branches, setBranches] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -175,6 +177,18 @@ export default function EmployeeManagement() {
     }
   };
 
+  // Filter employees based on search term
+  const filteredEmployees = employees.filter((emp) => {
+    if (!searchTerm.trim()) return true;
+
+    const searchLower = searchTerm.toLowerCase();
+    const matchName = emp.HoTen?.toLowerCase().includes(searchLower);
+    const matchBranch = emp.TenChiNhanh?.toLowerCase().includes(searchLower);
+    const matchPosition = emp.ViTri?.toLowerCase().includes(searchLower);
+
+    return matchName || matchBranch || matchPosition;
+  });
+
   if (loading) {
     return (
       <Card>
@@ -204,206 +218,223 @@ export default function EmployeeManagement() {
 
       <main className="w-full">
         <div className="max-w-[1920px] mx-auto px-6 py-8 space-y-6">
-          {/* HEADER giống BranchManagement */}
-          <div className="flex items-center justify-between bg-white rounded-xl shadow-md p-6 border border-blue-100">
-            <div className="flex items-center gap-4">
-              <Button
-                variant="outline"
-                size="icon"
-                className="bg-blue-50 text-blue-600 border-blue-200 hover:bg-blue-600 hover:text-white transition-colors"
-                onClick={onBack}
-              >
-                <ArrowLeft className="h-4 w-4" />
-              </Button>
-              <div>
-                <h1 className="text-3xl font-bold bg-gradient-to-r from-blue-600 to-teal-600 bg-clip-text text-transparent">
-                  Quản lý nhân viên
-                </h1>
-                <p className="text-gray-600 mt-1">
-                  Quản lý tất cả nhân viên trên hệ thống
-                </p>
-              </div>
-            </div>
-
-            {/* ADD DIALOG */}
-            <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
-              <DialogTrigger asChild>
-                <Button className="h-10 gap-2 bg-blue-600 text-white hover:bg-blue-700 transition-colors shadow-md">
-                  <Plus className="h-4 w-4" />
-                  Thêm nhân viên
+          {/* HEADER */}
+          <div className="bg-white rounded-xl shadow-md p-6 border border-blue-100 space-y-4">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-4">
+                <Button
+                  variant="outline"
+                  size="icon"
+                  className="bg-blue-50 text-blue-600 border-blue-200 hover:bg-blue-600 hover:text-white transition-colors"
+                  onClick={onBack}
+                >
+                  <ArrowLeft className="h-4 w-4" />
                 </Button>
-              </DialogTrigger>
-
-              <DialogContent className="sm:max-w-[700px]">
-                <DialogHeader>
-                  <DialogTitle className="text-2xl font-bold text-blue-600">
-                    Thêm nhân viên mới
-                  </DialogTitle>
-                  <DialogDescription className="text-gray-500 mt-2">
-                    Điền đầy đủ thông tin để tạo một nhân viên mới vào hệ thống.
-                  </DialogDescription>
-                </DialogHeader>
-
-                <div className="space-y-4 py-4">
-                  {/* Row 1: Họ tên & Giới tính */}
-                  <div className="grid grid-cols-2 gap-6">
-                    <div className="space-y-2">
-                      <Label htmlFor="add-HoTen">Họ tên</Label>
-                      <Input
-                        id="add-HoTen"
-                        placeholder="Nhập họ và tên"
-                        value={addFormData.HoTen}
-                        onChange={(e) =>
-                          setAddFormData({
-                            ...addFormData,
-                            HoTen: e.target.value,
-                          })
-                        }
-                        className="h-10 text-black placeholder:text-gray-600"
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="add-GioiTinh">Giới tính</Label>
-                      <select
-                        id="add-GioiTinh"
-                        value={addFormData.GioiTinh}
-                        onChange={(e) =>
-                          setAddFormData({
-                            ...addFormData,
-                            GioiTinh: e.target.value,
-                          })
-                        }
-                        className="w-full border rounded-lg px-3 h-10 border-input bg-background text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-                      >
-                        <option value="">Chọn giới tính</option>
-                        {GENDER_OPTIONS.map((g) => (
-                          <option key={g} value={g}>
-                            {g}
-                          </option>
-                        ))}
-                      </select>
-                    </div>
-                  </div>
-
-                  {/* Row 2: Ngày sinh & Ngày vào làm */}
-                  <div className="grid grid-cols-2 gap-6">
-                    <div className="space-y-2">
-                      <Label htmlFor="add-NgaySinh">Ngày sinh</Label>
-                      <Input
-                        id="add-NgaySinh"
-                        type="date"
-                        value={addFormData.NgaySinh}
-                        onChange={(e) =>
-                          setAddFormData({
-                            ...addFormData,
-                            NgaySinh: e.target.value,
-                          })
-                        }
-                        className="h-10"
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="add-NgayVaoLam">Ngày vào làm</Label>
-                      <Input
-                        id="add-NgayVaoLam"
-                        type="date"
-                        value={addFormData.NgayVaoLam}
-                        onChange={(e) =>
-                          setAddFormData({
-                            ...addFormData,
-                            NgayVaoLam: e.target.value,
-                          })
-                        }
-                        className="h-10"
-                      />
-                    </div>
-                  </div>
-
-                  {/* Row 3: Vị trí & Lương */}
-                  <div className="grid grid-cols-2 gap-6">
-                    <div className="space-y-2">
-                      <Label htmlFor="add-ViTri">Vị trí</Label>
-                      <select
-                        id="add-ViTri"
-                        value={addFormData.ViTri}
-                        onChange={(e) =>
-                          setAddFormData({
-                            ...addFormData,
-                            ViTri: e.target.value,
-                          })
-                        }
-                        className="w-full border rounded-lg px-3 h-10 border-input bg-background text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-                      >
-                        <option value="">Chọn vị trí</option>
-                        {POSITION_OPTIONS.map((p) => (
-                          <option key={p} value={p}>
-                            {p}
-                          </option>
-                        ))}
-                      </select>
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="add-LuongCoBan">Lương cơ bản</Label>
-                      <Input
-                        id="add-LuongCoBan"
-                        type="number"
-                        placeholder="Nhập lương cơ bản"
-                        value={addFormData.LuongCoBan}
-                        onChange={(e) =>
-                          setAddFormData({
-                            ...addFormData,
-                            LuongCoBan: e.target.value,
-                          })
-                        }
-                        className="h-10 text-black placeholder:text-gray-600"
-                      />
-                    </div>
-                  </div>
-
-                  {/* Row 4: Chi nhánh */}
-                  <div className="space-y-2">
-                    <Label htmlFor="add-TenChiNhanh">Chi nhánh</Label>
-                    <select
-                      id="add-TenChiNhanh"
-                      value={addFormData.TenChiNhanh}
-                      onChange={(e) =>
-                        setAddFormData({
-                          ...addFormData,
-                          TenChiNhanh: e.target.value,
-                        })
-                      }
-                      className="w-full border rounded-lg px-3 h-10 border-input bg-background text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-                    >
-                      <option value="">Chọn chi nhánh</option>
-                      {branches.map((b) => (
-                        <option key={b.MaChiNhanh} value={b.TenChiNhanh}>
-                          {b.TenChiNhanh}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
+                <div>
+                  <h1 className="text-3xl font-bold bg-gradient-to-r from-blue-600 to-teal-600 bg-clip-text text-transparent">
+                    Quản lý nhân viên
+                  </h1>
+                  <p className="text-gray-600 mt-1">
+                    Quản lý tất cả nhân viên trên hệ thống
+                  </p>
                 </div>
+              </div>
 
-                <DialogFooter className="gap-2">
-                  <Button
-                    onClick={handleAdd}
-                    className="h-10 bg-blue-600 text-white hover:bg-blue-700 transition-colors"
-                  >
+              {/* ADD DIALOG */}
+              <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
+                <DialogTrigger asChild>
+                  <Button className="h-10 gap-2 bg-blue-600 text-white hover:bg-blue-700 transition-colors shadow-md">
+                    <Plus className="h-4 w-4" />
                     Thêm nhân viên
                   </Button>
-                </DialogFooter>
-              </DialogContent>
-            </Dialog>
+                </DialogTrigger>
+
+                <DialogContent className="sm:max-w-[700px]">
+                  <DialogHeader>
+                    <DialogTitle className="text-2xl font-bold text-blue-600">
+                      Thêm nhân viên mới
+                    </DialogTitle>
+                    <DialogDescription className="text-gray-500 mt-2">
+                      Điền đầy đủ thông tin để tạo một nhân viên mới vào hệ
+                      thống.
+                    </DialogDescription>
+                  </DialogHeader>
+
+                  <div className="space-y-4 py-4">
+                    {/* Row 1: Họ tên & Giới tính */}
+                    <div className="grid grid-cols-2 gap-6">
+                      <div className="space-y-2">
+                        <Label htmlFor="add-HoTen">Họ tên</Label>
+                        <Input
+                          id="add-HoTen"
+                          placeholder="Nhập họ và tên"
+                          value={addFormData.HoTen}
+                          onChange={(e) =>
+                            setAddFormData({
+                              ...addFormData,
+                              HoTen: e.target.value,
+                            })
+                          }
+                          className="h-10 text-black placeholder:text-gray-600"
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="add-GioiTinh">Giới tính</Label>
+                        <select
+                          id="add-GioiTinh"
+                          value={addFormData.GioiTinh}
+                          onChange={(e) =>
+                            setAddFormData({
+                              ...addFormData,
+                              GioiTinh: e.target.value,
+                            })
+                          }
+                          className="w-full border rounded-lg px-3 h-10 border-input bg-background text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                        >
+                          <option value="">Chọn giới tính</option>
+                          {GENDER_OPTIONS.map((g) => (
+                            <option key={g} value={g}>
+                              {g}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+                    </div>
+
+                    {/* Row 2: Ngày sinh & Ngày vào làm */}
+                    <div className="grid grid-cols-2 gap-6">
+                      <div className="space-y-2">
+                        <Label htmlFor="add-NgaySinh">Ngày sinh</Label>
+                        <Input
+                          id="add-NgaySinh"
+                          type="date"
+                          value={addFormData.NgaySinh}
+                          onChange={(e) =>
+                            setAddFormData({
+                              ...addFormData,
+                              NgaySinh: e.target.value,
+                            })
+                          }
+                          className="h-10"
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="add-NgayVaoLam">Ngày vào làm</Label>
+                        <Input
+                          id="add-NgayVaoLam"
+                          type="date"
+                          value={addFormData.NgayVaoLam}
+                          onChange={(e) =>
+                            setAddFormData({
+                              ...addFormData,
+                              NgayVaoLam: e.target.value,
+                            })
+                          }
+                          className="h-10"
+                        />
+                      </div>
+                    </div>
+
+                    {/* Row 3: Vị trí & Lương */}
+                    <div className="grid grid-cols-2 gap-6">
+                      <div className="space-y-2">
+                        <Label htmlFor="add-ViTri">Vị trí</Label>
+                        <select
+                          id="add-ViTri"
+                          value={addFormData.ViTri}
+                          onChange={(e) =>
+                            setAddFormData({
+                              ...addFormData,
+                              ViTri: e.target.value,
+                            })
+                          }
+                          className="w-full border rounded-lg px-3 h-10 border-input bg-background text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                        >
+                          <option value="">Chọn vị trí</option>
+                          {POSITION_OPTIONS.map((p) => (
+                            <option key={p} value={p}>
+                              {p}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="add-LuongCoBan">Lương cơ bản</Label>
+                        <Input
+                          id="add-LuongCoBan"
+                          type="number"
+                          placeholder="Nhập lương cơ bản"
+                          value={addFormData.LuongCoBan}
+                          onChange={(e) =>
+                            setAddFormData({
+                              ...addFormData,
+                              LuongCoBan: e.target.value,
+                            })
+                          }
+                          className="h-10 text-black placeholder:text-gray-600"
+                        />
+                      </div>
+                    </div>
+
+                    {/* Row 4: Chi nhánh */}
+                    <div className="space-y-2">
+                      <Label htmlFor="add-TenChiNhanh">Chi nhánh</Label>
+                      <select
+                        id="add-TenChiNhanh"
+                        value={addFormData.TenChiNhanh}
+                        onChange={(e) =>
+                          setAddFormData({
+                            ...addFormData,
+                            TenChiNhanh: e.target.value,
+                          })
+                        }
+                        className="w-full border rounded-lg px-3 h-10 border-input bg-background text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                      >
+                        <option value="">Chọn chi nhánh</option>
+                        {branches.map((b) => (
+                          <option key={b.MaChiNhanh} value={b.TenChiNhanh}>
+                            {b.TenChiNhanh}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                  </div>
+
+                  <DialogFooter className="gap-2">
+                    <Button
+                      onClick={handleAdd}
+                      className="h-10 bg-blue-600 text-white hover:bg-blue-700 transition-colors"
+                    >
+                      Thêm nhân viên
+                    </Button>
+                  </DialogFooter>
+                </DialogContent>
+              </Dialog>
+            </div>
+
+            {/* Search Bar */}
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
+              <Input
+                type="text"
+                placeholder="Tìm kiếm theo tên, chi nhánh hoặc vị trí..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="pl-10 h-10 border-gray-300 focus:border-blue-500 focus:ring-blue-500 placeholder:text-gray-400"
+              />
+            </div>
           </div>
 
-          {/* LIST: 4 nhân viên / 1 dòng (lg:grid-cols-4) */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-            {employees.length === 0 ? (
+          {/* LIST: 4 nhân viên / 1 dòng (xl:grid-cols-4) */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+            {filteredEmployees.length === 0 ? (
               <div className="col-span-full text-center text-gray-500 py-12 bg-gray-50 rounded-xl">
-                Không có nhân viên nào
+                {searchTerm.trim()
+                  ? "Không tìm thấy nhân viên nào phù hợp"
+                  : "Không có nhân viên nào"}
               </div>
             ) : (
-              employees.map((emp) => (
+              filteredEmployees.map((emp) => (
                 <Card
                   key={emp.MaNhanVien}
                   className="relative bg-white rounded-xl shadow-md hover:shadow-xl transition-all duration-300 hover:-translate-y-1 border border-sky-600"
@@ -419,7 +450,9 @@ export default function EmployeeManagement() {
                     >
                       <Edit2 className="h-5 w-5" />
                     </Button>
+                  </div>
 
+                  <div className="absolute bottom-3 right-3 flex gap-2">
                     <Button
                       variant="ghost"
                       size="icon"

@@ -262,29 +262,12 @@ class CustomersService {
   async getInvoices(customerId) {
     try {
       const pool = await poolPromise;
+      
+      // GỌI STORED PROCEDURE sp_TV4_GetInvoices
       const result = await pool
         .request()
-        .input("MaKhachHang", sql.Char(7), customerId)
-        .query(
-          `
-          SELECT
-            hd.MaHoaDon,
-            hd.NgayLap,
-            hd.TongTien,
-            hd.HinhThucThanhToan,
-            hd.MaKhuyenMai,
-            hd.MaChiNhanh,
-            nv.HoTen AS TenNhanVienLap,
-            cn.TenChiNhanh
-          FROM dbo.HoaDon hd
-          LEFT JOIN dbo.NhanVien nv
-            ON hd.NhanVienLap = nv.MaNhanVien
-          LEFT JOIN dbo.ChiNhanh cn
-            ON hd.MaChiNhanh = cn.MaChiNhanh
-          WHERE hd.MaKhachHang = @MaKhachHang
-          ORDER BY hd.NgayLap DESC, hd.MaHoaDon DESC
-        `
-        );
+        .input('MaKhachHang', sql.Char(7), customerId)
+        .execute('sp_TV4_GetInvoices');
 
       return {
         success: true,
@@ -312,107 +295,36 @@ class CustomersService {
     try {
       const pool = await poolPromise;
 
-      const checkInvoice = await pool
+      // GỌI STORED PROCEDURE sp_TV4_GetInvoiceDetails
+      const result = await pool
         .request()
-        .input("MaHoaDon", sql.Char(8), maHoaDon)
-        .input("MaKhachHang", sql.Char(7), customerId)
-        .query(
-          `
-          SELECT TOP 1 MaHoaDon
-          FROM dbo.HoaDon
-          WHERE MaHoaDon = @MaHoaDon AND MaKhachHang = @MaKhachHang
-        `
-        );
+        .input('MaKhachHang', sql.Char(7), customerId)
+        .input('MaHoaDon', sql.Char(8), maHoaDon)
+        .output('ErrorMessage', sql.NVarChar(500))
+        .output('StatusCode', sql.Int)
+        .execute('sp_TV4_GetInvoiceDetails');
 
-      if (checkInvoice.recordset.length === 0) {
+      const { ErrorMessage, StatusCode } = result.output;
+
+      if (StatusCode !== 200) {
         return {
           success: false,
-          status: 404,
-          message:
-            "Không tìm thấy hóa đơn hoặc bạn không có quyền xem hóa đơn này",
+          status: StatusCode,
+          message: ErrorMessage,
         };
       }
 
-      const invoiceInfo = await pool
-        .request()
-        .input("MaHoaDon", sql.Char(8), maHoaDon)
-        .query(
-          `
-          SELECT
-            hd.MaHoaDon,
-            hd.NgayLap,
-            hd.TongTien,
-            hd.HinhThucThanhToan,
-            hd.MaKhuyenMai,
-            hd.MaChiNhanh,
-            nv.HoTen AS TenNhanVienLap,
-            cn.TenChiNhanh,
-            km.TiLeGiamGia
-          FROM dbo.HoaDon hd
-          LEFT JOIN dbo.NhanVien nv
-            ON hd.NhanVienLap = nv.MaNhanVien
-          LEFT JOIN dbo.ChiNhanh cn
-            ON hd.MaChiNhanh = cn.MaChiNhanh
-          LEFT JOIN dbo.KhuyenMai km
-            ON hd.MaKhuyenMai = km.MaKhuyenMai
-          WHERE hd.MaHoaDon = @MaHoaDon
-        `
-        );
+      // Result sets: [0] = invoice header, [1] = invoice details
+      const invoiceHeader = result.recordsets[0][0];
+      const invoiceDetails = result.recordsets[1];
 
-      const invoiceDetails = await pool
-        .request()
-        .input("MaHoaDon", sql.Char(8), maHoaDon)
-        .query(
-          `
-          SELECT
-            cthd.MaHoaDon,
-            cthd.STT,
-            cthd.LoaiDichVu,
-            cthd.ThanhTien,
-            -- Thông tin mua hàng (nếu có)
-            mh.MaSanPham,
-            mh.SoLuong AS SoLuongMuaHang,
-            sp.TenSanPham,
-            sp.DonGia AS DonGiaSanPham,
-            -- Thông tin dịch vụ sức khỏe (nếu có)
-            dvsk.MaThuCung,
-            dvsk.BacSi AS MaBacSi,
-            nvBs.HoTen AS TenBacSi,
-            -- Thông tin khám bệnh (nếu có)
-            kb.TrieuChung,
-            kb.ChanDoan,
-            kb.ToaThuoc,
-            kb.NgayTaiKham,
-            -- Thông tin tiêm phòng (nếu có)
-            tp.MaVacXin,
-            tp.MaGoiDK,
-            vx.TenVacXin
-          FROM dbo.CTHD cthd
-          LEFT JOIN dbo.CTHD_MuaHang mh
-            ON cthd.MaHoaDon = mh.MaHoaDon AND cthd.STT = mh.STT
-          LEFT JOIN dbo.SanPham sp
-            ON mh.MaSanPham = sp.MaSanPham
-          LEFT JOIN dbo.CTHD_DVSucKhoe dvsk
-            ON cthd.MaHoaDon = dvsk.MaHoaDon AND cthd.STT = dvsk.STT
-          LEFT JOIN dbo.NhanVien nvBs
-            ON dvsk.BacSi = nvBs.MaNhanVien
-          LEFT JOIN dbo.CTHD_KhamBenh kb
-            ON dvsk.MaHoaDon = kb.MaHoaDon AND dvsk.STT = kb.STT
-          LEFT JOIN dbo.CTHD_TiemPhong tp
-            ON dvsk.MaHoaDon = tp.MaHoaDon AND dvsk.STT = tp.STT
-          LEFT JOIN dbo.VacXin vx
-            ON tp.MaVacXin = vx.MaVacXin
-          WHERE cthd.MaHoaDon = @MaHoaDon
-          ORDER BY cthd.STT
-        `
-        );
-
-      const formattedDetails = invoiceDetails.recordset.map((item) => {
+      // Format chi tiết như logic cũ
+      const formattedDetails = invoiceDetails.map((item) => {
         const detail = {
           STT: item.STT,
           LoaiDichVu: item.LoaiDichVu,
           ThanhTien: item.ThanhTien,
-          LoaiChiTiet: null, 
+          LoaiChiTiet: null,
           ChiTiet: {},
         };
 
@@ -455,11 +367,10 @@ class CustomersService {
         success: true,
         status: 200,
         data: {
-          ...invoiceInfo.recordset[0],
+          ...invoiceHeader,
           chiTiet: formattedDetails,
-          // Đảm bảo trả về thông tin khuyến mãi
-          MaKhuyenMai: invoiceInfo.recordset[0].MaKhuyenMai || null,
-          TiLeGiamGia: invoiceInfo.recordset[0].TiLeGiamGia || 0,
+          MaKhuyenMai: invoiceHeader.MaKhuyenMai || null,
+          TiLeGiamGia: invoiceHeader.TiLeGiamGia || 0,
         },
       };
     } catch (error) {
@@ -476,6 +387,7 @@ class CustomersService {
   async createOrder(customerId, orderData) {
     const { items, paymentMethod, maChiNhanh } = orderData;
 
+    // Validation cơ bản
     if (!items || !Array.isArray(items) || items.length === 0) {
       return {
         success: false,
@@ -519,89 +431,31 @@ class CustomersService {
     try {
       const pool = await poolPromise;
 
-      const customerCheck = await pool
-        .request()
-        .input("MaKhachHang", sql.Char(7), customerId)
-        .query(
-          `
-          SELECT TOP 1 MaKhachHang, HoTen, CapHoiVien
-          FROM dbo.KhachHang
-          WHERE MaKhachHang = @MaKhachHang
-        `
-        );
+      // Chuẩn bị JSON cho stored procedure
+      const itemsJSON = JSON.stringify(items);
 
-      if (customerCheck.recordset.length === 0) {
+      // GỌI STORED PROCEDURE sp_TV3_CreateOrder
+      const result = await pool
+        .request()
+        .input('MaKhachHang', sql.Char(7), customerId)
+        .input('MaChiNhanh', sql.Char(4), maChiNhanh)
+        .input('HinhThucThanhToan', sql.NVarChar(20), hinhThucThanhToan)
+        .input('ItemsJSON', sql.NVarChar(sql.MAX), itemsJSON)
+        .output('MaHoaDon', sql.Char(8))
+        .output('TongTien', sql.Int)
+        .output('DiemLoyalty', sql.Int)
+        .output('ErrorMessage', sql.NVarChar(500))
+        .output('StatusCode', sql.Int)
+        .execute('sp_TV3_CreateOrder');
+
+      const { MaHoaDon, TongTien, DiemLoyalty, ErrorMessage, StatusCode } = result.output;
+
+      if (StatusCode !== 201) {
         return {
           success: false,
-          status: 404,
-          message: "Không tìm thấy khách hàng",
+          status: StatusCode,
+          message: ErrorMessage,
         };
-      }
-
-      const branchCheck = await pool
-        .request()
-        .input("MaChiNhanh", sql.Char(4), maChiNhanh)
-        .query(
-          `
-          SELECT TOP 1 MaChiNhanh, TenChiNhanh
-          FROM dbo.ChiNhanh
-          WHERE MaChiNhanh = @MaChiNhanh
-        `
-        );
-
-      if (branchCheck.recordset.length === 0) {
-        return {
-          success: false,
-          status: 404,
-          message: "Không tìm thấy chi nhánh",
-        };
-      }
-
-      for (const item of items) {
-        if (!item.maSanPham || !item.soLuong || item.soLuong <= 0) {
-          return {
-            success: false,
-            status: 400,
-            message: `Sản phẩm ${item.maSanPham || "N/A"} có thông tin không hợp lệ`,
-          };
-        }
-
-        const productCheck = await pool
-          .request()
-          .input("MaSanPham", sql.Char(5), item.maSanPham)
-          .input("MaChiNhanh", sql.Char(4), maChiNhanh)
-          .query(
-            `
-            SELECT TOP 1 
-              sp.MaSanPham, 
-              sp.TenSanPham, 
-              sp.DonGia,
-              tk.SoLuongTon AS TonKho
-            FROM dbo.SanPham sp
-            LEFT JOIN dbo.SanPham_TonKho tk 
-              ON sp.MaSanPham = tk.MaSanPham AND tk.MaChiNhanh = @MaChiNhanh
-            WHERE sp.MaSanPham = @MaSanPham
-          `
-          );
-
-        if (productCheck.recordset.length === 0) {
-          return {
-            success: false,
-            status: 404,
-            message: `Không tìm thấy sản phẩm ${item.maSanPham}`,
-          };
-        }
-
-        const product = productCheck.recordset[0];
-        const tonKho = product.TonKho || 0;
-
-        if (tonKho < item.soLuong) {
-          return {
-            success: false,
-            status: 400,
-            message: `Sản phẩm ${product.TenSanPham} không đủ tồn kho. Tồn kho: ${tonKho}, Yêu cầu: ${item.soLuong}`,
-          };
-        }
       }
 
       const today = new Date();
@@ -610,335 +464,25 @@ class CustomersService {
       const day = String(today.getDate()).padStart(2, '0');
       const ngayLapStr = `${year}-${month}-${day}`;
 
-      const customer = customerCheck.recordset[0];
-      const capHoiVien = customer.CapHoiVien || "Cơ bản";
-      const { TIER_DISCOUNTS, POINTS_PER_VND } = require("../../config/constants");
-      // Map từ database (Cơ bản, Thân thiết, VIP) sang constants (CoBan, ThanThiet, VIP)
-      const tierMap = {
-        "Cơ bản": "CoBan",
-        "Thân thiết": "ThanThiet",
-        "VIP": "VIP"
+      return {
+        success: true,
+        status: 201,
+        message: ErrorMessage,
+        data: {
+          maHoaDon: MaHoaDon,
+          ngayLap: ngayLapStr,
+          tongTien: TongTien,
+          diemLoyalty: DiemLoyalty,
+          trangThai: "Chờ xác nhận",
+        },
       };
-      const tierKey = tierMap[capHoiVien] || "CoBan";
-      const discountPercent = TIER_DISCOUNTS[tierKey] || 0;
-
-      let tongTien = 0;
-
-      const transaction = new sql.Transaction(pool);
-      await transaction.begin();
-
-      try {
-        const request = new sql.Request(transaction);
-
-        const itemsData = [];
-        for (const item of items) {
-          // Tạo request mới cho mỗi query để tránh trùng lặp parameter
-          const productRequest = new sql.Request(transaction);
-          const productResult = await productRequest
-            .input("MaSanPham", sql.Char(5), item.maSanPham)
-            .input("MaChiNhanh", sql.Char(4), maChiNhanh)
-            .query(
-              `
-              SELECT TOP 1 
-                sp.MaSanPham, 
-                sp.TenSanPham, 
-                sp.DonGia,
-                tk.SoLuongTon AS TonKho
-              FROM dbo.SanPham sp
-              LEFT JOIN dbo.SanPham_TonKho tk 
-                ON sp.MaSanPham = tk.MaSanPham AND tk.MaChiNhanh = @MaChiNhanh
-              WHERE sp.MaSanPham = @MaSanPham
-            `
-            );
-
-          if (!productResult.recordset || productResult.recordset.length === 0) {
-            await transaction.rollback();
-            return {
-              success: false,
-              status: 404,
-              message: `Không tìm thấy sản phẩm với mã: ${item.maSanPham}`,
-            };
-          }
-
-          const product = productResult.recordset[0];
-          
-          if (!product.DonGia) {
-            await transaction.rollback();
-            return {
-              success: false,
-              status: 400,
-              message: `Sản phẩm ${product.TenSanPham || item.maSanPham} không có giá`,
-            };
-          }
-
-          // Kiểm tra tồn kho (chỉ cảnh báo, không chặn vì sẽ trừ khi nhân viên xác nhận)
-          const tonKho = product.TonKho || 0;
-          if (tonKho < item.soLuong) {
-            await transaction.rollback();
-            return {
-              success: false,
-              status: 400,
-              message: `Sản phẩm ${product.TenSanPham || item.maSanPham} chỉ còn ${tonKho} sản phẩm trong kho`,
-            };
-          }
-
-          const donGia = product.DonGia;
-          const thanhTien = donGia * item.soLuong;
-          const thanhTienSauGiam = thanhTien * (1 - discountPercent / 100);
-          tongTien += thanhTienSauGiam;
-
-          itemsData.push({
-            ...item,
-            thanhTienSauGiam,
-          });
-        }
-
-        // Không cộng phí vận chuyển vì trigger trong database đã tự động tính tổng tiền
-        const tongTienFinal = tongTien;
-        // Tính điểm loyalty (sẽ cộng vào KhachHang khi nhân viên xác nhận)
-        const diemLoyalty = Math.floor(tongTienFinal / POINTS_PER_VND);
-
-        // Tạo hóa đơn với NhanVienLap = NULL (chờ xác nhận)
-        // Trigger trong database sẽ tự động sinh MaHoaDon
-        // Lưu ý: DiemLoyalty không có trong bảng HoaDon, chỉ lưu trong KhachHang
-        // Thứ tự cột theo schema: MaHoaDon, MaKhachHang, NgayLap, TongTien, HinhThucThanhToan, MaKhuyenMai, NhanVienLap, MaChiNhanh
-        // INSERT và sau đó query lại để lấy MaHoaDon vừa được trigger tạo
-        const insertHoaDonRequest = new sql.Request(transaction);
-        let insertResult;
-        try {
-          // INSERT với MaHoaDon = NULL (trigger sẽ tự sinh)
-          // Nếu trigger yêu cầu MaHoaDon phải có giá trị, sẽ báo lỗi
-          insertResult = await insertHoaDonRequest
-            .input("MaKhachHang", sql.Char(7), customerId)
-            .input("NgayLap", sql.Date, ngayLapStr)
-            .input("TongTien", sql.Int, Math.round(tongTienFinal)) // Schema là INT, không phải MONEY
-            .input("HinhThucThanhToan", sql.NVarChar(20), hinhThucThanhToan) // Đã convert sang tiếng Việt
-            .input("MaChiNhanh", sql.Char(4), maChiNhanh)
-            .query(
-              `
-              INSERT INTO dbo.HoaDon (
-                MaHoaDon, MaKhachHang, NgayLap, TongTien, HinhThucThanhToan, NhanVienLap, MaChiNhanh
-              )
-              VALUES (
-                NULL, @MaKhachHang, @NgayLap, @TongTien, @HinhThucThanhToan, NULL, @MaChiNhanh
-              )
-            `
-            );
-        } catch (insertError) {
-          await transaction.rollback();
-          console.error("Error inserting HoaDon:", insertError);
-          console.error("Error details:", {
-            message: insertError.message,
-            code: insertError.code,
-            number: insertError.number,
-            originalError: insertError.originalError
-          });
-          throw insertError;
-        }
-
-        // Query lại để lấy MaHoaDon vừa được trigger tạo
-        // Dùng điều kiện chính xác với tất cả giá trị INSERT để tìm record vừa tạo
-        let maHoaDon;
-        const getMaHoaDonRequest = new sql.Request(transaction);
-        const maHoaDonResult = await getMaHoaDonRequest
-          .input("MaKhachHang", sql.Char(7), customerId)
-          .input("NgayLap", sql.Date, ngayLapStr)
-          .input("TongTien", sql.Int, Math.round(tongTienFinal))
-          .input("MaChiNhanh", sql.Char(4), maChiNhanh)
-          .input("HinhThucThanhToan", sql.NVarChar(20), hinhThucThanhToan)
-          .query(
-            `
-            SELECT TOP 1 MaHoaDon, NgayLap, TongTien, MaChiNhanh, NhanVienLap, HinhThucThanhToan
-            FROM dbo.HoaDon
-            WHERE MaKhachHang = @MaKhachHang
-              AND NgayLap = @NgayLap
-              AND TongTien = @TongTien
-              AND MaChiNhanh = @MaChiNhanh
-              AND HinhThucThanhToan = @HinhThucThanhToan
-              AND NhanVienLap IS NULL
-            ORDER BY MaHoaDon DESC
-          `
-          );
-
-        // Lấy MaHoaDon vừa được trigger tạo
-        if (maHoaDonResult.recordset && maHoaDonResult.recordset.length > 0) {
-          maHoaDon = maHoaDonResult.recordset[0].MaHoaDon;
-        } else {
-          // Nếu không tìm thấy với điều kiện chính xác, thử query không có NhanVienLap IS NULL
-          const fallbackQuery = new sql.Request(transaction);
-          const fallbackResult = await fallbackQuery
-            .input("MaKhachHang", sql.Char(7), customerId)
-            .input("NgayLap", sql.Date, ngayLapStr)
-            .input("TongTien", sql.Int, Math.round(tongTienFinal))
-            .input("MaChiNhanh", sql.Char(4), maChiNhanh)
-            .input("HinhThucThanhToan", sql.NVarChar(20), hinhThucThanhToan)
-            .query(
-              `
-              SELECT TOP 1 MaHoaDon, NgayLap, TongTien, MaChiNhanh, NhanVienLap, HinhThucThanhToan
-              FROM dbo.HoaDon
-              WHERE MaKhachHang = @MaKhachHang
-                AND NgayLap = @NgayLap
-                AND TongTien = @TongTien
-                AND MaChiNhanh = @MaChiNhanh
-                AND HinhThucThanhToan = @HinhThucThanhToan
-              ORDER BY MaHoaDon DESC
-            `
-            );
-          
-          if (fallbackResult.recordset && fallbackResult.recordset.length > 0) {
-            maHoaDon = fallbackResult.recordset[0].MaHoaDon;
-          } else {
-            await transaction.rollback();
-            return {
-              success: false,
-              status: 500,
-              message: "Không thể lấy mã hóa đơn sau khi tạo. Có thể trigger không chạy hoặc có lỗi. Vui lòng kiểm tra trigger trong database.",
-            };
-          }
-        }
-
-        // Tạo chi tiết hóa đơn (CTHD và CTHD_MuaHang)
-        // Trigger trong database sẽ tự động sinh STT cho mỗi CTHD
-        // INSERT và sau đó query lại để lấy STT vừa được trigger tạo
-        for (const itemData of itemsData) {
-          // Tạo request mới cho mỗi query để tránh trùng lặp parameter
-          const cthdRequest = new sql.Request(transaction);
-          const cthdResult = await cthdRequest
-            .input("MaHoaDon", sql.Char(8), maHoaDon)
-            .input("LoaiDichVu", sql.NVarChar(20), "Mua hàng")
-            .input("ThanhTien", sql.Int, Math.round(itemData.thanhTienSauGiam)) // Schema là INT
-            .query(
-              `
-              INSERT INTO dbo.CTHD (MaHoaDon, LoaiDichVu, ThanhTien)
-              VALUES (@MaHoaDon, @LoaiDichVu, @ThanhTien)
-            `
-            );
-
-          // Query lại để lấy STT vừa được trigger tạo
-          // Đơn giản hóa query: chỉ dùng MaHoaDon và LoaiDichVu, ORDER BY để lấy mới nhất
-          const getSTTRequest = new sql.Request(transaction);
-          const sttResult = await getSTTRequest
-            .input("MaHoaDon", sql.Char(8), maHoaDon)
-            .input("LoaiDichVu", sql.NVarChar(20), "Mua hàng")
-            .query(
-              `
-              SELECT TOP 1 STT
-              FROM dbo.CTHD
-              WHERE MaHoaDon = @MaHoaDon
-                AND LoaiDichVu = @LoaiDichVu
-              ORDER BY STT DESC
-            `
-            );
-
-          // Lấy STT vừa được trigger tạo
-          if (!sttResult.recordset || sttResult.recordset.length === 0) {
-            await transaction.rollback();
-            console.error("Cannot find STT after INSERT CTHD. MaHoaDon:", maHoaDon);
-            return {
-              success: false,
-              status: 500,
-              message: "Không thể lấy STT sau khi tạo CTHD",
-            };
-          }
-          const stt = sttResult.recordset[0].STT;
-
-          const muaHangRequest = new sql.Request(transaction);
-          const muaHangResult = await muaHangRequest
-            .input("MaHoaDon", sql.Char(8), maHoaDon)
-            .input("STT", sql.Int, stt)
-            .input("MaSanPham", sql.Char(5), itemData.maSanPham)
-            .input("SoLuong", sql.Int, itemData.soLuong)
-            .query(
-              `
-              INSERT INTO dbo.CTHD_MuaHang (MaHoaDon, STT, MaSanPham, SoLuong)
-              VALUES (@MaHoaDon, @STT, @MaSanPham, @SoLuong)
-            `
-            );
-        }
-
-        // KHÔNG cập nhật tồn kho và KHÔNG cộng điểm ở đây
-        // Sẽ làm khi nhân viên xác nhận
-
-        await transaction.commit();
-
-        return {
-          success: true,
-          status: 201,
-          message: "Đặt hàng thành công. Đơn hàng đang chờ nhân viên xác nhận.",
-          data: {
-            maHoaDon,
-            ngayLap: ngayLapStr,
-            tongTien: tongTienFinal,
-            diemLoyalty, // Điểm sẽ được cộng khi nhân viên xác nhận
-            trangThai: "Chờ xác nhận",
-          },
-        };
-      } catch (error) {
-        await transaction.rollback();
-        console.error("Transaction error details:", {
-          message: error.message,
-          code: error.code,
-          number: error.number,
-          originalError: error.originalError,
-          stack: error.stack
-        });
-        // Re-throw để outer catch xử lý
-        throw error;
-      }
     } catch (error) {
       console.error("Error creating order:", error);
-      console.error("Error details:", {
-        message: error.message,
-        code: error.code,
-        number: error.number,
-        originalError: error.originalError,
-        stack: error.stack
-      });
-      // Xử lý các lỗi SQL Server phổ biến
-      let errorMessage = "Lỗi hệ thống khi tạo đơn hàng";
-      
-      if (error.originalError) {
-        const sqlError = error.originalError;
-        
-        // Foreign key constraint violation
-        if (sqlError.number === 547) {
-          if (sqlError.message.includes("FK_HD_CN")) {
-            errorMessage = "Mã chi nhánh không tồn tại trong hệ thống";
-          } else if (sqlError.message.includes("FK_HD_NV")) {
-            errorMessage = "Mã nhân viên không tồn tại trong hệ thống";
-          } else if (sqlError.message.includes("FK_HD_KM")) {
-            errorMessage = "Mã khuyến mãi không tồn tại trong hệ thống";
-          } else if (sqlError.message.includes("FK_MH_SP")) {
-            errorMessage = "Mã sản phẩm không tồn tại trong hệ thống";
-          } else {
-            errorMessage = "Dữ liệu không hợp lệ: " + sqlError.message;
-          }
-        }
-        // Check constraint violation
-        else if (sqlError.number === 515) {
-          errorMessage = "Thiếu thông tin bắt buộc: " + sqlError.message;
-        }
-        // Duplicate key
-        else if (sqlError.number === 2627) {
-          errorMessage = "Mã hóa đơn đã tồn tại. Vui lòng thử lại.";
-        }
-        else {
-          errorMessage = sqlError.message || errorMessage;
-        }
-      } else if (error.message) {
-        errorMessage = error.message;
-      }
-
       return {
         success: false,
         status: 500,
-        message: errorMessage,
+        message: "Lỗi hệ thống khi tạo đơn hàng",
         error: error.message,
-        details: process.env.NODE_ENV === 'development' ? {
-          code: error.code,
-          number: error.number,
-          originalError: error.originalError?.message
-        } : undefined
       };
     }
   }
@@ -1182,164 +726,7 @@ class CustomersService {
     }
   }
 
-  /**
-   * Xác nhận hóa đơn (cập nhật NhanVienLap, cập nhật tồn kho, cộng điểm)
-   * @param {string} maHoaDon
-   * @param {string} nhanVienId - Mã nhân viên xác nhận
-   */
-  async confirmOrder(maHoaDon, nhanVienId) {
-    try {
-      const pool = await poolPromise;
-
-      // Kiểm tra hóa đơn chờ xác nhận
-      const hoaDonCheck = await pool
-        .request()
-        .input("MaHoaDon", sql.Char(8), maHoaDon)
-        .query(
-          `
-          SELECT TOP 1 
-            hd.*,
-            kh.CapHoiVien
-          FROM dbo.HoaDon hd
-          JOIN dbo.KhachHang kh ON hd.MaKhachHang = kh.MaKhachHang
-          WHERE hd.MaHoaDon = @MaHoaDon
-            AND hd.NhanVienLap IS NULL
-            AND EXISTS (
-              SELECT 1 FROM dbo.CTHD cthd 
-              WHERE cthd.MaHoaDon = hd.MaHoaDon 
-              AND cthd.LoaiDichVu = N'Mua hàng'
-            )
-        `
-        );
-
-      if (hoaDonCheck.recordset.length === 0) {
-        return {
-          success: false,
-          status: 404,
-          message: "Không tìm thấy hóa đơn chờ xác nhận",
-        };
-      }
-
-      const hoaDon = hoaDonCheck.recordset[0];
-
-      // Kiểm tra tồn kho
-      const chiTietResult = await pool
-        .request()
-        .input("MaHoaDon", sql.Char(8), maHoaDon)
-        .input("MaChiNhanh", sql.Char(4), hoaDon.MaChiNhanh)
-        .query(
-          `
-          SELECT 
-            mh.MaSanPham,
-            mh.SoLuong,
-            ISNULL(tk.SoLuongTon, 0) AS TonKho
-          FROM dbo.CTHD_MuaHang mh
-          LEFT JOIN dbo.SanPham_TonKho tk 
-            ON mh.MaSanPham = tk.MaSanPham 
-            AND tk.MaChiNhanh = @MaChiNhanh
-          WHERE mh.MaHoaDon = @MaHoaDon
-        `
-        );
-
-      for (const item of chiTietResult.recordset) {
-        if (item.TonKho < item.SoLuong) {
-          return {
-            success: false,
-            status: 400,
-            message: `Sản phẩm ${item.MaSanPham} không đủ tồn kho. Tồn kho: ${item.TonKho}, Yêu cầu: ${item.SoLuong}`,
-          };
-        }
-      }
-
-      const { POINTS_PER_VND } = require("../../config/constants");
-      const diemLoyalty = hoaDon.DiemLoyalty || Math.floor(hoaDon.TongTien / POINTS_PER_VND);
-
-      const transaction = new sql.Transaction(pool);
-      await transaction.begin();
-
-      try {
-        const request = new sql.Request(transaction);
-
-        // Cập nhật NhanVienLap trong hóa đơn
-        await request
-          .input("MaHoaDon", sql.Char(8), maHoaDon)
-          .input("NhanVienLap", sql.Char(5), nhanVienId)
-          .query(
-            `
-            UPDATE dbo.HoaDon
-            SET NhanVienLap = @NhanVienLap
-            WHERE MaHoaDon = @MaHoaDon
-          `
-          );
-
-        // Cập nhật tồn kho
-        const chiTietMuaHang = await request
-          .input("MaHoaDon", sql.Char(8), maHoaDon)
-          .query(
-            `
-            SELECT MaSanPham, SoLuong
-            FROM dbo.CTHD_MuaHang
-            WHERE MaHoaDon = @MaHoaDon
-          `
-          );
-
-        for (const item of chiTietMuaHang.recordset) {
-          await request
-            .input("MaSanPham", sql.Char(5), item.MaSanPham)
-            .input("MaChiNhanh", sql.Char(4), hoaDon.MaChiNhanh)
-            .input("SoLuong", sql.Int, item.SoLuong)
-            .query(
-              `
-              UPDATE dbo.SanPham_TonKho
-              SET SoLuongTon = SoLuongTon - @SoLuong
-              WHERE MaSanPham = @MaSanPham AND MaChiNhanh = @MaChiNhanh
-              
-              IF @@ROWCOUNT = 0
-              BEGIN
-                INSERT INTO dbo.SanPham_TonKho (MaSanPham, MaChiNhanh, SoLuongTon)
-                VALUES (@MaSanPham, @MaChiNhanh, -@SoLuong)
-              END
-            `
-            );
-        }
-
-        // Cộng điểm loyalty
-        await request
-          .input("MaKhachHang", sql.Char(7), hoaDon.MaKhachHang)
-          .input("DiemLoyalty", sql.Int, diemLoyalty)
-          .query(
-            `
-            UPDATE dbo.KhachHang
-            SET DiemLoyalty = DiemLoyalty + @DiemLoyalty
-            WHERE MaKhachHang = @MaKhachHang
-          `
-          );
-
-        await transaction.commit();
-
-        return {
-          success: true,
-          status: 200,
-          message: "Xác nhận đơn hàng thành công",
-          data: {
-            maHoaDon,
-            diemLoyalty,
-          },
-        };
-      } catch (error) {
-        await transaction.rollback();
-        throw error;
-      }
-    } catch (error) {
-      console.error("Error confirming order:", error);
-      return {
-        success: false,
-        status: 500,
-        message: "Lỗi khi xác nhận đơn hàng",
-        error: error.message,
-      };
-    }
-  }
+  
 }
 
 module.exports = new CustomersService();

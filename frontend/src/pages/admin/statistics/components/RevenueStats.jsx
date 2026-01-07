@@ -1,4 +1,5 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
+import ReactDOM from "react-dom";
 import { useNavigate } from "react-router-dom";
 import { ArrowLeft } from "lucide-react";
 import { Button } from "../../../../components/ui/button";
@@ -17,6 +18,81 @@ import {
 } from "lucide-react";
 import AdminHeader from "../../components/AdminHeader";
 import { reportAPI } from "../../../../api/services";
+
+// Tooltip component for displaying full numbers
+const NumberTooltip = ({ children, fullValue }) => {
+  const [position, setPosition] = useState({ top: 0, left: 0 });
+  const [isVisible, setIsVisible] = useState(false);
+  const triggerRef = useRef(null);
+
+  const handleMouseEnter = () => {
+    if (triggerRef.current) {
+      const rect = triggerRef.current.getBoundingClientRect();
+      console.log("Tooltip triggered:", { fullValue, rect });
+      setPosition({
+        top: rect.top - 3,
+        left: rect.left + rect.width / 2,
+      });
+      setIsVisible(true);
+    }
+  };
+
+  const handleMouseLeave = () => {
+    setIsVisible(false);
+  };
+
+  return (
+    <>
+      <span
+        ref={triggerRef}
+        className="inline-block"
+        onMouseEnter={handleMouseEnter}
+        onMouseLeave={handleMouseLeave}
+      >
+        {children}
+      </span>
+      {isVisible &&
+        ReactDOM.createPortal(
+          <div
+            className="fixed z-[9999] pointer-events-none"
+            style={{
+              top: `${position.top}px`,
+              left: `${position.left}px`,
+              transform: "translate(-50%, -100%)",
+            }}
+          >
+            <div className="bg-blue-50 text-blue-600 border border-blue-400 px-2 py-1 rounded-lg shadow-2xl text-sm font-bold whitespace-nowrap">
+              {fullValue}
+            </div>
+          </div>,
+          document.body
+        )}
+    </>
+  );
+};
+
+// Helper function to format numbers in compact form
+const formatCompactNumber = (value) => {
+  if (!value || value === 0) return "0";
+
+  const absValue = Math.abs(value);
+
+  if (absValue >= 1000000000) {
+    // Tỷ
+    return `${(value / 1000000000).toFixed(1)} tỷ`;
+  } else if (absValue >= 1000000) {
+    // Triệu
+    return `${(value / 1000000).toFixed(1)} tr`;
+  } else {
+    return value.toLocaleString("vi-VN") + " đ";
+  }
+};
+
+// Helper function to format full number with separators
+const formatFullNumber = (value) => {
+  if (!value || value === 0) return "0 đ";
+  return `${value.toLocaleString("vi-VN")} đ`;
+};
 
 export default function RevenueStats() {
   const navigate = useNavigate();
@@ -190,24 +266,26 @@ export default function RevenueStats() {
             </div>
 
             <div className="lg:col-span-8">
-              <Card className="bg-gradient-to-br from-blue-600 via-sky-600 to-cyan-600 text-white border-none shadow-xl overflow-hidden relative h-full">
-                <div className="absolute top-0 right-0 p-8 opacity-10">
+              <Card className="bg-gradient-to-br from-blue-600 via-sky-600 to-cyan-600 text-white border-none shadow-xl relative h-full rounded-xl">
+                {/* watermark */}
+                <div className="absolute top-0 right-0 p-8 opacity-10 pointer-events-none select-none z-0 overflow-hidden">
                   <DollarSign size={120} />
                 </div>
 
-                <CardHeader className="pt-3 pb-3">
+                <CardHeader className="pt-3 pb-3 relative z-10">
                   <CardTitle className="text-3xl font-bold text-white">
                     Tổng doanh thu hệ thống
                   </CardTitle>
                 </CardHeader>
 
-                <CardContent>
+                <CardContent className="relative z-10">
                   <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-5">
                     <div>
-                      <div className="text-5xl font-black tracking-tight">
-                        {totalRevenue.toLocaleString("vi-VN")}
-                        <span className="text-2xl ml-2">₫</span>
-                      </div>
+                      <NumberTooltip fullValue={formatFullNumber(totalRevenue)}>
+                        <div className="text-5xl font-black tracking-tight cursor-pointer">
+                          {formatCompactNumber(totalRevenue)}
+                        </div>
+                      </NumberTooltip>
                       <p className="text-white mt-2 opacity-80">
                         Dựa trên dữ liệu từ {branches.length} chi nhánh
                       </p>
@@ -222,9 +300,13 @@ export default function RevenueStats() {
                           <span className="text-[10px] text-white block uppercase font-bold">
                             Mua hàng
                           </span>
-                          <span className="font-bold text-lg truncate block">
-                            {totalSales.toLocaleString("vi-VN")} ₫
-                          </span>
+                          <NumberTooltip
+                            fullValue={formatFullNumber(totalSales)}
+                          >
+                            <span className="font-bold text-lg block cursor-pointer">
+                              {formatCompactNumber(totalSales)}
+                            </span>
+                          </NumberTooltip>
                         </div>
                       </div>
 
@@ -236,9 +318,13 @@ export default function RevenueStats() {
                           <span className="text-[10px] text-white block uppercase font-bold">
                             Khám bệnh
                           </span>
-                          <span className="font-bold text-lg truncate block">
-                            {totalMedical.toLocaleString("vi-VN")} ₫
-                          </span>
+                          <NumberTooltip
+                            fullValue={formatFullNumber(totalMedical)}
+                          >
+                            <span className="font-bold text-lg block cursor-pointer">
+                              {formatCompactNumber(totalMedical)}
+                            </span>
+                          </NumberTooltip>
                         </div>
                       </div>
 
@@ -250,9 +336,13 @@ export default function RevenueStats() {
                           <span className="text-[10px] text-white block uppercase font-bold">
                             Tiêm phòng
                           </span>
-                          <span className="font-bold text-lg truncate block">
-                            {totalVaccine.toLocaleString("vi-VN")} ₫
-                          </span>
+                          <NumberTooltip
+                            fullValue={formatFullNumber(totalVaccine)}
+                          >
+                            <span className="font-bold text-lg block cursor-pointer">
+                              {formatCompactNumber(totalVaccine)}
+                            </span>
+                          </NumberTooltip>
                         </div>
                       </div>
                     </div>
@@ -296,12 +386,11 @@ export default function RevenueStats() {
                       <p className="text-xs font-bold text-gray-500 uppercase tracking-wider">
                         Doanh thu chi nhánh
                       </p>
-                      <div className="text-2xl font-black text-blue-600">
-                        {revenue.toLocaleString("vi-VN")}
-                        <span className="text-sm ml-1 font-black text-blue-600">
-                          ₫
-                        </span>
-                      </div>
+                      <NumberTooltip fullValue={formatFullNumber(revenue)}>
+                        <div className="text-2xl font-black text-blue-600 cursor-pointer">
+                          {formatCompactNumber(revenue)}
+                        </div>
+                      </NumberTooltip>
                     </div>
 
                     <div className="space-y-2 text-sm">
@@ -310,9 +399,13 @@ export default function RevenueStats() {
                           <ShoppingBag className="h-4 w-4 text-emerald-600" />
                           <span>Mua hàng</span>
                         </div>
-                        <span className="font-bold text-gray-800">
-                          {(branch.salesRevenue || 0).toLocaleString("vi-VN")} đ
-                        </span>
+                        <NumberTooltip
+                          fullValue={formatFullNumber(branch.salesRevenue || 0)}
+                        >
+                          <span className="font-bold text-gray-800 cursor-pointer">
+                            {formatCompactNumber(branch.salesRevenue || 0)}
+                          </span>
+                        </NumberTooltip>
                       </div>
 
                       <div className="flex items-center justify-between gap-3">
@@ -320,10 +413,15 @@ export default function RevenueStats() {
                           <Stethoscope className="h-4 w-4 text-amber-500" />
                           <span>Khám bệnh</span>
                         </div>
-                        <span className="font-bold text-gray-800">
-                          {(branch.medicalRevenue || 0).toLocaleString("vi-VN")}{" "}
-                          đ
-                        </span>
+                        <NumberTooltip
+                          fullValue={formatFullNumber(
+                            branch.medicalRevenue || 0
+                          )}
+                        >
+                          <span className="font-bold text-gray-800 cursor-pointer">
+                            {formatCompactNumber(branch.medicalRevenue || 0)}
+                          </span>
+                        </NumberTooltip>
                       </div>
 
                       <div className="flex items-center justify-between gap-3">
@@ -331,10 +429,15 @@ export default function RevenueStats() {
                           <Syringe className="h-4 w-4 text-rose-500" />
                           <span>Tiêm phòng</span>
                         </div>
-                        <span className="font-bold text-gray-800">
-                          {(branch.vaccineRevenue || 0).toLocaleString("vi-VN")}{" "}
-                          đ
-                        </span>
+                        <NumberTooltip
+                          fullValue={formatFullNumber(
+                            branch.vaccineRevenue || 0
+                          )}
+                        >
+                          <span className="font-bold text-gray-800 cursor-pointer">
+                            {formatCompactNumber(branch.vaccineRevenue || 0)}
+                          </span>
+                        </NumberTooltip>
                       </div>
                     </div>
 

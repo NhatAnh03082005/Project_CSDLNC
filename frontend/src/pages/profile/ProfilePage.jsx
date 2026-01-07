@@ -18,7 +18,7 @@ import {
   SelectValue,
 } from "../../components/ui/select";
 import { Badge } from "../../components/ui/badge";
-import { Crown, TrendingUp, Award, Loader2 } from "lucide-react";
+import { Crown, TrendingUp, Award, Loader2, ShieldCheck } from "lucide-react";
 import { useAuth } from "../../context/AuthContext";
 import { customerAPI } from "../../api/services";
 
@@ -28,7 +28,7 @@ export default function ProfilePage() {
   const [errors, setErrors] = useState({});
   const [loading, setLoading] = useState(true);
   const [profileData, setProfileData] = useState(null);
-  
+
   const [formData, setFormData] = useState({
     HoTen: "",
     SDT: "",
@@ -59,7 +59,7 @@ export default function ProfilePage() {
         setLoading(false);
       }
     };
-    
+
     fetchProfile();
   }, []);
 
@@ -69,7 +69,9 @@ export default function ProfilePage() {
         HoTen: profileData.HoTen || "",
         SDT: profileData.SDT || "",
         CCCD: profileData.CCCD || "",
-        NgaySinh: profileData.NgaySinh ? profileData.NgaySinh.split("T")[0] : "",
+        NgaySinh: profileData.NgaySinh
+          ? profileData.NgaySinh.split("T")[0]
+          : "",
         GioiTinh: profileData.GioiTinh || "Nam",
       });
     }
@@ -77,9 +79,9 @@ export default function ProfilePage() {
 
   if (loading || !profileData) {
     return (
-      <div className="flex justify-center items-center py-20">
+      <div className="flex justify-center items-center py-20 min-h-screen bg-gradient-to-br from-blue-50 via-white to-sky-50/50">
         <Loader2 className="animate-spin h-8 w-8 text-blue-600" />
-        <p className="ml-2">Đang tải hồ sơ...</p>
+        <p className="ml-2 font-medium text-slate-600">Đang tải hồ sơ...</p>
       </div>
     );
   }
@@ -121,7 +123,11 @@ export default function ProfilePage() {
         setIsEditing(false);
         setErrors({});
         const updatedResponse = await customerAPI.getProfile();
-        if (updatedResponse && updatedResponse.data && updatedResponse.data.success) {
+        if (
+          updatedResponse &&
+          updatedResponse.data &&
+          updatedResponse.data.success
+        ) {
           const updatedData = updatedResponse.data.data;
           setProfileData(updatedData);
           setUser(updatedData);
@@ -150,47 +156,66 @@ export default function ProfilePage() {
   const loyalTierMin = 5000000;
   const vipTierMin = 15000000;
   return (
-    <div className="min-h-screen bg-gradient-to-b from-blue-50 to-white">
-      <div className="container mx-auto px-4 py-8 max-w-5xl">
-        <div className="mb-6">
-          <h1 className="text-3xl font-bold text-blue-900 mb-2">
-            Quản lý hồ sơ
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-sky-50/50 py-12">
+      <div className="container mx-auto px-4 max-w-6xl">
+        <div className="mb-10 text-center lg:text-left">
+          <h1 className="text-4xl font-black bg-gradient-to-r from-blue-600 to-teal-600 bg-clip-text text-transparent mb-3">
+            Hồ sơ tài khoản
           </h1>
-          <p className="text-gray-600">
-            Xem và cập nhật thông tin cá nhân của bạn
+          <p className="text-slate-600 font-medium">
+            Quản lý thông tin cá nhân và theo dõi đặc quyền hội viên của bạn
           </p>
         </div>
 
-        <div className="grid lg:grid-cols-3 gap-6">
-          <div className="lg:col-span-1">
-            <Card className="bg-gradient-to-br from-blue-600 to-blue-800 text-white">
-              <CardHeader>
+        <div className="grid lg:grid-cols-3 gap-8">
+          <div className="lg:col-span-1 space-y-6">
+            <Card className="bg-gradient-to-br from-blue-600 to-blue-800 text-white rounded-[2.5rem] border-none shadow-2xl shadow-blue-200 overflow-hidden relative group transition-all hover:-translate-y-2">
+              <div className="absolute top-0 right-0 p-8 opacity-10 group-hover:scale-110 transition-transform">
+                <Crown className="h-24 w-24" />
+              </div>
+              <CardHeader className="relative z-10">
                 <div className="flex items-center justify-between">
-                  <CardTitle className="text-white">Hội viên</CardTitle>
-                  <Crown className="h-6 w-6" />
+                  <CardTitle className="text-2xl font-bold text-white">
+                    Hội viên
+                  </CardTitle>
+                  <Crown className="h-7 w-7 animate-bounce-slow" />
                 </div>
               </CardHeader>
-              <CardContent className="space-y-4">
+              <CardContent className="relative z-10 space-y-4">
                 <div>
-                  <Badge className="bg-white/20 text-white border-white/30 mb-2">
+                  <Badge className="bg-white/20 text-white border-white/30 text-sm py-1 px-4 rounded-full mb-4">
                     {profileData.CapHoiVien}
                   </Badge>
-                  <p className="text-2xl font-bold">{profileData.DiemLoyalty || 0} </p>
-                  <p className="text-sm text-blue-100">Điểm loyalty</p>
+                  <div className="flex items-baseline gap-2">
+                    <span className="text-5xl font-black">
+                      {profileData.DiemLoyalty || 0}
+                    </span>
+                    <span className="text-blue-100 font-bold tracking-widest uppercase text-xs">
+                      Điểm
+                    </span>
+                  </div>
                 </div>
 
-                <div className="pt-4 border-t border-white/20 space-y-2 text-sm">
-                  <div className="flex items-center gap-2">
-                    <TrendingUp className="h-4 w-4" />
-                    <span>Chi tiêu hiện tại:</span>
-                    <span className="font-semibold ml-auto">
+                <div className="pt-6 border-t border-white/20 space-y-3">
+                  <div className="flex items-center justify-between text-blue-50">
+                    <div className="flex items-center gap-2">
+                      <TrendingUp className="h-4 w-4" />
+                      <span className="text-sm font-medium">
+                        Tổng chi tiêu:
+                      </span>
+                    </div>
+                    <span className="font-bold">
                       {currentSpending.toLocaleString("vi-VN")}đ
                     </span>
                   </div>
-                  <div className="flex items-center gap-2">
-                    <Award className="h-4 w-4" />
-                    <span>Chi tiêu giữ hạng:</span>
-                    <span className="font-semibold ml-auto">
+                  <div className="flex items-center justify-between text-blue-50">
+                    <div className="flex items-center gap-2">
+                      <Award className="h-4 w-4" />
+                      <span className="text-sm font-medium">
+                        Chi tiêu giữ hạng:
+                      </span>
+                    </div>
+                    <span className="font-bold">
                       {maintainSpending.toLocaleString("vi-VN")}đ
                     </span>
                   </div>
@@ -198,60 +223,58 @@ export default function ProfilePage() {
               </CardContent>
             </Card>
 
-            <Card className="mt-6">
-              <CardHeader>
-                <CardTitle className="text-lg">Các cấp hội viên</CardTitle>
+            <Card className="rounded-[2.5rem] border border-blue-200 shadow-xl shadow-blue-900/5 bg-white overflow-hidden transition-all hover:shadow-2xl hover:-translate-y-1">
+              <CardHeader className="border-b border-blue-100">
+                <CardTitle className="text-blue-600 text-xl font-bold">
+                  Bản đồ thăng hạng
+                </CardTitle>
               </CardHeader>
-              <CardContent className="space-y-3">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <div className="h-3 w-3 rounded-full bg-gray-400" />
-                    <span className="text-sm">Cơ bản</span>
-                  </div>
-                  <span className="text-sm text-gray-600">
-                    {basicTierMin.toLocaleString("vi-VN")}đ
-                  </span>
-                </div>
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <div className="h-3 w-3 rounded-full bg-blue-500" />
-                    <span className="text-sm">Thân thiết</span>
-                  </div>
-                  <span className="text-sm text-gray-600">
-                    {loyalTierMin.toLocaleString("vi-VN")}đ
-                  </span>
-                </div>
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <div className="h-3 w-3 rounded-full bg-amber-500" />
-                    <span className="text-sm">VIP</span>
-                  </div>
-                  <span className="text-sm text-gray-600">
-                    {vipTierMin.toLocaleString("vi-VN")}đ
-                  </span>
-                </div>
+              <CardContent className="pt-6 space-y-4">
+                <TierItem
+                  label="Cơ bản"
+                  min={basicTierMin}
+                  color="bg-slate-400"
+                />
+                <TierItem
+                  label="Thân thiết"
+                  min={loyalTierMin}
+                  color="bg-blue-500"
+                />
+                <TierItem
+                  label="VIP"
+                  min={vipTierMin}
+                  color="bg-amber-500"
+                  isLast
+                />
               </CardContent>
             </Card>
           </div>
 
           <div className="lg:col-span-2">
-            <Card>
-              <CardHeader>
-                <div className="flex items-center justify-between">
+            <Card className="rounded-[2.5rem] border border-blue-100 shadow-xl shadow-blue-900/5 bg-white h-full transition-all hover:shadow-2xl">
+              <CardHeader className="p-8 border-b border-blue-50">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                   <div>
-                    <CardTitle>Thông tin cá nhân</CardTitle>
-                    <CardDescription>
-                      Quản lý thông tin tài khoản của bạn
+                    <CardTitle className="text-blue-600 text-3xl font-black">
+                      Thông tin cá nhân
+                    </CardTitle>
+                    <CardDescription className="text-slate-500 font-medium mt-1">
+                      Cập nhật thông tin định danh và liên hệ
                     </CardDescription>
                   </div>
                   {!isEditing ? (
-                    <Button onClick={() => setIsEditing(true)}>
-                      Chỉnh sửa
+                    <Button
+                      variant="premium"
+                      className="rounded-2xl h-12 px-8 font-bold shadow-lg shadow-blue-100"
+                      onClick={() => setIsEditing(true)}
+                    >
+                      Chỉnh sửa profile
                     </Button>
                   ) : (
-                    <div className="flex gap-2">
+                    <div className="flex gap-3">
                       <Button
                         variant="outline"
+                        className="rounded-2xl h-12 px-8 text-red-600 font-bold hover:bg-red-600 hover:text-white shadow-lg border-red-600"
                         onClick={() => {
                           setIsEditing(false);
                           setErrors({});
@@ -269,75 +292,118 @@ export default function ProfilePage() {
                       >
                         Hủy
                       </Button>
-                      <Button onClick={handleSave}>Lưu</Button>
+                      <Button
+                        className="rounded-2xl h-12 px-8 bg-blue-600 text-white font-bold hover:bg-blue-700 shadow-lg shadow-blue-100"
+                        onClick={handleSave}
+                      >
+                        Lưu thay đổi
+                      </Button>
                     </div>
                   )}
                 </div>
               </CardHeader>
-              <CardContent className="space-y-6">
-                <div className="grid md:grid-cols-2 gap-4">
+              <CardContent className="space-y-4">
+                <div className="grid md:grid-cols-2 gap-8">
                   <div className="space-y-2">
-                    <Label htmlFor="HoTen">Họ tên</Label>
+                    <Label className="text-slate-700 font-bold ml-1">
+                      Họ và tên
+                    </Label>
                     <Input
                       name="HoTen"
-                      id="HoTen"
+                      className="h-12 rounded-xl bg-slate-50 border-slate-200 focus:bg-white transition-all disabled:opacity-100 disabled:bg-slate-50/50"
                       value={formData.HoTen}
                       onChange={handleChange}
                       disabled={!isEditing}
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="SDT">Số điện thoại</Label>
+                    <Label className="text-slate-700 font-bold ml-1">
+                      Số điện thoại
+                    </Label>
                     <Input
                       name="SDT"
-                      id="SDT"
-                      className={errors.SDT ? "border-red-500" : ""}
+                      className={`h-12 rounded-xl bg-slate-50 border-slate-200 focus:bg-white transition-all disabled:opacity-100 disabled:bg-slate-50/50 ${
+                        errors.SDT ? "border-amber-400 bg-amber-50/30" : ""
+                      }`}
                       value={formData.SDT}
                       onChange={handleChange}
                       disabled={!isEditing}
                     />
                     {errors.SDT && (
-                      <p className="text-xs text-red-500 font-medium">
+                      <p className="text-xs text-amber-600 font-bold ml-1">
                         {errors.SDT}
                       </p>
                     )}
                   </div>
                 </div>
 
-                <div className="space-y-2">
-                  <Label htmlFor="Email">Email</Label>
-                  <Input
-                    name="Email"
-                    id="Email"
-                    type="email"
-                    value={profileData.Email || ""}
-                    disabled={true}
-                  />
+                <div className="grid md:grid-cols-2 gap-8">
+                  <div className="space-y-2">
+                    <Label className="text-slate-700 font-bold ml-1">
+                      Địa chỉ Email
+                    </Label>
+                    <Input
+                      className="h-12 rounded-xl bg-slate-100/50 border-slate-200 text-slate-700 italic"
+                      value={profileData.Email || ""}
+                      disabled={true}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label className="text-slate-700 font-bold ml-1">
+                      Giới tính
+                    </Label>
+
+                    <Select
+                      value={formData.GioiTinh}
+                      onValueChange={handleSelectChange}
+                      disabled={!isEditing}
+                    >
+                      <SelectTrigger
+                        className="!h-12 !min-h-[48px] w-full !rounded-xl !bg-slate-50 !border-slate-200
+                 px-4 py-0 text-[15px] leading-none
+                 focus:bg-white transition-all
+                 disabled:opacity-100 disabled:!bg-slate-50/50"
+                      >
+                        <SelectValue placeholder="Chọn giới tính" />
+                      </SelectTrigger>
+
+                      <SelectContent className="rounded-xl border-slate-100 shadow-2xl">
+                        <SelectItem value="Nam">Nam</SelectItem>
+                        <SelectItem value="Nữ">Nữ</SelectItem>
+                        <SelectItem value="Other">Khác</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
                 </div>
 
-                <div className="grid md:grid-cols-2 gap-4">
+                <div className="grid md:grid-cols-2 gap-8">
                   <div className="space-y-2">
-                    <Label htmlFor="CCCD">CCCD</Label>
+                    <Label className="text-slate-700 font-bold ml-1">
+                      Số CCCD
+                    </Label>
                     <Input
                       name="CCCD"
-                      id="CCCD"
-                      className={errors.CCCD ? "border-red-500" : ""}
+                      className={`h-12 rounded-xl bg-slate-50 border-slate-200 focus:bg-white transition-all disabled:opacity-100 disabled:bg-slate-50/50 ${
+                        errors.CCCD ? "border-amber-400 bg-amber-50/30" : ""
+                      }`}
                       value={formData.CCCD}
                       onChange={handleChange}
                       disabled={!isEditing}
                     />
                     {errors.CCCD && (
-                      <p className="text-xs text-red-500 font-medium">
+                      <p className="text-xs text-amber-600 font-bold ml-1">
                         {errors.CCCD}
                       </p>
                     )}
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="NgaySinh">Ngày sinh</Label>
+                    <Label className="text-slate-700 font-bold ml-1">
+                      Ngày sinh
+                    </Label>
                     <Input
                       name="NgaySinh"
-                      id="NgaySinh"
                       type="date"
+                      className="h-12 rounded-xl bg-slate-50 border-slate-200 focus:bg-white transition-all disabled:opacity-100 disabled:bg-slate-50/50"
                       value={formData.NgaySinh}
                       onChange={handleChange}
                       disabled={!isEditing}
@@ -345,38 +411,50 @@ export default function ProfilePage() {
                   </div>
                 </div>
 
-                <div className="space-y-2">
-                  <Label htmlFor="GioiTinh">Giới tính</Label>
-                  <Select
-                    id="GioiTinh"
-                    value={formData.GioiTinh}
-                    onValueChange={handleSelectChange}
-                    disabled={!isEditing}
-                  >
-                    <SelectTrigger id="GioiTinh">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="Nam">Nam</SelectItem>
-                      <SelectItem value="Nữ">Nữ</SelectItem>
-                      <SelectItem value="Other">Khác</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                {isEditing && (
-                  <div className="pt-4 border-t">
-                    <p className="text-sm text-muted-foreground">
-                      Lưu ý: Cấp hội viên và mức chi tiêu không thể chỉnh sửa
-                      thủ công
-                    </p>
+                <div className="bg-blue-50/40 rounded-[2rem] p-6 border border-blue-100/50 space-y-3 relative overflow-hidden group">
+                  <div className="absolute top-0 right-0 p-4 opacity-5 group-hover:rotate-12 transition-transform">
+                    <ShieldCheck className="h-16 w-16" />
                   </div>
-                )}
+                  <div className="flex items-center gap-2 text-blue-800 font-black text-sm uppercase tracking-wide">
+                    <ShieldCheck className="h-5 w-5" />
+                    Bảo mật dữ liệu định danh
+                  </div>
+                  <p className="text-sm text-slate-500 leading-relaxed font-medium">
+                    Thông tin CCCD và ngày sinh được sử dụng để xác thực quyền
+                    chủ tài khoản và đồng bộ hồ sơ y khoa. PetCareX cam kết
+                    tuyệt đối không chia sẻ dữ liệu này cho bên thứ ba.
+                  </p>
+                </div>
               </CardContent>
             </Card>
           </div>
         </div>
       </div>
+      <style>{`
+        @keyframes bounce-slow {
+          0%, 100% { transform: translateY(0); }
+          50% { transform: translateY(-5px); }
+        }
+        .animate-bounce-slow {
+          animation: bounce-slow 3s ease-in-out infinite;
+        }
+      `}</style>
+    </div>
+  );
+}
+
+function TierItem({ label, min, color, isLast }) {
+  return (
+    <div
+      className={`flex items-center justify-between ${!isLast ? "pb-4" : ""}`}
+    >
+      <div className="flex items-center gap-3">
+        <div className={`h-4 w-4 rounded-full ${color} shadow-sm`} />
+        <span className="font-bold text-slate-700">{label}</span>
+      </div>
+      <span className="font-black text-blue-600">
+        {min.toLocaleString("vi-VN")}đ
+      </span>
     </div>
   );
 }

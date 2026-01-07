@@ -70,7 +70,11 @@ export default function RegisterPage() {
       <div className="w-full max-w-2xl">
         {/* Logo */}
         <div className="flex items-center justify-center gap-2 mb-8">
-          <Heart className="h-10 w-10 text-blue-600 fill-blue-600" />
+          <img
+            src="/logo.png"
+            alt="PetCareX Logo"
+            className="h-11 w-11 object-contain"
+          />
           <h1 className="text-3xl font-bold text-gray-900">PetCare</h1>
         </div>
 
@@ -94,6 +98,7 @@ export default function RegisterPage() {
                     name="fullName"
                     type="text"
                     placeholder="Nguyễn Văn A"
+                    className="placeholder:text-slate-400/50 font-medium"
                     value={formData.fullName}
                     onChange={handleChange}
                     required
@@ -110,6 +115,7 @@ export default function RegisterPage() {
                     name="phone"
                     type="tel"
                     placeholder="0912345678"
+                    className="placeholder:text-slate-400/50 font-medium"
                     value={formData.phone}
                     onChange={handleChange}
                     required
@@ -126,6 +132,7 @@ export default function RegisterPage() {
                     name="email"
                     type="email"
                     placeholder="example@email.com"
+                    className="placeholder:text-slate-400/50 font-medium"
                     value={formData.email}
                     onChange={handleChange}
                     required
@@ -142,6 +149,7 @@ export default function RegisterPage() {
                     name="cccd"
                     type="text"
                     placeholder="001234567890"
+                    className="placeholder:text-slate-400/50 font-medium"
                     value={formData.cccd}
                     onChange={handleChange}
                     required
@@ -193,7 +201,8 @@ export default function RegisterPage() {
                     id="password"
                     name="password"
                     type="password"
-                    placeholder="••••••••"
+                    placeholder="Mật khẩu"
+                    className="placeholder:text-slate-400/50 font-medium"
                     value={formData.password}
                     onChange={handleChange}
                     required
@@ -210,7 +219,8 @@ export default function RegisterPage() {
                     id="confirmPassword"
                     name="confirmPassword"
                     type="password"
-                    placeholder="••••••••"
+                    placeholder="Xác nhận mật khẩu"
+                    className="placeholder:text-slate-400/50 font-medium"
                     value={formData.confirmPassword}
                     onChange={handleChange}
                     required
@@ -237,8 +247,12 @@ export default function RegisterPage() {
               </div>
 
               {/* Register Button */}
-              <Button type="submit" className="w-full bg-blue-600 hover:bg-blue-700 text-white">
-                Đăng ký
+              <Button 
+                type="submit" 
+                variant="premium"
+                className="w-full py-6 rounded-xl text-lg font-bold shadow-lg shadow-blue-100 transition-all"
+              >
+                Đăng ký tài khoản
               </Button>
             </form>
 

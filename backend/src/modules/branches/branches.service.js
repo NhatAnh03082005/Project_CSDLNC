@@ -35,92 +35,23 @@ class BranchesService {
    */
   async getBranches(options = {}) {
     const { page = 1, limit = 6, search, service } = options;
-    const offset = (page - 1) * limit;
 
     try {
       const pool = await poolPromise;
-      let whereClause = "WHERE 1=1";
-      const conditions = [];
 
-      if (service) {
-        // Nếu service là "Mua hàng", kiểm tra chi nhánh có sản phẩm trong tồn kho
-        if (service === "Mua hàng") {
-          conditions.push(`
-            EXISTS (
-              SELECT 1 
-              FROM dbo.SanPham_TonKho tk
-              WHERE tk.MaChiNhanh = cn.MaChiNhanh 
-                AND tk.SoLuongTon > 0
-            )
-          `);
-        } else {
-          // Các dịch vụ khác (Khám bệnh, Tiêm phòng) kiểm tra trong bảng DichVu_ChiNhanh
-          conditions.push(`
-            EXISTS (
-              SELECT 1 
-              FROM dbo.DichVu_ChiNhanh dvcn
-              WHERE dvcn.MaChiNhanh = cn.MaChiNhanh 
-                AND dvcn.LoaiDichVu = @Service
-            )
-          `);
-        }
-      }
+      // GỌI STORED PROCEDURE sp_TV1_SearchBranches
+      const result = await pool
+        .request()
+        .input("Page", sql.Int, parseInt(page))
+        .input("Limit", sql.Int, parseInt(limit))
+        .input("Search", sql.NVarChar(255), search || null)
+        .input("Service", sql.NVarChar(50), service ? service.trim() : null)
+        .output("TotalCount", sql.Int)
+        .output("TotalPages", sql.Int)
+        .execute("sp_TV1_SearchBranches");
 
-      if (search) {
-        conditions.push(`(
-          cn.TenChiNhanh LIKE @Search 
-          OR CONCAT(cn.SoNha, ' ', cn.TenDuong, ', ', cn.Phuong, ', ', cn.ThanhPho) LIKE @Search
-          OR cn.TenDuong LIKE @Search
-          OR cn.Phuong LIKE @Search
-          OR cn.ThanhPho LIKE @Search
-        )`);
-      }
-
-      if (conditions.length > 0) {
-        whereClause += " AND " + conditions.join(" AND ");
-      }
-
-      // 1. Đếm tổng số bản ghi
-      const countRequest = pool.request();
-      if (service && service !== "Mua hàng")
-        countRequest.input("Service", sql.NVarChar(50), service.trim());
-      if (search)
-        countRequest.input("Search", sql.NVarChar(255), `%${search}%`);
-
-      const countResult = await countRequest.query(
-        `SELECT COUNT(*) AS Total FROM dbo.ChiNhanh cn ${whereClause}`
-      );
-      const total = countResult.recordset[0].Total;
-      const totalPages = Math.ceil(total / limit);
-
-      // 2. Lấy dữ liệu phân trang
-      const dataRequest = pool.request();
-      if (service && service !== "Mua hàng")
-        dataRequest.input("Service", sql.NVarChar(50), service.trim());
-      if (search) dataRequest.input("Search", sql.NVarChar(255), `%${search}%`);
-      dataRequest.input("Offset", sql.Int, offset);
-      dataRequest.input("Limit", sql.Int, limit);
-
-      const dataQuery = `
-        SELECT 
-          cn.MaChiNhanh, cn.TenChiNhanh, cn.SDT, cn.TGMoCua, cn.TGDongCua,
-          CONCAT(cn.SoNha, ' ', cn.TenDuong, ', ', cn.Phuong, ', ', cn.ThanhPho) AS DiaChi,
-          CASE 
-            WHEN cn.TGMoCua IS NULL OR cn.TGDongCua IS NULL THEN 0
-            WHEN cn.TGMoCua <= cn.TGDongCua THEN
-              CASE WHEN CAST(GETDATE() AS TIME) >= cn.TGMoCua AND CAST(GETDATE() AS TIME) <= cn.TGDongCua THEN 1 ELSE 0 END
-            ELSE
-              CASE WHEN CAST(GETDATE() AS TIME) >= cn.TGMoCua OR CAST(GETDATE() AS TIME) <= cn.TGDongCua THEN 1 ELSE 0 END
-          END AS DangMoCua
-        FROM dbo.ChiNhanh cn
-        ${whereClause}
-        ORDER BY cn.TenChiNhanh ASC
-        OFFSET @Offset ROWS
-        FETCH NEXT @Limit ROWS ONLY
-      `;
-
-      const dataResult = await dataRequest.query(dataQuery);
-      const branches = dataResult.recordset.map((branch) => ({
+      const { TotalCount, TotalPages } = result.output;
+      const branches = result.recordset.map((branch) => ({
         MaChiNhanh: branch.MaChiNhanh,
         TenChiNhanh: branch.TenChiNhanh,
         DiaChi: branch.DiaChi,
@@ -128,16 +59,16 @@ class BranchesService {
         TGMoCua: formatTime(branch.TGMoCua),
         TGDongCua: formatTime(branch.TGDongCua),
         DangMoCua: branch.DangMoCua === 1,
+        DichVu: [], // Sẽ được populate ở bước sau
       }));
 
-      // 3. Lấy dịch vụ cho từng chi nhánh
+      // Lấy dịch vụ cho từng chi nhánh sử dụng stored procedure
       for (const branch of branches) {
         const servicesResult = await pool
           .request()
           .input("MaChiNhanh", sql.Char(4), branch.MaChiNhanh)
-          .query(
-            `SELECT LoaiDichVu FROM dbo.DichVu_ChiNhanh WHERE MaChiNhanh = @MaChiNhanh`
-          );
+          .execute("sp_TV1_GetBranchServices");
+
         branch.DichVu = servicesResult.recordset.map((s) => s.LoaiDichVu);
       }
 
@@ -149,9 +80,9 @@ class BranchesService {
           pagination: {
             page: parseInt(page),
             limit: parseInt(limit),
-            total,
-            totalPages,
-            hasNext: page < totalPages,
+            total: TotalCount || 0,
+            totalPages: TotalPages || 0,
+            hasNext: page < (TotalPages || 0),
             hasPrev: page > 1,
           },
         },
@@ -311,17 +242,12 @@ class BranchesService {
   }
 
   // --- Logic quản lý Tồn kho & Dịch vụ (Từ feature/admin) ---
-
   async getProductsStockByBranch(maChiNhanh) {
     const pool = await poolPromise;
     const result = await pool
       .request()
-      .input("MaChiNhanh", sql.VarChar, maChiNhanh).query(`
-        SELECT tk.MaSanPham, sp.TenSanPham, sp.LoaiSanPham, sp.DonGia, tk.SoLuongTon
-        FROM SanPham_TonKho tk
-        JOIN SanPham sp ON sp.MaSanPham = tk.MaSanPham
-        WHERE tk.MaChiNhanh = @MaChiNhanh ORDER BY tk.MaSanPham
-      `);
+      .input("MaChiNhanh", sql.Char(4), maChiNhanh)
+      .execute("dbo.sp_XemSPTonKho_TheoChiNhanh");
     return result.recordset;
   }
 
@@ -334,9 +260,7 @@ class BranchesService {
       .input("MaChiNhanh", sql.Char(4), maChiNhanh)
       .input("MaSanPham", sql.Char(5), MaSanPham)
       .input("SoLuongTon", sql.Int, qty)
-      .query(
-        `INSERT INTO SanPham_TonKho (MaChiNhanh, MaSanPham, SoLuongTon) VALUES (@MaChiNhanh, @MaSanPham, @SoLuongTon)`
-      );
+      .execute("dbo.sp_ThemSPTonKho_TheoChiNhanh");
     return true;
   }
 
@@ -347,9 +271,7 @@ class BranchesService {
       .input("MaChiNhanh", sql.Char(4), maChiNhanh)
       .input("MaSanPham", sql.Char(5), maSanPham)
       .input("SoLuongTon", sql.Int, Number(SoLuongTon))
-      .query(
-        `UPDATE SanPham_TonKho SET SoLuongTon = @SoLuongTon WHERE MaChiNhanh=@MaChiNhanh AND MaSanPham=@MaSanPham; SELECT @@ROWCOUNT AS affected;`
-      );
+      .execute("dbo.sp_CapNhatSPTonKho_TheoChiNhanh");
     if (rs.recordset[0].affected === 0)
       throw new Error("Không tìm thấy dòng tồn kho để cập nhật");
     return rs.recordset[0];
@@ -359,12 +281,8 @@ class BranchesService {
     const pool = await poolPromise;
     const result = await pool
       .request()
-      .input("MaChiNhanh", sql.VarChar, maChiNhanh).query(`
-        SELECT tk.MaVacXin, sp.TenVacXin, sp.GiaTien, tk.SoLuongTon
-        FROM VacXin_TonKho tk
-        JOIN VacXin sp ON sp.MaVacXin = tk.MaVacXin
-        WHERE tk.MaChiNhanh = @MaChiNhanh ORDER BY tk.MaVacXin
-      `);
+      .input("MaChiNhanh", sql.Char(4), maChiNhanh)
+      .execute("dbo.sp_XemVXTonKho_TheoChiNhanh");
     return result.recordset;
   }
 
@@ -376,9 +294,7 @@ class BranchesService {
       .input("MaChiNhanh", sql.Char(4), maChiNhanh)
       .input("MaVacXin", sql.Char(4), MaVacXin)
       .input("SoLuongTon", sql.Int, Number(SoLuongTon))
-      .query(
-        `INSERT INTO VacXin_TonKho (MaChiNhanh, MaVacXin, SoLuongTon) VALUES (@MaChiNhanh, @MaVacXin, @SoLuongTon)`
-      );
+      .execute("dbo.sp_ThemVXTonKho_TheoChiNhanh");
     return true;
   }
 
@@ -389,9 +305,7 @@ class BranchesService {
       .input("MaChiNhanh", sql.Char(4), maChiNhanh)
       .input("MaVacXin", sql.Char(4), maVacXin)
       .input("SoLuongTon", sql.Int, Number(SoLuongTon))
-      .query(
-        `UPDATE VacXin_TonKho SET SoLuongTon = @SoLuongTon WHERE MaChiNhanh=@MaChiNhanh AND MaVacXin=@MaVacXin; SELECT @@ROWCOUNT AS affected;`
-      );
+      .execute("dbo.sp_CapNhatVXTonKho_TheoChiNhanh");
     if (rs.recordset[0].affected === 0)
       throw new Error("Không tìm thấy dòng tồn kho để cập nhật");
     return rs.recordset[0];
@@ -440,7 +354,8 @@ class BranchesService {
         .input("maChiNhanh", sql.NVarChar, maChiNhanh).query(`
           SELECT nv.MaNhanVien, nv.HoTen, ls.NgayBatDau, ls.NgayKetThuc, nv.TrangThai
           FROM LichSuDieuDong ls JOIN NhanVien nv ON ls.MaNhanVien = nv.MaNhanVien
-          WHERE ls.MaChiNhanh = @maChiNhanh ORDER BY nv.TrangThai, nv.MaNhanVien
+          WHERE ls.MaChiNhanh = @maChiNhanh 
+          ORDER BY nv.TrangThai, ls.NgayKetThuc, nv.MaNhanVien
         `);
       return result.recordset;
     } catch (error) {

@@ -10,7 +10,7 @@ import {
 import { Label } from "../../components/ui/label";
 import { Input } from "../../components/ui/input";
 import { Button } from "../../components/ui/button";
-import { Heart, User, Briefcase, Hash } from "lucide-react";
+import { Heart, User, Briefcase, Hash, ShieldCheck } from "lucide-react";
 import axios from "axios";
 import { useAuth } from "../../context/AuthContext";
 import { useAuthStore } from "../../store/authStore";
@@ -22,6 +22,7 @@ export default function LoginPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [staffCode, setStaffCode] = useState("");
+  const [adminCode, setAdminCode] = useState("");
   const { setUser, setIsAuthenticated } = useAuth();
   const loginStore = useAuthStore((state) => state.login);
 
@@ -45,6 +46,29 @@ export default function LoginPage() {
           staffCode,
           role: "staff",
         });
+      } else if (selectedRole === "admin") {
+        const envAdminCode = import.meta.env.VITE_ADMIN_CODE || "NV001";
+        if (adminCode === envAdminCode) {
+          // For Admin role with code, we can bypass backend login if preferred or use fixed response
+          const adminUser = { 
+            maNguoiDung: "ADMIN", 
+            tenNguoiDung: "Quản trị viên hệ thống", 
+            Role: "admin" 
+          };
+          const token = "admin-session-token";
+
+          localStorage.setItem("token", token);
+          loginStore(adminUser, token);
+          setUser(adminUser);
+          setIsAuthenticated(true);
+
+          alert("Đăng nhập quyền Quản trị viên thành công!");
+          navigate("/admin/demo");
+          return; // Exit early
+        } else {
+          alert("Mã quản trị viên không hợp lệ!");
+          return;
+        }
       }
 
       if (response.data.status === 200) {
@@ -105,24 +129,24 @@ export default function LoginPage() {
             {/* Role Selection */}
             <div className="space-y-3">
               <Label className="text-base font-semibold">Vai trò</Label>
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-3 gap-3">
                 <button
                   type="button"
                   onClick={() => setSelectedRole("customer")}
                   className={`p-4 rounded-lg border-2 transition-all ${
                     selectedRole === "customer"
-                      ? "border-blue-600 bg-blue-50"
+                      ? "border-orange-600 bg-orange-50"
                       : "border-gray-200 hover:border-gray-300"
                   }`}
                 >
                   <User
                     className={`h-8 w-8 mx-auto mb-2 ${
                       selectedRole === "customer"
-                        ? "text-blue-600"
+                        ? "text-orange-600"
                         : "text-gray-400"
                     }`}
                   />
-                  <div className="text-sm font-medium text-center">
+                  <div className="text-[10px] font-black uppercase text-center tracking-tighter">
                     Khách hàng
                   </div>
                 </button>
@@ -132,19 +156,40 @@ export default function LoginPage() {
                   onClick={() => setSelectedRole("staff")}
                   className={`p-4 rounded-lg border-2 transition-all ${
                     selectedRole === "staff"
-                      ? "border-blue-600 bg-blue-50"
+                      ? "border-orange-600 bg-orange-50"
                       : "border-gray-200 hover:border-gray-300"
                   }`}
                 >
                   <Briefcase
                     className={`h-8 w-8 mx-auto mb-2 ${
                       selectedRole === "staff"
-                        ? "text-blue-600"
+                        ? "text-orange-600"
                         : "text-gray-400"
                     }`}
                   />
-                  <div className="text-sm font-medium text-center">
+                  <div className="text-[10px] font-black uppercase text-center tracking-tighter">
                     Nhân viên
+                  </div>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setSelectedRole("admin")}
+                  className={`p-4 rounded-lg border-2 transition-all ${
+                    selectedRole === "admin"
+                      ? "border-orange-600 bg-orange-50"
+                      : "border-gray-200 hover:border-gray-300"
+                  }`}
+                >
+                  <ShieldCheck
+                    className={`h-8 w-8 mx-auto mb-2 ${
+                      selectedRole === "admin"
+                        ? "text-orange-600"
+                        : "text-gray-400"
+                    }`}
+                  />
+                  <div className="text-[10px] font-black uppercase text-center tracking-tighter">
+                    Quản trị viên
                   </div>
                 </button>
               </div>
@@ -160,11 +205,29 @@ export default function LoginPage() {
                       id="staffCode"
                       type="text"
                       placeholder="Nhập mã nhân viên (VD: NV001)"
-                      className="pl-10"
+                      className="pl-10 h-12 rounded-xl placeholder:text-slate-400/50 font-medium"
                       value={staffCode}
                       onChange={(e) => setStaffCode(e.target.value)}
                       required
                     />
+                  </div>
+                </div>
+              ) : selectedRole === "admin" ? (
+                <div className="space-y-4 animate-in fade-in duration-300">
+                   <div className="space-y-2">
+                    <Label htmlFor="adminCode">Mã quản trị viên</Label>
+                    <div className="relative">
+                      <ShieldCheck className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
+                      <Input
+                        id="adminCode"
+                        type="password"
+                        placeholder="Nhập mã quản trị (VD: NVxxx)"
+                        className="pl-10 h-12 rounded-xl placeholder:text-slate-400/50 font-medium"
+                        value={adminCode}
+                        onChange={(e) => setAdminCode(e.target.value)}
+                        required
+                      />
+                    </div>
                   </div>
                 </div>
               ) : (
@@ -175,36 +238,31 @@ export default function LoginPage() {
                       id="email"
                       type="email"
                       placeholder="example@petcare.vn"
+                      className="h-12 rounded-xl placeholder:text-slate-400/50 font-medium"
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
                       required
                     />
                   </div>
-                  <div className="space-y-2">
+                  <div className="space-y-2 ">
                     <Label htmlFor="password">Mật khẩu</Label>
                     <Input
                       id="password"
                       type="password"
-                      placeholder="••••••••"
+                      placeholder="Mật khẩu"
+                      className="h-12 rounded-xl placeholder:text-slate-400/50 font-medium"
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
                       required
                     />
                   </div>
-                  {/* <div className="flex justify-end">
-                    <Link
-                      to="#"
-                      className="text-sm text-blue-600 hover:underline"
-                    >
-                      Quên mật khẩu?
-                    </Link>
-                  </div> */}
                 </div>
               )}
 
               <Button
                 type="submit"
-                className="w-full bg-blue-600 hover:bg-blue-700 text-white"
+                variant="premium"
+                className="w-full py-6 rounded-xl text-lg font-bold shadow-lg shadow-blue-100 transition-all"
                 disabled={!selectedRole}
               >
                 Đăng nhập

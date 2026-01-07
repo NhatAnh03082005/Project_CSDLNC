@@ -7,6 +7,7 @@ import {
   Calendar,
   Percent,
   BadgeCheck,
+  Search,
 } from "lucide-react";
 
 import { Button } from "../../../../components/ui/button";
@@ -32,6 +33,7 @@ export default function PromotionManagement() {
   const [promotions, setPromotions] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [searchTerm, setSearchTerm] = useState("");
 
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
@@ -139,6 +141,19 @@ export default function PromotionManagement() {
     }
   };
 
+  // Filter promotions based on search term
+  const filteredPromotions = promotions.filter((promotion) => {
+    if (!searchTerm.trim()) return true;
+
+    const searchLower = searchTerm.toLowerCase();
+    const matchDiscount =
+      promotion.TiLeGiamGia?.toString().includes(searchTerm);
+    const status = getStatusBadge(promotion.NgayBatDau, promotion.NgayKetThuc);
+    const matchStatus = status.label.toLowerCase().includes(searchLower);
+
+    return matchDiscount || matchStatus;
+  });
+
   if (loading) {
     return (
       <Card>
@@ -169,119 +184,135 @@ export default function PromotionManagement() {
       <main className="w-full">
         <div className="max-w-[1920px] mx-auto px-6 py-8 space-y-6">
           {/* Page Header */}
-          <div className="flex items-center justify-between bg-white rounded-xl shadow-md p-6 border border-blue-100">
-            <div className="flex items-center gap-4">
-              <Button
-                variant="outline"
-                size="icon"
-                className="bg-blue-50 text-blue-600 border-blue-200 hover:bg-blue-600 hover:text-white transition-colors"
-                onClick={onBack}
-              >
-                <ArrowLeft className="h-4 w-4" />
-              </Button>
-
-              <div>
-                <h1 className="text-3xl font-bold bg-gradient-to-r from-blue-600 to-teal-600 bg-clip-text text-transparent">
-                  Quản lý khuyến mãi
-                </h1>
-                <p className="text-gray-600 mt-1">
-                  Quản lý các chương trình khuyến mãi trên hệ thống
-                </p>
-              </div>
-            </div>
-
-            {/* ADD DIALOG */}
-            <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
-              <DialogTrigger asChild>
-                <Button className="h-10 gap-2 bg-blue-600 text-white hover:bg-blue-700 transition-colors shadow-md">
-                  <Plus className="h-4 w-4" />
-                  Thêm khuyến mãi
+          <div className="bg-white rounded-xl shadow-md p-6 border border-blue-100 space-y-4">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-4">
+                <Button
+                  variant="outline"
+                  size="icon"
+                  className="bg-blue-50 text-blue-600 border-blue-200 hover:bg-blue-600 hover:text-white transition-colors"
+                  onClick={onBack}
+                >
+                  <ArrowLeft className="h-4 w-4" />
                 </Button>
-              </DialogTrigger>
 
-              <DialogContent className="sm:max-w-[700px]">
-                <DialogHeader>
-                  <DialogTitle className="text-2xl font-bold bg-gradient-to-r from-blue-600 to-blue-400 bg-clip-text text-transparent">
-                    Thêm khuyến mãi mới
-                  </DialogTitle>
-                  <DialogDescription className="text-gray-500 mt-2">
-                    Điền đầy đủ thông tin để tạo chương trình khuyến mãi mới.
-                  </DialogDescription>
-                </DialogHeader>
-
-                <div className="space-y-4 py-4">
-                  <div className="grid grid-cols-2 gap-6">
-                    <div className="space-y-2">
-                      <Label htmlFor="NgayBatDau">Ngày bắt đầu</Label>
-                      <Input
-                        id="NgayBatDau"
-                        type="date"
-                        value={addFormData.NgayBatDau}
-                        onChange={(e) =>
-                          setAddFormData({
-                            ...addFormData,
-                            NgayBatDau: e.target.value,
-                          })
-                        }
-                        className="h-10"
-                      />
-                    </div>
-
-                    <div className="space-y-2">
-                      <Label htmlFor="NgayKetThuc">Ngày kết thúc</Label>
-                      <Input
-                        id="NgayKetThuc"
-                        type="date"
-                        value={addFormData.NgayKetThuc}
-                        onChange={(e) =>
-                          setAddFormData({
-                            ...addFormData,
-                            NgayKetThuc: e.target.value,
-                          })
-                        }
-                        className="h-10"
-                      />
-                    </div>
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label htmlFor="TiLeGiamGia">Tỉ lệ giảm giá (%)</Label>
-                    <Input
-                      id="TiLeGiamGia"
-                      type="number"
-                      placeholder="VD: 10"
-                      value={addFormData.TiLeGiamGia}
-                      onChange={(e) =>
-                        setAddFormData({
-                          ...addFormData,
-                          TiLeGiamGia: e.target.value,
-                        })
-                      }
-                      className="h-10 text-black placeholder:text-gray-600"
-                    />
-                  </div>
+                <div>
+                  <h1 className="text-3xl font-bold bg-gradient-to-r from-blue-600 to-teal-600 bg-clip-text text-transparent">
+                    Quản lý khuyến mãi
+                  </h1>
+                  <p className="text-gray-600 mt-1">
+                    Quản lý các chương trình khuyến mãi trên hệ thống
+                  </p>
                 </div>
+              </div>
 
-                <DialogFooter className="gap-2">
-                  <Button
-                    onClick={handleAdd}
-                    className="h-10 bg-blue-600 text-white hover:bg-blue-700 transition-colors"
-                  >
+              {/* ADD DIALOG */}
+              <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
+                <DialogTrigger asChild>
+                  <Button className="h-10 gap-2 bg-blue-600 text-white hover:bg-blue-700 transition-colors shadow-md">
+                    <Plus className="h-4 w-4" />
                     Thêm khuyến mãi
                   </Button>
-                </DialogFooter>
-              </DialogContent>
-            </Dialog>
+                </DialogTrigger>
+
+                <DialogContent className="sm:max-w-[700px]">
+                  <DialogHeader>
+                    <DialogTitle className="text-2xl font-bold bg-gradient-to-r from-blue-600 to-blue-400 bg-clip-text text-transparent">
+                      Thêm khuyến mãi mới
+                    </DialogTitle>
+                    <DialogDescription className="text-gray-500 mt-2">
+                      Điền đầy đủ thông tin để tạo chương trình khuyến mãi mới.
+                    </DialogDescription>
+                  </DialogHeader>
+
+                  <div className="space-y-4 py-4">
+                    <div className="grid grid-cols-2 gap-6">
+                      <div className="space-y-2">
+                        <Label htmlFor="NgayBatDau">Ngày bắt đầu</Label>
+                        <Input
+                          id="NgayBatDau"
+                          type="date"
+                          value={addFormData.NgayBatDau}
+                          onChange={(e) =>
+                            setAddFormData({
+                              ...addFormData,
+                              NgayBatDau: e.target.value,
+                            })
+                          }
+                          className="h-10"
+                        />
+                      </div>
+
+                      <div className="space-y-2">
+                        <Label htmlFor="NgayKetThuc">Ngày kết thúc</Label>
+                        <Input
+                          id="NgayKetThuc"
+                          type="date"
+                          value={addFormData.NgayKetThuc}
+                          onChange={(e) =>
+                            setAddFormData({
+                              ...addFormData,
+                              NgayKetThuc: e.target.value,
+                            })
+                          }
+                          className="h-10"
+                        />
+                      </div>
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label htmlFor="TiLeGiamGia">Tỉ lệ giảm giá (%)</Label>
+                      <Input
+                        id="TiLeGiamGia"
+                        type="number"
+                        placeholder="VD: 10"
+                        value={addFormData.TiLeGiamGia}
+                        onChange={(e) =>
+                          setAddFormData({
+                            ...addFormData,
+                            TiLeGiamGia: e.target.value,
+                          })
+                        }
+                        className="h-10 text-black placeholder:text-gray-600"
+                      />
+                    </div>
+                  </div>
+
+                  <DialogFooter className="gap-2">
+                    <Button
+                      onClick={handleAdd}
+                      className="h-10 bg-blue-600 text-white hover:bg-blue-700 transition-colors"
+                    >
+                      Thêm khuyến mãi
+                    </Button>
+                  </DialogFooter>
+                </DialogContent>
+              </Dialog>
+            </div>
+
+            {/* Search Bar */}
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
+              <Input
+                type="text"
+                placeholder="Tìm kiếm theo tỉ lệ giảm giá hoặc trạng thái..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="pl-10 h-10 border-gray-300 focus:border-blue-500 focus:ring-blue-500 placeholder:text-gray-400"
+              />
+            </div>
           </div>
 
           {/* Grid Layout - Promotion Cards (5 / row) */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
-            {promotions.length === 0 ? (
+            {filteredPromotions.length === 0 ? (
               <div className="col-span-full text-center text-gray-500 py-12 bg-gray-50 rounded-xl">
-                Không có khuyến mãi nào
+                {searchTerm.trim()
+                  ? "Không tìm thấy khuyến mãi nào phù hợp"
+                  : "Không có khuyến mãi nào"}
               </div>
             ) : (
-              promotions.map((promotion) => {
+              filteredPromotions.map((promotion) => {
                 const status = getStatusBadge(
                   promotion.NgayBatDau,
                   promotion.NgayKetThuc

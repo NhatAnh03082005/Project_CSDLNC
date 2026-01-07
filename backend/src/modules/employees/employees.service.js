@@ -125,6 +125,7 @@ class EmployeesService {
     try {
       const pool = await poolPromise;
 
+      // 1) Lấy nhân viên hiện tại
       const employee = await this.getEmployeeById(maNhanVien);
       if (!employee) return null;
 
@@ -135,42 +136,45 @@ class EmployeesService {
         NgayVaoLam,
         ViTri,
         LuongCoBan,
-        TenChiNhanh,
+        TenChiNhanh, // FE gửi tên CN (optional)
       } = employeeData;
 
-      const currentTenCN = employee.TenChiNhanh; // nên có từ JOIN
+      // 2) Xác định có đổi chi nhánh không
+      const currentTenCN = employee.TenChiNhanh; // lấy từ JOIN ở getEmployeeById
       const hasBranchChange =
         TenChiNhanh &&
         (!currentTenCN || TenChiNhanh.trim() !== String(currentTenCN).trim());
 
+      // 3) Update các field cơ bản (KHÔNG đụng MaChiNhanh ở đây)
+      const queryUpdateFields = `
+      UPDATE NhanVien
+      SET 
+        HoTen = @HoTen,
+        NgaySinh = @NgaySinh,
+        GioiTinh = @GioiTinh,
+        NgayVaoLam = @NgayVaoLam,
+        ViTri = @ViTri,
+        LuongCoBan = @LuongCoBan
+      WHERE MaNhanVien = @MaNhanVien
+    `;
+
+      await pool
+        .request()
+        .input("MaNhanVien", sql.Char(5), maNhanVien)
+        .input("HoTen", sql.NVarChar, HoTen ?? employee.HoTen)
+        .input("NgaySinh", sql.Date, NgaySinh ?? employee.NgaySinh)
+        .input("GioiTinh", sql.NVarChar, GioiTinh ?? employee.GioiTinh)
+        .input("NgayVaoLam", sql.Date, NgayVaoLam ?? employee.NgayVaoLam)
+        .input("ViTri", sql.NVarChar, ViTri ?? employee.ViTri)
+        .input("LuongCoBan", sql.Int, LuongCoBan ?? employee.LuongCoBan)
+        .query(queryUpdateFields);
+
+      // 4) Nếu không đổi chi nhánh -> xong
       if (!hasBranchChange) {
-        const queryNoBranch = `
-        UPDATE NhanVien
-        SET 
-          HoTen = @HoTen,
-          NgaySinh = @NgaySinh,
-          GioiTinh = @GioiTinh,
-          NgayVaoLam = @NgayVaoLam,
-          ViTri = @ViTri,
-          LuongCoBan = @LuongCoBan
-        WHERE MaNhanVien = @MaNhanVien
-      `;
-
-        await pool
-          .request()
-          .input("MaNhanVien", sql.NVarChar, maNhanVien)
-          .input("HoTen", sql.NVarChar, HoTen ?? employee.HoTen)
-          .input("NgaySinh", sql.Date, NgaySinh ?? employee.NgaySinh)
-          .input("GioiTinh", sql.NVarChar, GioiTinh ?? employee.GioiTinh)
-          .input("NgayVaoLam", sql.Date, NgayVaoLam ?? employee.NgayVaoLam)
-          .input("ViTri", sql.NVarChar, ViTri ?? employee.ViTri)
-          .input("LuongCoBan", sql.Int, LuongCoBan ?? employee.LuongCoBan)
-          .query(queryNoBranch);
-
         return await this.getEmployeeById(maNhanVien);
       }
 
-      // --- CASE 2: CÓ đổi chi nhánh -> map tên -> mã, update thêm MaChiNhanh ---
+      // 5) Có đổi chi nhánh: map TenChiNhanh -> MaChiNhanh
       const branchResult = await pool
         .request()
         .input("TenChiNhanh", sql.NVarChar, TenChiNhanh.trim()).query(`
@@ -183,33 +187,17 @@ class EmployeesService {
         throw new Error("Tên chi nhánh không tồn tại");
       }
 
-      const MaChiNhanhFinal = branchResult.recordset[0].MaChiNhanh;
+      const maChiNhanhMoi = String(branchResult.recordset[0].MaChiNhanh).trim();
 
-      const queryWithBranch = `
-      UPDATE NhanVien
-      SET 
-        HoTen = @HoTen,
-        NgaySinh = @NgaySinh,
-        GioiTinh = @GioiTinh,
-        NgayVaoLam = @NgayVaoLam,
-        ViTri = @ViTri,
-        LuongCoBan = @LuongCoBan,
-        MaChiNhanh = @MaChiNhanh
-      WHERE MaNhanVien = @MaNhanVien
-    `;
-
+      // 6) Gọi SP để đổi chi nhánh + cập nhật lịch sử điều động
+      // SP của bạn nhận CHAR(4) -> truyền đúng kiểu CHAR(4)
       await pool
         .request()
-        .input("MaNhanVien", sql.NVarChar, maNhanVien)
-        .input("HoTen", sql.NVarChar, HoTen ?? employee.HoTen)
-        .input("NgaySinh", sql.Date, NgaySinh ?? employee.NgaySinh)
-        .input("GioiTinh", sql.NVarChar, GioiTinh ?? employee.GioiTinh)
-        .input("NgayVaoLam", sql.Date, NgayVaoLam ?? employee.NgayVaoLam)
-        .input("ViTri", sql.NVarChar, ViTri ?? employee.ViTri)
-        .input("LuongCoBan", sql.Int, LuongCoBan ?? employee.LuongCoBan)
-        .input("MaChiNhanh", sql.NVarChar, MaChiNhanhFinal)
-        .query(queryWithBranch);
+        .input("MaNhanVien", sql.Char(5), maNhanVien)
+        .input("MaChiNhanhMoi", sql.Char(4), maChiNhanhMoi)
+        .execute("dbo.sp_NV_ChangeBranch_UpdateLSDD");
 
+      // 7) Trả về nhân viên mới nhất
       return await this.getEmployeeById(maNhanVien);
     } catch (error) {
       console.error("Error in updateEmployee:", error);

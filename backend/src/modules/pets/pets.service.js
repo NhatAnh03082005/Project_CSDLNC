@@ -53,7 +53,7 @@ async function getCustomerPets(customerId) {
 async function createPet(customerId, petData) {
   const { TenThuCung, GioiTinh, Loai, Giong, NgaySinh, TinhTrangSucKhoe } = petData;
 
-  // Validation: TenThuCung là bắt buộc
+  // Validation cơ bản: TenThuCung là bắt buộc
   if (!TenThuCung || TenThuCung.trim() === "") {
     return {
       success: false,
@@ -62,101 +62,52 @@ async function createPet(customerId, petData) {
     };
   }
 
-  // Validation: GioiTinh phải là 'Đực' hoặc 'Cái' nếu có
-  if (GioiTinh && GioiTinh !== "Đực" && GioiTinh !== "Cái") {
-    return {
-      success: false,
-      status: 400,
-      message: "Giới tính phải là 'Đực' hoặc 'Cái'",
-    };
-  }
-
-  // Validation: NgaySinh không được lớn hơn ngày hiện tại
-  if (NgaySinh) {
-    const birthDate = new Date(NgaySinh);
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    if (birthDate > today) {
-      return {
-        success: false,
-        status: 400,
-        message: "Ngày sinh không được lớn hơn ngày hiện tại",
-      };
-    }
-  }
-
   try {
     const pool = await poolPromise;
 
-    // Tìm MaThuCung lớn nhất của khách hàng này để tạo mã mới
-    const maxPetResult = await pool
+    // GỌI STORED PROCEDURE sp_TV5_AddPet
+    const result = await pool
       .request()
-      .input("MaKhachHang", sql.Char(7), customerId)
-      .query(
-        `
-        SELECT TOP 1 MaThuCung
-        FROM dbo.ThuCung
-        WHERE MaKhachHang = @MaKhachHang
-        ORDER BY MaThuCung DESC
-      `
-      );
+      .input('MaKhachHang', sql.Char(7), customerId)
+      .input('TenThuCung', sql.NVarChar(50), TenThuCung.trim())
+      .input('GioiTinh', sql.NVarChar(3), GioiTinh || null)
+      .input('Loai', sql.NVarChar(20), Loai || null)
+      .input('Giong', sql.NVarChar(20), Giong || null)
+      .input('NgaySinh', sql.Date, NgaySinh || null)
+      .input('TinhTrangSucKhoe', sql.NVarChar(50), TinhTrangSucKhoe || null)
+      .output('MaThuCung', sql.Int)
+      .output('ErrorMessage', sql.NVarChar(500))
+      .output('StatusCode', sql.Int)
+      .execute('sp_TV5_AddPet');
 
-    let nextPetId = 1;
-    if (maxPetResult.recordset.length > 0) {
-      nextPetId = maxPetResult.recordset[0].MaThuCung + 1;
-    }
+    const { MaThuCung, ErrorMessage, StatusCode } = result.output;
 
-    // Insert thú cưng mới
-    const insertResult = await pool
-      .request()
-      .input("MaKhachHang", sql.Char(7), customerId)
-      .input("MaThuCung", sql.Int, nextPetId)
-      .input("TenThuCung", sql.NVarChar(50), TenThuCung.trim())
-      .input("GioiTinh", sql.NVarChar(3), GioiTinh || null)
-      .input("Loai", sql.NVarChar(20), Loai || null)
-      .input("Giong", sql.NVarChar(20), Giong || null)
-      .input("NgaySinh", sql.Date, NgaySinh || null)
-      .input("TinhTrangSucKhoe", sql.NVarChar(50), TinhTrangSucKhoe || null)
-      .query(
-        `
-        INSERT INTO dbo.ThuCung
-          (MaKhachHang, MaThuCung, TenThuCung, GioiTinh, Loai, Giong, NgaySinh, TinhTrangSucKhoe)
-        VALUES
-          (@MaKhachHang, @MaThuCung, @TenThuCung, @GioiTinh, @Loai, @Giong, @NgaySinh, @TinhTrangSucKhoe);
-        
-        SELECT TOP 1 *
-        FROM dbo.ThuCung
-        WHERE MaKhachHang = @MaKhachHang AND MaThuCung = @MaThuCung;
-      `
-      );
-
-    if (insertResult.recordset.length === 0) {
+    if (StatusCode !== 201) {
       return {
         success: false,
-        status: 500,
-        message: "Không thể tạo thú cưng mới",
+        status: StatusCode,
+        message: ErrorMessage,
       };
     }
+
+    // Query để lấy thông tin thú cưng vừa tạo
+    const petInfo = await pool
+      .request()
+      .input('MaKhachHang', sql.Char(7), customerId)
+      .input('MaThuCung', sql.Int, MaThuCung)
+      .query(`
+        SELECT * FROM dbo.ThuCung
+        WHERE MaKhachHang = @MaKhachHang AND MaThuCung = @MaThuCung
+      `);
 
     return {
       success: true,
       status: 201,
-      message: "Thêm thú cưng mới thành công",
-      data: insertResult.recordset[0],
+      message: ErrorMessage,
+      data: petInfo.recordset[0],
     };
   } catch (error) {
     console.error("Error creating pet:", error);
-
-    // Xử lý lỗi duplicate key (nếu có)
-    if (error.number === 2627 || error.message.includes("PRIMARY KEY")) {
-      return {
-        success: false,
-        status: 409,
-        message: "Thú cưng đã tồn tại",
-        error: error.message,
-      };
-    }
-
     return {
       success: false,
       status: 500,
@@ -176,46 +127,13 @@ async function createPet(customerId, petData) {
 async function updatePet(customerId, petId, petData) {
   const { TenThuCung, GioiTinh, Loai, Giong, NgaySinh, TinhTrangSucKhoe } = petData;
 
-  // Kiểm tra thú cưng có thuộc về khách hàng này không
-  const petCheck = await verifyPetOwnership(customerId, petId);
-  if (!petCheck.success) {
-    return {
-      success: false,
-      status: 404,
-      message: "Không tìm thấy thú cưng hoặc bạn không có quyền cập nhật thú cưng này",
-    };
-  }
-
-  // Validation: Nếu có TenThuCung thì không được rỗng
+  // Validation cơ bản: Nếu có TenThuCung thì không được rỗng
   if (TenThuCung !== undefined && (!TenThuCung || TenThuCung.trim() === "")) {
     return {
       success: false,
       status: 400,
       message: "Tên thú cưng không được để trống",
     };
-  }
-
-  // Validation: GioiTinh phải là 'Đực' hoặc 'Cái' nếu có
-  if (GioiTinh !== undefined && GioiTinh !== "Đực" && GioiTinh !== "Cái") {
-    return {
-      success: false,
-      status: 400,
-      message: "Giới tính phải là 'Đực' hoặc 'Cái'",
-    };
-  }
-
-  // Validation: NgaySinh không được lớn hơn ngày hiện tại
-  if (NgaySinh !== undefined) {
-    const birthDate = new Date(NgaySinh);
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    if (birthDate > today) {
-      return {
-        success: false,
-        status: 400,
-        message: "Ngày sinh không được lớn hơn ngày hiện tại",
-      };
-    }
   }
 
   // Kiểm tra có dữ liệu để cập nhật không
@@ -236,69 +154,47 @@ async function updatePet(customerId, petId, petData) {
 
   try {
     const pool = await poolPromise;
-    const request = pool
+
+    // GỌI STORED PROCEDURE sp_TV5_UpdatePet
+    const result = await pool
       .request()
-      .input("MaKhachHang", sql.Char(7), customerId)
-      .input("MaThuCung", sql.Int, parseInt(petId));
+      .input('MaKhachHang', sql.Char(7), customerId)
+      .input('MaThuCung', sql.Int, parseInt(petId))
+      .input('TenThuCung', sql.NVarChar(50), TenThuCung !== undefined ? TenThuCung?.trim() : null)
+      .input('GioiTinh', sql.NVarChar(3), GioiTinh !== undefined ? GioiTinh : null)
+      .input('Loai', sql.NVarChar(20), Loai !== undefined ? Loai : null)
+      .input('Giong', sql.NVarChar(20), Giong !== undefined ? Giong : null)
+      .input('NgaySinh', sql.Date, NgaySinh !== undefined ? NgaySinh : null)
+      .input('TinhTrangSucKhoe', sql.NVarChar(50), TinhTrangSucKhoe !== undefined ? TinhTrangSucKhoe : null)
+      .output('ErrorMessage', sql.NVarChar(500))
+      .output('StatusCode', sql.Int)
+      .execute('sp_TV5_UpdatePet');
 
-    // Xây dựng phần SET động, chỉ cập nhật field được gửi lên
-    const setClauses = [];
+    const { ErrorMessage, StatusCode } = result.output;
 
-    if (TenThuCung !== undefined) {
-      setClauses.push("TenThuCung = @TenThuCung");
-      request.input("TenThuCung", sql.NVarChar(50), TenThuCung.trim());
-    }
-
-    if (GioiTinh !== undefined) {
-      setClauses.push("GioiTinh = @GioiTinh");
-      request.input("GioiTinh", sql.NVarChar(3), GioiTinh || null);
-    }
-
-    if (Loai !== undefined) {
-      setClauses.push("Loai = @Loai");
-      request.input("Loai", sql.NVarChar(20), Loai || null);
-    }
-
-    if (Giong !== undefined) {
-      setClauses.push("Giong = @Giong");
-      request.input("Giong", sql.NVarChar(20), Giong || null);
-    }
-
-    if (NgaySinh !== undefined) {
-      setClauses.push("NgaySinh = @NgaySinh");
-      request.input("NgaySinh", sql.Date, NgaySinh || null);
-    }
-
-    if (TinhTrangSucKhoe !== undefined) {
-      setClauses.push("TinhTrangSucKhoe = @TinhTrangSucKhoe");
-      request.input("TinhTrangSucKhoe", sql.NVarChar(50), TinhTrangSucKhoe || null);
-    }
-
-    const updateQuery = `
-      UPDATE dbo.ThuCung
-      SET ${setClauses.join(", ")}
-      WHERE MaKhachHang = @MaKhachHang AND MaThuCung = @MaThuCung;
-
-      SELECT TOP 1 *
-      FROM dbo.ThuCung
-      WHERE MaKhachHang = @MaKhachHang AND MaThuCung = @MaThuCung;
-    `;
-
-    const result = await request.query(updateQuery);
-
-    if (result.recordset.length === 0) {
+    if (StatusCode !== 200) {
       return {
         success: false,
-        status: 404,
-        message: "Không tìm thấy thú cưng để cập nhật",
+        status: StatusCode,
+        message: ErrorMessage,
       };
     }
+
+    // Query để lấy thông tin thú cưng sau khi update
+    const petInfo = await pool
+      .request()
+      .input('MaKhachHang', sql.Char(7), customerId)
+      .input('MaThuCung', sql.Int, parseInt(petId))
+      .query(`
+        SELECT * FROM dbo.ThuCung
+        WHERE MaKhachHang = @MaKhachHang AND MaThuCung = @MaThuCung
+      `);
 
     return {
       success: true,
       status: 200,
-      message: "Cập nhật thông tin thú cưng thành công",
-      data: result.recordset[0],
+      message: ErrorMessage,
+      data: petInfo.recordset[0],
     };
   } catch (error) {
     console.error("Error updating pet:", error);
@@ -319,75 +215,34 @@ async function updatePet(customerId, petId, petData) {
  */
 async function deletePet(customerId, petId) {
   try {
-    // Kiểm tra thú cưng có thuộc về khách hàng này không
-    // const petCheck = await verifyPetOwnership(customerId, petId);
-    // if (!petCheck.success) {
-    //   return {
-    //     success: false,
-    //     status: 404,
-    //     message: "Không tìm thấy thú cưng hoặc bạn không có quyền xóa thú cưng này",
-    //   };
-    // }
-
     const pool = await poolPromise;
 
-    // Kiểm tra xem thú cưng có đang được sử dụng trong lịch sử dịch vụ sức khỏe không
-    const checkUsage = await pool
+    // GỌI STORED PROCEDURE sp_TV5_DeletePet
+    const result = await pool
       .request()
-      .input("MaThuCung", sql.Int, parseInt(petId))
-      .input("MaKhachHang", sql.Char(7), customerId)
-      .query(
-        `
-        SELECT TOP 1 1
-        FROM dbo.CTHD_DVSucKhoe
-        WHERE MaThuCung = @MaThuCung AND MaKhachHang = @MaKhachHang
-      `
-      );
+      .input('MaKhachHang', sql.Char(7), customerId)
+      .input('MaThuCung', sql.Int, parseInt(petId))
+      .output('ErrorMessage', sql.NVarChar(500))
+      .output('StatusCode', sql.Int)
+      .execute('sp_TV5_DeletePet');
 
-    if (checkUsage.recordset.length > 0) {
+    const { ErrorMessage, StatusCode } = result.output;
+
+    if (StatusCode !== 200) {
       return {
         success: false,
-        status: 409,
-        message:
-          "Không thể xóa thú cưng vì thú cưng này đã có lịch sử khám bệnh hoặc tiêm phòng. Vui lòng liên hệ quản trị viên nếu cần hỗ trợ.",
+        status: StatusCode,
+        message: ErrorMessage,
       };
     }
-
-    // Thực hiện xóa thú cưng
-    const deleteResult = await pool
-      .request()
-      .input("MaKhachHang", sql.Char(7), customerId)
-      .input("MaThuCung", sql.Int, parseInt(petId))
-      .query(
-        `
-        DELETE FROM dbo.ThuCung
-        WHERE MaKhachHang = @MaKhachHang AND MaThuCung = @MaThuCung
-      `
-      );
 
     return {
       success: true,
       status: 200,
-      message: "Xóa thú cưng thành công",
+      message: ErrorMessage,
     };
   } catch (error) {
     console.error("Error deleting pet:", error);
-
-    // Xử lý lỗi foreign key constraint
-    if (
-      error.number === 547 ||
-      error.message.includes("FOREIGN KEY") ||
-      error.message.includes("constraint")
-    ) {
-      return {
-        success: false,
-        status: 409,
-        message:
-          "Không thể xóa thú cưng vì thú cưng này đang được sử dụng trong hệ thống. Vui lòng liên hệ quản trị viên nếu cần hỗ trợ.",
-        error: error.message,
-      };
-    }
-
     return {
       success: false,
       status: 500,

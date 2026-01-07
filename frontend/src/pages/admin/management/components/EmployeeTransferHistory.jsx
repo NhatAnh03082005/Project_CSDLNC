@@ -1,11 +1,12 @@
 import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { ArrowLeft, BadgeCheck, MapPin, Calendar } from "lucide-react";
+import { ArrowLeft, BadgeCheck, MapPin, Calendar, Search } from "lucide-react";
 
 import AdminHeader from "../../components/AdminHeader";
 import { Button } from "../../../../components/ui/button";
 import { branchAPI } from "../../../../api/services";
 import { Card, CardContent } from "../../../../components/ui/card";
+import { Input } from "../../../../components/ui/input";
 import { formatDate } from "../../management/utils/timeFormat";
 
 export default function EmployeeTransferHistory() {
@@ -15,6 +16,7 @@ export default function EmployeeTransferHistory() {
   const [branches, setBranches] = useState([]);
   const [selectedBranch, setSelectedBranch] = useState(null);
   const [transferHistory, setTransferHistory] = useState([]);
+  const [searchTerm, setSearchTerm] = useState("");
 
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -63,8 +65,41 @@ export default function EmployeeTransferHistory() {
   const handleBackToBranches = () => {
     setSelectedBranch(null);
     setTransferHistory([]);
+    setSearchTerm("");
     setError(null);
   };
+
+  // Filter transfer history based on search term
+  const filteredTransferHistory = transferHistory.filter((record) => {
+    if (!searchTerm.trim()) return true;
+
+    const searchLower = searchTerm.toLowerCase();
+    const matchName = record.HoTen?.toLowerCase().includes(searchLower);
+
+    // Determine status
+    const trangThai = Number(record.TrangThai);
+    const ngayKetThucNull =
+      record.NgayKetThuc === null ||
+      record.NgayKetThuc === undefined ||
+      record.NgayKetThuc === "";
+
+    const statusKey =
+      trangThai === 1
+        ? "quit"
+        : trangThai === 0 && ngayKetThucNull
+        ? "working"
+        : "transferred";
+
+    const statusLabels = {
+      working: "đang làm việc",
+      transferred: "đã chuyển công tác",
+      quit: "đã nghỉ việc",
+    };
+
+    const matchStatus = statusLabels[statusKey]?.includes(searchLower);
+
+    return matchName || matchStatus;
+  });
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-sky-50 to-cyan-50">
@@ -73,32 +108,48 @@ export default function EmployeeTransferHistory() {
       <main className="w-full">
         <div className="max-w-[1920px] mx-auto px-6 py-8 space-y-6">
           {/* HEADER */}
-          <div className="flex items-center justify-between bg-white rounded-xl shadow-md p-6 border border-blue-100">
-            <div className="flex items-center gap-4">
-              <Button
-                variant="outline"
-                size="icon"
-                className="bg-blue-50 text-blue-600 border-blue-200 hover:bg-blue-600 hover:text-white transition-colors"
-                onClick={
-                  selectedBranch ? handleBackToBranches : onBackToManagement
-                }
-              >
-                <ArrowLeft className="h-4 w-4" />
-              </Button>
+          <div className="bg-white rounded-xl shadow-md p-6 border border-blue-100 space-y-4">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-4">
+                <Button
+                  variant="outline"
+                  size="icon"
+                  className="bg-blue-50 text-blue-600 border-blue-200 hover:bg-blue-600 hover:text-white transition-colors"
+                  onClick={
+                    selectedBranch ? handleBackToBranches : onBackToManagement
+                  }
+                >
+                  <ArrowLeft className="h-4 w-4" />
+                </Button>
 
-              <div>
-                <h1 className="text-3xl font-bold bg-gradient-to-r from-blue-600 to-teal-600 bg-clip-text text-transparent">
-                  {selectedBranch
-                    ? `Lịch sử điều động - ${selectedBranch.TenChiNhanh}`
-                    : "Lịch sử điều động nhân viên"}
-                </h1>
-                <p className="text-gray-600 mt-1">
-                  {selectedBranch
-                    ? "Danh sách nhân viên đã/đang làm việc tại chi nhánh"
-                    : "Chọn chi nhánh để xem lịch sử điều động"}
-                </p>
+                <div>
+                  <h1 className="text-3xl font-bold bg-gradient-to-r from-blue-600 to-teal-600 bg-clip-text text-transparent">
+                    {selectedBranch
+                      ? `Lịch sử điều động - ${selectedBranch.TenChiNhanh}`
+                      : "Lịch sử điều động nhân viên"}
+                  </h1>
+                  <p className="text-gray-600 mt-1">
+                    {selectedBranch
+                      ? "Danh sách nhân viên đã/đang làm việc tại chi nhánh"
+                      : "Chọn chi nhánh để xem lịch sử điều động"}
+                  </p>
+                </div>
               </div>
             </div>
+
+            {/* Search Bar - chỉ hiện khi đã chọn chi nhánh */}
+            {selectedBranch && (
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
+                <Input
+                  type="text"
+                  placeholder="Tìm kiếm theo tên nhân viên hoặc trạng thái..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="pl-10 h-10 border-gray-300 focus:border-blue-500 focus:ring-blue-500 placeholder:text-gray-400"
+                />
+              </div>
+            )}
           </div>
 
           {/* CONTENT */}
@@ -152,10 +203,12 @@ export default function EmployeeTransferHistory() {
                 </Card>
               ))}
             </div>
-          ) : transferHistory.length === 0 ? (
+          ) : filteredTransferHistory.length === 0 ? (
             <Card>
               <CardContent className="p-10 text-center text-gray-500">
-                Chưa có lịch sử điều động nào
+                {searchTerm.trim()
+                  ? "Không tìm thấy kết quả phù hợp"
+                  : "Chưa có lịch sử điều động nào"}
               </CardContent>
             </Card>
           ) : (
@@ -163,7 +216,7 @@ export default function EmployeeTransferHistory() {
             // LỊCH SỬ (card grid 1 dòng 5 cột)
             // =========================
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
-              {transferHistory.map((record, index) => {
+              {filteredTransferHistory.map((record, index) => {
                 const trangThai = Number(record.TrangThai); // 0/1
                 const ngayKetThucNull =
                   record.NgayKetThuc === null ||
