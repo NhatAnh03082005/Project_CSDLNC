@@ -1,8 +1,5 @@
-import React, { useState } from "react";
-// 1. Thay thế Next.js Link bằng React Router DOM Link
-import { Link } from "react-router-dom"; 
-
-// 2. Chuyển đổi imports alias (@/) sang đường dẫn tương đối (../...)
+import React, { useState, useEffect } from "react";
+import { Link } from "react-router-dom";
 import { Button } from "../../../components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../../../components/ui/card";
 import { Input } from "../../../components/ui/input";
@@ -15,328 +12,500 @@ import {
   DialogHeader,
   DialogTitle,
   DialogTrigger,
+  DialogFooter,
 } from "../../../components/ui/dialog";
-import { ArrowLeft, Search, Receipt, Plus, Trash2, FileText } from "lucide-react";
-
-// Xóa bỏ "use client"
+import { ArrowLeft, Search, Receipt, Plus, Trash2, FileText, Printer, PackageCheck, Loader2, ShoppingCart, Stethoscope, Syringe } from "lucide-react";
+import { invoiceAPI, productAPI } from "../../../api/services";
+import { useAuthStore } from "../../../store/authStore";
 
 export default function InvoicePage() {
-  // Loại bỏ khai báo kiểu TypeScript: <any>
-  const [selectedCustomer, setSelectedCustomer] = useState(null);
-  // Loại bỏ khai báo kiểu TypeScript: <any[]>
-  const [selectedProducts, setSelectedProducts] = useState([]);
-  const [showInvoice, setShowInvoice] = useState(false);
+  const { user } = useAuthStore();
+  const [invoices, setInvoices] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [searchTerm, setSearchTerm] = useState("");
+  
+  // Selected Invoice State
+  const [selectedInvoice, setSelectedInvoice] = useState(null);
+  const [invoiceDetails, setInvoiceDetails] = useState(null);
+  const [loadingDetails, setLoadingDetails] = useState(false);
+  const [showInvoiceDialog, setShowInvoiceDialog] = useState(false);
 
-  const customers = [
-    {
-      id: "KH001",
-      name: "Nguyễn Văn A",
-      phone: "0912345678",
-      services: [
-        { type: "Khám bệnh", date: "10/12/2025", price: 200000, pet: "Chó Golden - Lucky" },
-        { type: "Tiêm phòng", date: "10/12/2025", price: 350000, pet: "Chó Golden - Lucky" },
-      ],
-    },
-    {
-      id: "KH002",
-      name: "Trần Thị B",
-      phone: "0987654321",
-      services: [{ type: "Khám bệnh", date: "12/12/2025", price: 200000, pet: "Mèo Anh Lông Ngắn - Miu" }],
-    },
-  ];
+  // Add Product State
+  const [showAddProductDialog, setShowAddProductDialog] = useState(false);
+  const [availableProducts, setAvailableProducts] = useState([]);
+  const [loadingProducts, setLoadingProducts] = useState(false);
+  const [productSearchTerm, setProductSearchTerm] = useState("");
+  const [selectedProductToAdd, setSelectedProductToAdd] = useState(null);
+  const [quantityToAdd, setQuantityToAdd] = useState(1);
+  const [addingProduct, setAddingProduct] = useState(false);
 
-  const availableProducts = [
-    { id: "SP001", name: "Royal Canin Mini Adult", type: "Thức ăn", price: 450000 },
-    { id: "SP002", name: "Nexgard Spectra", type: "Thuốc", price: 165000 },
-    { id: "SP003", name: "Vòng cổ chống bọ chét", type: "Phụ kiện", price: 120000 },
-    { id: "SP004", name: "Pate Whiskas", type: "Thức ăn", price: 85000 },
-  ];
+  // Confirm State
+  const [confirming, setConfirming] = useState(false);
+  // paymentMethod state removed
 
-  // Loại bỏ khai báo kiểu TypeScript: (product: any)
-  const addProduct = (product) => {
-    // Tăng số lượng nếu sản phẩm đã có, hoặc thêm mới
-    const existingProductIndex = selectedProducts.findIndex(p => p.id === product.id);
+  // Fetch pending invoices on mount
+  useEffect(() => {
+    fetchPendingInvoices();
+  }, []);
 
-    if (existingProductIndex >= 0) {
-      const newProducts = [...selectedProducts];
-      newProducts[existingProductIndex].quantity += 1;
-      setSelectedProducts(newProducts);
-    } else {
-      setSelectedProducts([...selectedProducts, { ...product, quantity: 1 }]);
+  const fetchPendingInvoices = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      const response = await invoiceAPI.getPending();
+      const data = response.data;
+      if (data.success) {
+        setInvoices(data.data || []);
+      } else {
+        setError(data.message || "Lỗi khi lấy danh sách hóa đơn");
+      }
+    } catch (err) {
+      console.error(err);
+      setError("Lỗi kết nối máy chủ");
+    } finally {
+      setLoading(false);
     }
   };
 
-  // Loại bỏ khai báo kiểu TypeScript: (index: number)
-  const removeProduct = (index) => {
-    setSelectedProducts(selectedProducts.filter((_, i) => i !== index));
+  const fetchInvoiceDetails = async (id) => {
+    try {
+      setLoadingDetails(true);
+      const response = await invoiceAPI.getById(id);
+      const data = response.data;
+      if (data.success) {
+        setInvoiceDetails(data.data);
+      } else {
+        alert(data.message);
+      }
+    } catch (err) {
+      console.error(err);
+      alert("Lỗi khi lấy chi tiết hóa đơn");
+    } finally {
+      setLoadingDetails(false);
+    }
   };
 
-  const calculateTotal = () => {
-    // Loại bỏ khai báo kiểu TypeScript: (sum: number, s: any)
-    const servicesTotal = selectedCustomer?.services.reduce((sum, s) => sum + s.price, 0) || 0;
-    const productsTotal = selectedProducts.reduce((sum, p) => sum + p.price * p.quantity, 0);
-    return servicesTotal + productsTotal;
+  const handleSelectInvoice = (invoice) => {
+    setSelectedInvoice(invoice);
+    fetchInvoiceDetails(invoice.maHoaDon);
+    setShowInvoiceDialog(true);
+  };
+
+  const fetchProducts = async () => {
+    if (!user?.MaChiNhanh) return;
+    try {
+      setLoadingProducts(true);
+      const response = await productAPI.getByBranch(user.MaChiNhanh);
+      const data = response.data;
+      if (data.success) {
+        setAvailableProducts(data.data?.products || []);
+      }
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setLoadingProducts(false);
+    }
+  };
+
+  const handleOpenAddProduct = () => {
+    fetchProducts();
+    setShowAddProductDialog(true);
+    setQuantityToAdd(1);
+    setSelectedProductToAdd(null);
+    setProductSearchTerm("");
+  };
+
+  const handleAddProduct = async () => {
+    if (!selectedProductToAdd || !quantityToAdd || quantityToAdd < 1) return;
+
+    // Kiểm tra số lượng tồn kho
+    const stockAvailable = selectedProductToAdd.soLuongTonKho || 0;
+    if (parseInt(quantityToAdd) > stockAvailable) {
+      alert(`Số lượng tồn kho không đủ! Chỉ còn ${stockAvailable} sản phẩm trong kho.`);
+      return;
+    }
+
+    try {
+      setAddingProduct(true);
+      const productsToAdd = [
+        {
+          MaSanPham: selectedProductToAdd.maSanPham,
+          SoLuong: parseInt(quantityToAdd),
+        },
+      ];
+
+      const response = await invoiceAPI.addProducts(selectedInvoice.maHoaDon, productsToAdd);
+      const res = response.data;
+      
+      if (res.success) {
+        await fetchInvoiceDetails(selectedInvoice.maHoaDon);
+        setShowAddProductDialog(false);
+        fetchPendingInvoices();
+      } else {
+        alert(res.message || "Lỗi khi thêm sản phẩm");
+      }
+    } catch (err) {
+      console.error(err);
+      alert("Lỗi khi thêm sản phẩm: " + err.message);
+    } finally {
+      setAddingProduct(false);
+    }
+  };
+
+  const handleConfirmInvoice = async () => {
+    const isOnlineOrder = checkIsOnlineOrder();
+    const confirmMsg = isOnlineOrder 
+      ? "Bạn có chắc chắn muốn xác nhận đơn hàng này?"
+      : "Bạn có chắc chắn muốn xuất hóa đơn này?";
+    
+    if (!confirm(confirmMsg)) return;
+
+    try {
+      setConfirming(true);
+      // Defaulting to "Chuyển khoản" since user mentioned payment is done by customer (likely online/transfer)
+      // or "Tiền mặt" if offline. But since UI is removed, we pick a safe default.
+      // Backend defaults to "Tiền mặt" if void. Let's pass "Chuyển khoản" if it's online, else "Tiền mặt" or just "Chuyển khoản" for all?
+      // User said "already done". 
+      // I'll use "Chuyển khoản" as it implies external handling effectively.
+      const paymentMethod = "Chuyển khoản"; 
+      const response = await invoiceAPI.confirm(selectedInvoice.maHoaDon, { hinhThucThanhToan: paymentMethod });
+      const res = response.data;
+      if (res.success) {
+        alert(isOnlineOrder ? "Xác nhận đơn hàng thành công!" : "Xuất hóa đơn thành công!");
+        setShowInvoiceDialog(false);
+        setSelectedInvoice(null);
+        setInvoiceDetails(null);
+        fetchPendingInvoices();
+      } else {
+        alert(res.message || "Lỗi khi xác nhận");
+      }
+    } catch (err) {
+      console.error(err);
+      alert("Lỗi hệ thống");
+    } finally {
+      setConfirming(false);
+    }
+  };
+
+  // Check if invoice is from online order (only "Mua hàng" items)
+  const checkIsOnlineOrder = () => {
+    if (!invoiceDetails?.chiTiet || invoiceDetails.chiTiet.length === 0) return false;
+    return invoiceDetails.chiTiet.every(item => item.LoaiDichVu === "Mua hàng");
+  };
+
+  const filteredInvoices = invoices.filter(inv => 
+    inv.tenKhachHang?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    inv.sdt?.includes(searchTerm) ||
+    inv.maHoaDon?.toLowerCase().includes(searchTerm.toLowerCase())
+  );
+
+  const filteredProducts = availableProducts.filter(p => 
+    p.tenSanPham?.toLowerCase().includes(productSearchTerm.toLowerCase()) ||
+    p.maSanPham?.toLowerCase().includes(productSearchTerm.toLowerCase())
+  );
+
+  const getServiceIcon = (loaiDichVu) => {
+    if (loaiDichVu === "Mua hàng") return <ShoppingCart className="h-4 w-4 text-green-600" />;
+    if (loaiDichVu?.includes("Tiêm")) return <Syringe className="h-4 w-4 text-purple-600" />;
+    return <Stethoscope className="h-4 w-4 text-blue-600" />;
+  };
+
+  const getServiceBadge = (loaiDichVu) => {
+    if (loaiDichVu === "Mua hàng") return <Badge className="bg-green-100 text-green-700 hover:bg-green-100">Mua hàng</Badge>;
+    if (loaiDichVu?.includes("Tiêm")) return <Badge className="bg-purple-100 text-purple-700 hover:bg-purple-100">Tiêm phòng</Badge>;
+    return <Badge className="bg-blue-100 text-blue-700 hover:bg-blue-100">Khám bệnh</Badge>;
   };
 
   return (
     <div className="min-h-screen bg-gray-50 p-6">
       <div className="max-w-6xl mx-auto space-y-6">
-        {/* Sửa Link href -> to */}
-        <Link to="/staff/demo">
-          <Button variant="ghost" className="gap-2">
-            <ArrowLeft className="h-4 w-4" />
-            Quay lại
-          </Button>
-        </Link>
-
-        <div>
-          <h1 className="text-3xl font-bold text-gray-900 flex items-center gap-3">
-            <Receipt className="h-8 w-8 text-blue-600" />
-            Lập hóa đơn
-          </h1>
-          <p className="text-gray-500 mt-1">Chọn khách hàng và tạo hóa đơn thanh toán</p>
+        <div className="flex items-center gap-4 mb-6">
+          <Link to="/staff/demo">
+            <Button variant="ghost" size="icon">
+              <ArrowLeft className="h-5 w-5" />
+            </Button>
+          </Link>
+          <div>
+            <h1 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
+              <Receipt className="h-6 w-6 text-blue-600" />
+              Lập hóa đơn
+            </h1>
+            <p className="text-gray-500 text-sm">Xác nhận hóa đơn trong ngày tại chi nhánh</p>
+          </div>
         </div>
 
-        <div className="grid lg:grid-cols-2 gap-6">
-          {/* Customer Selection */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Danh sách khách hàng</CardTitle>
-              <CardDescription>Chọn khách hàng để lập hóa đơn</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="flex gap-2">
-                <Input placeholder="Tìm kiếm khách hàng..." />
-                <Button size="icon" variant="outline">
-                  <Search className="h-4 w-4" />
-                </Button>
-              </div>
+        {error && (
+          <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg">
+            <p className="font-medium">Lỗi: {error}</p>
+          </div>
+        )}
 
-              <div className="space-y-2">
-                {customers.map((customer) => (
-                  <div
-                    key={customer.id}
-                    className={`border rounded-lg p-4 cursor-pointer transition-colors ${
-                      selectedCustomer?.id === customer.id ? "bg-blue-50 border-blue-500" : "hover:bg-gray-50"
-                    }`}
-                    onClick={() => {
-                        setSelectedCustomer(customer);
-                        setSelectedProducts([]); // Reset products when customer changes
-                    }}
+        <Card>
+          <CardHeader>
+            <div className="flex justify-between items-center">
+              <div>
+                <CardTitle className="text-lg">Danh sách hóa đơn chờ xác nhận (Hôm nay)</CardTitle>
+                <CardDescription>Click vào hóa đơn để xem chi tiết và xác nhận</CardDescription>
+              </div>
+              <div className="relative w-64">
+                <Search className="absolute left-2 top-2.5 h-4 w-4 text-gray-500" />
+                <Input 
+                  placeholder="Tìm kiếm hóa đơn..." 
+                  className="pl-8"
+                  value={searchTerm}
+                  onChange={e => setSearchTerm(e.target.value)}
+                />
+              </div>
+            </div>
+          </CardHeader>
+          <CardContent>
+            {loading ? (
+              <div className="flex justify-center py-12">
+                <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
+              </div>
+            ) : filteredInvoices.length === 0 ? (
+              <div className="text-center py-12 text-gray-500">
+                <Receipt className="h-12 w-12 mx-auto mb-3 text-gray-300" />
+                <p>Không có hóa đơn nào cần xác nhận hôm nay</p>
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {filteredInvoices.map((inv) => (
+                  <div 
+                    key={inv.maHoaDon} 
+                    className="flex items-center justify-between p-4 border rounded-xl hover:bg-blue-50 cursor-pointer transition-colors hover:border-blue-200"
+                    onClick={() => handleSelectInvoice(inv)}
                   >
-                    <div className="flex items-start justify-between">
-                      <div>
-                        <div className="font-semibold">{customer.name}</div>
-                        <div className="text-sm text-gray-600">Mã KH: {customer.id}</div>
-                        <div className="text-sm text-gray-600">SĐT: {customer.phone}</div>
+                    <div className="flex items-center gap-4">
+                      <div className="h-12 w-12 rounded-full bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center text-white font-bold text-lg">
+                        {inv.tenKhachHang?.charAt(0) || "?"}
                       </div>
-                      {selectedCustomer?.id === customer.id && <Badge className="bg-blue-600">Đã chọn</Badge>}
+                      <div>
+                        <div className="font-semibold text-gray-900">{inv.tenKhachHang}</div>
+                        <div className="text-sm text-gray-500">
+                          <span className="font-medium text-blue-600">{inv.maHoaDon}</span> • SĐT: {inv.sdt}
+                        </div>
+                        <div className="text-xs text-gray-400">{inv.ngayLap}</div>
+                      </div>
+                    </div>
+                    <div className="text-right">
+                      <div className="font-bold text-lg text-blue-600">{inv.tongTien?.toLocaleString('vi-VN')} ₫</div>
+                      <Badge variant="outline" className="text-orange-600 border-orange-200 bg-orange-50">
+                        {inv.trangThai}
+                      </Badge>
                     </div>
                   </div>
                 ))}
               </div>
-            </CardContent>
-          </Card>
+            )}
+          </CardContent>
+        </Card>
 
-          {/* Invoice Details */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Chi tiết hóa đơn</CardTitle>
-              <CardDescription>Dịch vụ đã sử dụng và sản phẩm mua thêm</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              {!selectedCustomer ? (
-                <div className="text-center py-8 text-gray-500">Vui lòng chọn khách hàng</div>
-              ) : (
-                <>
-                  {/* Services */}
+        {/* Invoice Detail Dialog */}
+        <Dialog open={showInvoiceDialog} onOpenChange={setShowInvoiceDialog}>
+          <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle className="text-xl">Chi tiết hóa đơn {selectedInvoice?.maHoaDon}</DialogTitle>
+              <DialogDescription>
+                {checkIsOnlineOrder() 
+                  ? "Đơn hàng online - Khách hàng đặt qua website"
+                  : "Kiểm tra thông tin và xác nhận hóa đơn"}
+              </DialogDescription>
+            </DialogHeader>
+            
+            {loadingDetails ? (
+              <div className="flex justify-center py-12">
+                <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
+              </div>
+            ) : invoiceDetails ? (
+              <div className="space-y-6">
+                {/* Customer Info */}
+                <div className="grid grid-cols-2 gap-4 p-4 bg-gray-50 rounded-xl">
                   <div>
-                    <Label className="text-base font-semibold">Dịch vụ đã sử dụng</Label>
-                    <div className="mt-2 space-y-2">
-                      {/* Loại bỏ khai báo kiểu TypeScript: service: any, index: number */}
-                      {selectedCustomer.services.map((service, index) => (
-                        <div key={index} className="flex justify-between items-start p-3 bg-gray-50 rounded-lg">
-                          <div className="flex-1">
-                            <div className="font-medium">{service.type}</div>
-                            <div className="text-sm text-gray-600">{service.pet}</div>
-                            <div className="text-xs text-gray-500">{service.date}</div>
-                          </div>
-                          <div className="font-semibold text-blue-600">{service.price.toLocaleString("vi-VN")} ₫</div>
-                        </div>
-                      ))}
-                    </div>
+                    <Label className="text-gray-500 text-xs uppercase">Khách hàng</Label>
+                    <div className="font-semibold">{invoiceDetails.tenKhachHang}</div>
+                    <div className="text-sm text-gray-500">SĐT: {invoiceDetails.sdt}</div>
+                    <Badge className="mt-1" variant="outline">{invoiceDetails.capHoiVien}</Badge>
                   </div>
+                  <div className="text-right">
+                    <Label className="text-gray-500 text-xs uppercase">Chi nhánh</Label>
+                    <div className="font-semibold">{invoiceDetails.chiNhanh?.tenChiNhanh}</div>
+                    <div className="text-sm text-gray-500">{invoiceDetails.ngayLap}</div>
+                  </div>
+                </div>
 
-                  {/* Products */}
-                  <div>
-                    <div className="flex items-center justify-between mb-2">
-                      <Label className="text-base font-semibold">Sản phẩm mua thêm</Label>
-                      <Dialog>
-                        <DialogTrigger asChild>
-                          <Button size="sm" variant="outline" className="gap-2 bg-transparent">
-                            <Plus className="h-4 w-4" />
-                            Thêm sản phẩm
-                          </Button>
-                        </DialogTrigger>
-                        <DialogContent>
-                          <DialogHeader>
-                            <DialogTitle>Chọn sản phẩm</DialogTitle>
-                            <DialogDescription>Chọn sản phẩm có tại chi nhánh để thêm vào hóa đơn</DialogDescription>
-                          </DialogHeader>
-                          <div className="space-y-2 max-h-[400px] overflow-y-auto">
-                            {availableProducts.map((product) => (
-                              <div
-                                key={product.id}
-                                className="flex items-center justify-between p-3 border rounded-lg hover:bg-gray-50"
-                              >
-                                <div>
-                                  <div className="font-medium">{product.name}</div>
-                                  <div className="text-sm text-gray-600">{product.type}</div>
-                                  <div className="text-sm font-semibold text-blue-600">
-                                    {product.price.toLocaleString("vi-VN")} ₫
-                                  </div>
-                                </div>
-                                <Button size="sm" onClick={() => addProduct(product)}>
-                                  Thêm
-                                </Button>
-                              </div>
-                            ))}
-                          </div>
-                        </DialogContent>
-                      </Dialog>
-                    </div>
-
-                    {selectedProducts.length === 0 ? (
-                      <div className="text-center py-4 text-gray-500 text-sm bg-gray-50 rounded-lg">
-                        Chưa có sản phẩm nào
-                      </div>
-                    ) : (
-                      <div className="space-y-2">
-                        {selectedProducts.map((product, index) => (
-                          <div key={index} className="flex justify-between items-center p-3 bg-green-50 rounded-lg">
-                            <div className="flex-1">
-                              <div className="font-medium">{product.name}</div>
-                              <div className="text-sm text-gray-600">
-                                {product.type} - SL: {product.quantity}
-                              </div>
-                            </div>
-                            <div className="flex items-center gap-3">
-                              <div className="font-semibold text-green-600">
-                                {(product.price * product.quantity).toLocaleString("vi-VN")} ₫
-                              </div>
-                              <Button size="sm" variant="ghost" onClick={() => removeProduct(index)}>
-                                <Trash2 className="h-4 w-4 text-red-600" />
-                              </Button>
-                            </div>
-                          </div>
-                        ))}
-                      </div>
+                {/* Invoice Items */}
+                <div className="space-y-3">
+                  <div className="flex justify-between items-center">
+                    <h3 className="font-semibold text-gray-900">Chi tiết dịch vụ & sản phẩm</h3>
+                    {!checkIsOnlineOrder() && (
+                      <Button size="sm" variant="outline" onClick={handleOpenAddProduct}>
+                        <Plus className="h-4 w-4 mr-1" /> Thêm sản phẩm
+                      </Button>
                     )}
                   </div>
-
-                  {/* Total */}
-                  <div className="pt-4 border-t">
-                    <div className="flex justify-between items-center text-lg font-bold">
-                      <span>Tổng cộng:</span>
-                      <span className="text-blue-600 text-2xl">{calculateTotal().toLocaleString("vi-VN")} ₫</span>
-                    </div>
-                  </div>
-
-                  <Button className="w-full gap-2" size="lg" onClick={() => setShowInvoice(true)}>
-                    <FileText className="h-5 w-5" />
-                    Xuất hóa đơn
-                  </Button>
-                </>
-              )}
-            </CardContent>
-          </Card>
-        </div>
-
-        {/* Invoice Dialog */}
-        <Dialog open={showInvoice} onOpenChange={setShowInvoice}>
-          <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
-            <DialogHeader>
-              <DialogTitle className="text-2xl">Hóa đơn thanh toán</DialogTitle>
-              <DialogDescription>Chi tiết hóa đơn dịch vụ và sản phẩm</DialogDescription>
-            </DialogHeader>
-            {selectedCustomer && (
-              <div className="space-y-4">
-                <div className="border-b pb-4">
-                  <h3 className="font-semibold text-lg">Thông tin khách hàng</h3>
-                  <div className="mt-2 space-y-1 text-sm">
-                    <div>Họ tên: {selectedCustomer.name}</div>
-                    <div>Mã KH: {selectedCustomer.id}</div>
-                    <div>SĐT: {selectedCustomer.phone}</div>
-                    <div>Ngày lập: {new Date().toLocaleDateString("vi-VN")}</div>
-                  </div>
-                </div>
-
-                <div className="border-b pb-4">
-                  <h3 className="font-semibold text-lg mb-2">Dịch vụ</h3>
-                  <table className="w-full text-sm">
-                    <thead className="bg-gray-100">
-                      <tr>
-                        <th className="text-left p-2">Dịch vụ</th>
-                        <th className="text-left p-2">Thú cưng</th>
-                        <th className="text-right p-2">Thành tiền</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {/* Loại bỏ khai báo kiểu TypeScript: service: any, index: number */}
-                      {selectedCustomer.services.map((service, index) => (
-                        <tr key={index} className="border-b">
-                          <td className="p-2">{service.type}</td>
-                          <td className="p-2">{service.pet}</td>
-                          <td className="text-right p-2">{service.price.toLocaleString("vi-VN")} ₫</td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-
-                {selectedProducts.length > 0 && (
-                  <div className="border-b pb-4">
-                    <h3 className="font-semibold text-lg mb-2">Sản phẩm</h3>
+                  
+                  <div className="border rounded-xl overflow-hidden">
                     <table className="w-full text-sm">
                       <thead className="bg-gray-100">
                         <tr>
-                          <th className="text-left p-2">Sản phẩm</th>
-                          <th className="text-center p-2">SL</th>
-                          <th className="text-right p-2">Đơn giá</th>
-                          <th className="text-right p-2">Thành tiền</th>
+                          <th className="py-3 px-4 text-left font-medium text-gray-600">STT</th>
+                          <th className="py-3 px-4 text-left font-medium text-gray-600">Mô tả</th>
+                          <th className="py-3 px-4 text-left font-medium text-gray-600">Loại</th>
+                          <th className="py-3 px-4 text-right font-medium text-gray-600">SL</th>
+                          <th className="py-3 px-4 text-right font-medium text-gray-600">Thành tiền</th>
                         </tr>
                       </thead>
-                      <tbody>
-                        {selectedProducts.map((product, index) => (
-                          <tr key={index} className="border-b">
-                            <td className="p-2">{product.name}</td>
-                            <td className="text-center p-2">{product.quantity}</td>
-                            <td className="text-right p-2">{product.price.toLocaleString("vi-VN")} ₫</td>
-                            <td className="text-right p-2">
-                              {(product.price * product.quantity).toLocaleString("vi-VN")} ₫
+                      <tbody className="divide-y">
+                        {invoiceDetails.chiTiet?.map((item, idx) => (
+                          <tr key={idx} className="hover:bg-gray-50">
+                            <td className="py-3 px-4 text-gray-500">{idx + 1}</td>
+                            <td className="py-3 px-4">
+                              <div className="flex items-center gap-2">
+                                {getServiceIcon(item.LoaiDichVu)}
+                                <span className="font-medium">
+                                  {item.LoaiChiTiet === "MuaHang" 
+                                    ? item.ChiTiet?.tenSanPham
+                                    : item.LoaiChiTiet === "KhamBenh"
+                                      ? `Khám bệnh${item.ChiTiet?.tenBacSi ? ` - BS. ${item.ChiTiet.tenBacSi}` : ''}`
+                                      : item.ChiTiet?.tenVacXin 
+                                        ? `Tiêm: ${item.ChiTiet.tenVacXin}` 
+                                        : item.LoaiDichVu
+                                  }
+                                </span>
+                              </div>
+                            </td>
+                            <td className="py-3 px-4">{getServiceBadge(item.LoaiDichVu)}</td>
+                            <td className="py-3 px-4 text-right">
+                              {item.LoaiChiTiet === "MuaHang" ? item.ChiTiet?.soLuong : 1}
+                            </td>
+                            <td className="py-3 px-4 text-right font-semibold">
+                              {item.ThanhTien?.toLocaleString('vi-VN')} ₫
                             </td>
                           </tr>
                         ))}
                       </tbody>
                     </table>
                   </div>
-                )}
+                </div>
 
-                <div className="bg-blue-50 p-4 rounded-lg">
-                  <div className="flex justify-between items-center text-xl font-bold">
-                    <span>Tổng cộng:</span>
-                    <span className="text-blue-600 text-2xl">{calculateTotal().toLocaleString("vi-VN")} ₫</span>
+                {/* Total */}
+                <div className="bg-gradient-to-r from-blue-50 to-blue-100 p-5 rounded-xl">
+                  <div className="flex justify-between items-center">
+                    <span className="text-lg font-semibold text-gray-800">Tổng cộng:</span>
+                    <span className="text-2xl font-bold text-blue-600">
+                      {invoiceDetails.tongTien?.toLocaleString('vi-VN')} ₫
+                    </span>
                   </div>
+                  {invoiceDetails.maKhuyenMai && (
+                    <div className="text-sm text-green-600 mt-1">
+                      Áp dụng khuyến mãi: {invoiceDetails.maKhuyenMai}
+                    </div>
+                  )}
                 </div>
 
-                <div className="flex gap-3">
-                  <Button className="flex-1">In hóa đơn</Button>
-                  <Button variant="outline" className="flex-1 bg-transparent">
-                    Gửi email
+                {/* Payment Method Selection Removed as per requirement */}
+
+
+                <DialogFooter className="gap-2">
+                  <Button variant="outline" onClick={() => setShowInvoiceDialog(false)}>
+                    Đóng
                   </Button>
-                </div>
+                  <Button 
+                    onClick={handleConfirmInvoice} 
+                    disabled={confirming}
+                    className={checkIsOnlineOrder() 
+                      ? "bg-green-600 hover:bg-green-700" 
+                      : "bg-blue-600 hover:bg-blue-700"}
+                  >
+                    {confirming ? (
+                      <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                    ) : checkIsOnlineOrder() ? (
+                      <PackageCheck className="h-4 w-4 mr-2" />
+                    ) : (
+                      <Printer className="h-4 w-4 mr-2" />
+                    )}
+                    {checkIsOnlineOrder() ? "Xác nhận đặt hàng" : "Xuất hóa đơn"}
+                  </Button>
+                </DialogFooter>
               </div>
-            )}
+            ) : null}
+          </DialogContent>
+        </Dialog>
+
+        {/* Add Product Dialog */}
+        <Dialog open={showAddProductDialog} onOpenChange={setShowAddProductDialog}>
+          <DialogContent className="max-w-md">
+            <DialogHeader>
+              <DialogTitle>Thêm sản phẩm</DialogTitle>
+              <DialogDescription>Chọn sản phẩm từ kho của chi nhánh</DialogDescription>
+            </DialogHeader>
+            
+            <div className="space-y-4 py-4">
+              <Input 
+                placeholder="Tìm sản phẩm..." 
+                value={productSearchTerm}
+                onChange={e => setProductSearchTerm(e.target.value)}
+              />
+              
+              <div className="h-[200px] overflow-y-auto border rounded-lg p-2 space-y-2">
+                {loadingProducts ? (
+                  <div className="flex justify-center p-4">
+                    <Loader2 className="h-6 w-6 animate-spin" />
+                  </div>
+                ) : filteredProducts.length === 0 ? (
+                  <div className="text-center text-sm text-gray-500 p-4">
+                    Không tìm thấy sản phẩm
+                  </div>
+                ) : (
+                  filteredProducts.map(p => (
+                    <div 
+                      key={p.maSanPham} 
+                      className={`p-3 border rounded-lg cursor-pointer transition-colors ${
+                        selectedProductToAdd?.maSanPham === p.maSanPham 
+                          ? 'bg-blue-50 border-blue-400' 
+                          : 'hover:bg-gray-50'
+                      }`}
+                      onClick={() => setSelectedProductToAdd(p)}
+                    >
+                      <div className="font-medium">{p.tenSanPham}</div>
+                      <div className="flex justify-between text-xs text-gray-500">
+                        <span>Kho: {p.soLuongTonKho || 0}</span>
+                        <span className="font-semibold text-blue-600">
+                          {p.donGia?.toLocaleString('vi-VN')} ₫
+                        </span>
+                      </div>
+                    </div>
+                  ))
+                )}
+              </div>
+
+              <div className="flex items-center gap-4">
+                <Label>Số lượng:</Label>
+                <Input 
+                  type="number" 
+                  min="1" 
+                  max={selectedProductToAdd?.SoLuongTon || 1} 
+                  value={quantityToAdd}
+                  onChange={e => setQuantityToAdd(e.target.value)}
+                  className="w-24"
+                />
+              </div>
+            </div>
+
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setShowAddProductDialog(false)}>
+                Hủy
+              </Button>
+              <Button 
+                onClick={handleAddProduct} 
+                disabled={!selectedProductToAdd || addingProduct}
+              >
+                {addingProduct && <Loader2 className="h-4 w-4 animate-spin mr-2" />}
+                Thêm vào hóa đơn
+              </Button>
+            </DialogFooter>
           </DialogContent>
         </Dialog>
       </div>

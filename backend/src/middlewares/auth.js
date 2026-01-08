@@ -38,7 +38,20 @@ const authorize = (...allowedRoles) => {
       });
     }
 
-    if (!allowedRoles.includes(req.user.role)) {
+    // Map role từ token sang role trong constants
+    // Token có thể có: "staff", "admin", "KHACH_HANG", "NHAN_VIEN", "QUAN_TRI"
+    let userRole = req.user.role;
+    
+    // Chuyển đổi role từ token sang format trong constants
+    if (userRole === "staff") {
+      userRole = ROLES.EMPLOYEE; // "NHAN_VIEN"
+    } else if (userRole === "admin") {
+      userRole = ROLES.ADMIN; // "QUAN_TRI"
+    } else if (userRole === "customer") {
+      userRole = ROLES.CUSTOMER; // "KHACH_HANG"
+    }
+
+    if (!allowedRoles.includes(userRole)) {
       return res.status(403).json({
         success: false,
         message: 'Không có quyền truy cập'

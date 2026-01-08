@@ -34,6 +34,8 @@ export const appointmentAPI = {
     api.get("/appointments/available-slots", { params }),
   getAvailableDoctors: (params) =>
     api.get("/appointments/available-doctors", { params }),
+  getToday: (maChiNhanh, date) => api.get("/appointments/today", { params: { MaChiNhanh: maChiNhanh, date } }),
+  getSchedule: (params) => api.get("/appointments/schedule", { params }),
 };
 
 export const branchAPI = {
@@ -73,6 +75,9 @@ export const invoiceAPI = {
   create: (data) => api.post("/invoices", data),
   getById: (id) => api.get(`/invoices/${id}`),
   getAll: (params) => api.get("/invoices", { params }),
+  getPending: () => api.get("/invoices/pending"),
+  addProducts: (id, products) => api.post(`/invoices/${id}/products`, { products }),
+  confirm: (id, data) => api.put(`/invoices/${id}/confirm`, data),
 };
 
 export const employeeAPI = {
@@ -81,6 +86,12 @@ export const employeeAPI = {
   create: (data) => api.post("/employees", data),
   update: (id, data) => api.put(`/employees/${id}`, data),
   delete: (id) => api.delete(`/employees/${id}`),
+  // Profile & Branch
+  getBranch: () => api.get("/employees/branch"),
+  // Work Schedule APIs
+  getWorkSchedule: () => api.get("/employees/work-schedule"),
+  createWorkSchedule: (data) => api.post("/employees/work-schedule", data),
+  deleteWorkSchedule: (data) => api.delete("/employees/work-schedule", { data }),
 };
 
 export const reportAPI = {
@@ -134,3 +145,5 @@ export const orderAPI = {
   getPending: (maChiNhanh) => api.get("/customers/orders/pending", { params: { maChiNhanh } }),
   confirm: (maHoaDon) => api.put(`/customers/orders/${maHoaDon}/confirm`),
 };
+
+

@@ -158,33 +158,6 @@ export default function AboutPage() {
           </div>
         </div>
 
-        {/* Founders Section */}
-        <div className="pt-12">
-          <div className="text-center mb-16 space-y-4">
-            <h2 className="text-5xl font-bold bg-gradient-to-r from-blue-600 to-teal-600 bg-clip-text text-transparent leading-tight mb-1">
-              Đội Ngũ Sáng Lập
-            </h2>
-            <p className="text-slate-500 max-w-2xl mx-auto font-medium">
-              Những con người đầy nhiệt huyết, kết hợp giữa kiến thức y khoa
-              uyên bác và tình yêu thú cưng vô bờ bến.
-            </p>
-          </div>
-          <div className="grid md:grid-cols-2 gap-12 max-w-5xl mx-auto">
-            <FounderCard
-              image="https://images.unsplash.com/photo-1559839734-2b71f1536783?auto=format&fit=crop&q=80&w=400"
-              name="BS. Nguyễn Minh Anh"
-              role="Co-founder & Giám đốc Chuyên môn"
-              desc="Với hơn 15 năm kinh nghiệm tu nghiệp tại Pháp, Bác sĩ Minh Anh là người đặt nền móng cho quy chuẩn y tế quốc tế tại PetCareX."
-            />
-            <FounderCard
-              image="https://images.unsplash.com/photo-1594824476967-48c8b964273f?auto=format&fit=crop&q=80&w=400"
-              name="Bà Lê Thu Thủy"
-              role="Co-founder & Giám đốc Điều hành"
-              desc="Chuyên gia quản trị với tầm nhìn chiến lược, bà Thủy luôn nỗ lực mang dịch vụ chăm sóc thú cưng cao cấp đến gần hơn với mọi gia đình."
-            />
-          </div>
-        </div>
-
         {/* Core Values with Grid */}
         <div className="pt-24 inline-flex flex-col w-full">
           <div className="text-center mb-16 space-y-4">

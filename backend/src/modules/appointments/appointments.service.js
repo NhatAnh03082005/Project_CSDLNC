@@ -740,10 +740,401 @@ async function getAvailableDoctors(params) {
   }
 }
 
+/**
+ * Lấy lịch hẹn theo chi nhánh/ngày/trạng thái (cho nhân viên)
+ * @param {object} queryParams - { MaChiNhanh, NgayHen?, TrangThai?, page?, limit? }
+ * @param {string} maNhanVien - Mã nhân viên (để lọc theo chi nhánh của nhân viên)
+ * @returns {Promise<{success: boolean, status?: number, message?: string, data?: object, error?: string}>}
+ */
+async function getAppointmentsSchedule(queryParams = {}, maNhanVien = null) {
+  const { MaChiNhanh, NgayHen, TrangThai, page = 1, limit = 50 } = queryParams;
+  const offset = (page - 1) * limit;
+
+  try {
+    const pool = await poolPromise;
+    const request = pool.request();
+
+    // Nếu có maNhanVien, lấy MaChiNhanh từ thông tin nhân viên
+    let finalMaChiNhanh = MaChiNhanh;
+    if (maNhanVien && !MaChiNhanh) {
+      const nvResult = await pool
+        .request()
+        .input("MaNhanVien", sql.Char(5), maNhanVien)
+        .query(`SELECT TOP 1 MaChiNhanh FROM dbo.NhanVien WHERE MaNhanVien = @MaNhanVien`);
+      
+      if (nvResult.recordset.length > 0) {
+        finalMaChiNhanh = nvResult.recordset[0].MaChiNhanh;
+      }
+    }
+
+    if (!finalMaChiNhanh) {
+      return {
+        success: false,
+        status: 400,
+        message: "Thiếu thông tin MaChiNhanh",
+      };
+    }
+
+    // Xây dựng WHERE clause
+    let whereClause = "WHERE lh.MaChiNhanh = @MaChiNhanh";
+    request.input("MaChiNhanh", sql.Char(4), finalMaChiNhanh);
+
+    if (NgayHen) {
+      whereClause += " AND CAST(lh.ThoiGianHen AS DATE) = CAST(@NgayHen AS DATE)";
+      request.input("NgayHen", sql.NVarChar(10), NgayHen);
+    }
+
+    if (TrangThai) {
+      whereClause += " AND lh.TrangThai = @TrangThai";
+      request.input("TrangThai", sql.NVarChar(20), TrangThai);
+    }
+
+    // Đếm tổng số
+    const countQuery = `
+      SELECT COUNT(*) AS Total
+      FROM dbo.LichHen lh
+      ${whereClause}
+    `;
+    const countResult = await request.query(countQuery);
+    const total = countResult.recordset[0].Total;
+    const totalPages = Math.ceil(total / limit);
+
+    // Lấy danh sách lịch hẹn
+    const dataQuery = `
+      SELECT 
+        lh.MaLichHen,
+        lh.MaKhachHang,
+        kh.HoTen AS TenKhachHang,
+        kh.SDT AS SDTKhachHang,
+        lh.MaChiNhanh,
+        cn.TenChiNhanh,
+        lh.LoaiDichVu,
+        lh.BacSiPhuTrach,
+        nvBs.HoTen AS TenBacSiPhuTrach,
+        CONVERT(VARCHAR(10), lh.ThoiGianHen, 120) AS ThoiGianHen,
+        CONVERT(VARCHAR(10), lh.NgayLap, 120) AS NgayLap,
+        lh.TrangThai,
+        (SELECT COUNT(*) FROM dbo.ThuCung tc WHERE tc.MaKhachHang = lh.MaKhachHang) AS SoLuongThuCung
+      FROM dbo.LichHen lh
+      INNER JOIN dbo.KhachHang kh ON lh.MaKhachHang = kh.MaKhachHang
+      LEFT JOIN dbo.ChiNhanh cn ON lh.MaChiNhanh = cn.MaChiNhanh
+      LEFT JOIN dbo.NhanVien nvBs ON lh.BacSiPhuTrach = nvBs.MaNhanVien
+      ${whereClause}
+      ORDER BY lh.ThoiGianHen ASC, lh.MaLichHen ASC
+      OFFSET @Offset ROWS
+      FETCH NEXT @Limit ROWS ONLY
+    `;
+
+    request.input("Offset", sql.Int, offset);
+    request.input("Limit", sql.Int, limit);
+
+    const dataResult = await request.query(dataQuery);
+
+    const appointments = dataResult.recordset.map((apt) => ({
+      maLichHen: apt.MaLichHen,
+      maKhachHang: apt.MaKhachHang,
+      tenKhachHang: apt.TenKhachHang,
+      sdtKhachHang: apt.SDTKhachHang,
+      maChiNhanh: apt.MaChiNhanh,
+      tenChiNhanh: apt.TenChiNhanh,
+      loaiDichVu: apt.LoaiDichVu,
+      bacSiPhuTrach: apt.BacSiPhuTrach,
+      tenBacSiPhuTrach: apt.TenBacSiPhuTrach,
+      thoiGianHen: formatDateForResponse(apt.ThoiGianHen),
+      ngayLap: formatDateForResponse(apt.NgayLap),
+      trangThai: apt.TrangThai,
+      soLuongThuCung: apt.SoLuongThuCung || 0,
+    }));
+
+    return {
+      success: true,
+      status: 200,
+      data: {
+        appointments,
+        pagination: {
+          page: parseInt(page),
+          limit: parseInt(limit),
+          total,
+          totalPages,
+          hasNext: page < totalPages,
+          hasPrev: page > 1,
+        },
+      },
+    };
+  } catch (error) {
+    console.error("Error fetching appointments schedule:", error);
+    return {
+      success: false,
+      status: 500,
+      message: "Lỗi khi lấy lịch hẹn",
+      error: error.message,
+    };
+  }
+}
+
+/**
+ * Lấy lịch hẹn hôm nay của chi nhánh với thống kê (cho nhân viên)
+ * @param {string} maChiNhanh - Mã chi nhánh (optional, nếu không có sẽ lấy từ maNhanVien)
+ * @param {string} maNhanVien - Mã nhân viên (optional)
+ * @returns {Promise<{success: boolean, status?: number, message?: string, data?: object, error?: string}>}
+ */
+async function getTodayAppointments(maChiNhanh = null, maNhanVien = null, date = null) {
+  try {
+    const pool = await poolPromise;
+
+    // Lấy MaChiNhanh từ nhân viên nếu không có
+    let finalMaChiNhanh = maChiNhanh;
+    if (!finalMaChiNhanh && maNhanVien) {
+      const nvResult = await pool
+        .request()
+        .input("MaNhanVien", sql.Char(5), maNhanVien)
+        .query(`SELECT TOP 1 MaChiNhanh FROM dbo.NhanVien WHERE MaNhanVien = @MaNhanVien`);
+      
+      if (nvResult.recordset.length > 0) {
+        finalMaChiNhanh = nvResult.recordset[0].MaChiNhanh;
+      }
+    }
+
+    if (!finalMaChiNhanh) {
+      return {
+        success: false,
+        status: 400,
+        message: "Thiếu thông tin MaChiNhanh",
+      };
+    }
+
+    let targetDateStr = null;
+    if (date) {
+        targetDateStr = date; // Expecting YYYY-MM-DD
+    } else {
+        // If no date provided, we want ALL appointments, so keep targetDateStr as null
+        // const today = new Date();
+        // targetDateStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
+    }
+
+    // Lấy thống kê
+    const statsQuery = `
+      SELECT 
+        COUNT(*) AS TongSo,
+        SUM(CASE WHEN TrangThai = N'Đã lên lịch' THEN 1 ELSE 0 END) AS ChoXacNhan,
+        SUM(CASE WHEN TrangThai = N'Hoàn thành' THEN 1 ELSE 0 END) AS HoanThanh,
+        SUM(CASE WHEN TrangThai = N'Đã hủy' THEN 1 ELSE 0 END) AS DaHuy
+      FROM dbo.LichHen
+      WHERE MaChiNhanh = @MaChiNhanh
+        AND (@TodayDate IS NULL OR CAST(ThoiGianHen AS DATE) = CAST(@TodayDate AS DATE))
+    `;
+
+    const statsResult = await pool
+      .request()
+      .input("MaChiNhanh", sql.Char(4), finalMaChiNhanh)
+      .input("TodayDate", sql.NVarChar(10), targetDateStr)
+      .query(statsQuery);
+
+    const stats = statsResult.recordset[0];
+
+    // Lấy danh sách lịch hẹn hôm nay
+    const appointmentsQuery = `
+      SELECT 
+        lh.MaLichHen,
+        lh.MaKhachHang,
+        kh.HoTen AS TenKhachHang,
+        kh.SDT AS SDTKhachHang,
+        lh.MaChiNhanh,
+        cn.TenChiNhanh,
+        lh.LoaiDichVu,
+        lh.BacSiPhuTrach,
+        nvBs.HoTen AS TenBacSiPhuTrach,
+        CONVERT(VARCHAR(10), lh.ThoiGianHen, 120) AS ThoiGianHen,
+        CONVERT(VARCHAR(10), lh.NgayLap, 120) AS NgayLap,
+        lh.TrangThai
+      FROM dbo.LichHen lh
+      INNER JOIN dbo.KhachHang kh ON lh.MaKhachHang = kh.MaKhachHang
+      LEFT JOIN dbo.ChiNhanh cn ON lh.MaChiNhanh = cn.MaChiNhanh
+      LEFT JOIN dbo.NhanVien nvBs ON lh.BacSiPhuTrach = nvBs.MaNhanVien
+      WHERE lh.MaChiNhanh = @MaChiNhanh
+        AND (@TodayDate IS NULL OR CAST(lh.ThoiGianHen AS DATE) = CAST(@TodayDate AS DATE))
+      ORDER BY lh.ThoiGianHen ASC, lh.MaLichHen ASC
+    `;
+
+    const appointmentsResult = await pool
+      .request()
+      .input("MaChiNhanh", sql.Char(4), finalMaChiNhanh)
+      .input("TodayDate", sql.NVarChar(10), targetDateStr)
+      .query(appointmentsQuery);
+
+    const appointments = appointmentsResult.recordset.map((apt) => ({
+      maLichHen: apt.MaLichHen,
+      maKhachHang: apt.MaKhachHang,
+      tenKhachHang: apt.TenKhachHang,
+      sdtKhachHang: apt.SDTKhachHang,
+      maChiNhanh: apt.MaChiNhanh,
+      tenChiNhanh: apt.TenChiNhanh,
+      loaiDichVu: apt.LoaiDichVu,
+      bacSiPhuTrach: apt.BacSiPhuTrach,
+      tenBacSiPhuTrach: apt.TenBacSiPhuTrach,
+      thoiGianHen: formatDateForResponse(apt.ThoiGianHen),
+      ngayLap: formatDateForResponse(apt.NgayLap),
+      trangThai: apt.TrangThai,
+    }));
+
+    return {
+      success: true,
+      status: 200,
+      data: {
+        ngayHen: targetDateStr,
+        maChiNhanh: finalMaChiNhanh,
+        thongKe: {
+          tongSo: stats.TongSo || 0,
+          choXacNhan: stats.ChoXacNhan || 0,
+          hoanThanh: stats.HoanThanh || 0,
+          daHuy: stats.DaHuy || 0,
+        },
+        appointments,
+      },
+    };
+  } catch (error) {
+    console.error("Error fetching today appointments:", error);
+    return {
+      success: false,
+      status: 500,
+      message: "Lỗi khi lấy lịch hẹn hôm nay",
+      error: error.message,
+    };
+  }
+}
+
+/**
+ * Lấy chi tiết lịch hẹn (cho nhân viên)
+ * @param {string} maLichHen - Mã lịch hẹn
+ * @returns {Promise<{success: boolean, status?: number, message?: string, data?: object, error?: string}>}
+ */
+async function getAppointmentDetails(maLichHen) {
+  try {
+    const pool = await poolPromise;
+
+    const query = `
+      SELECT 
+        lh.MaLichHen,
+        lh.MaKhachHang,
+        kh.HoTen AS TenKhachHang,
+        kh.SDT AS SDTKhachHang,
+        kh.CCCD AS CCCDKhachHang,
+        kh.Email AS EmailKhachHang,
+        kh.GioiTinh AS GioiTinhKhachHang,
+        CONVERT(VARCHAR(10), kh.NgaySinh, 120) AS NgaySinhKhachHang,
+        lh.MaChiNhanh,
+        cn.TenChiNhanh,
+        CONCAT(cn.SoNha, ' ', cn.TenDuong, ', ', cn.Phuong, ', ', cn.ThanhPho) AS DiaChiChiNhanh,
+        cn.SDT AS SDTChiNhanh,
+        lh.LoaiDichVu,
+        lh.BacSiPhuTrach,
+        nvBs.HoTen AS TenBacSiPhuTrach,
+        CONVERT(VARCHAR(10), lh.ThoiGianHen, 120) AS ThoiGianHen,
+        CONVERT(VARCHAR(10), lh.NgayLap, 120) AS NgayLap,
+        lh.TrangThai
+      FROM dbo.LichHen lh
+      INNER JOIN dbo.KhachHang kh ON lh.MaKhachHang = kh.MaKhachHang
+      LEFT JOIN dbo.ChiNhanh cn ON lh.MaChiNhanh = cn.MaChiNhanh
+      LEFT JOIN dbo.NhanVien nvBs ON lh.BacSiPhuTrach = nvBs.MaNhanVien
+      WHERE lh.MaLichHen = @MaLichHen
+    `;
+
+    const result = await pool
+      .request()
+      .input("MaLichHen", sql.Char(8), maLichHen)
+      .query(query);
+
+    if (result.recordset.length === 0) {
+      return {
+        success: false,
+        status: 404,
+        message: "Không tìm thấy lịch hẹn",
+      };
+    }
+
+    const apt = result.recordset[0];
+
+    // Lấy danh sách thú cưng của khách hàng
+    const petsQuery = `
+      SELECT 
+        tc.MaThuCung,
+        tc.TenThuCung,
+        tc.GioiTinh,
+        tc.Loai,
+        tc.Giong,
+        CONVERT(VARCHAR(10), tc.NgaySinh, 120) AS NgaySinh,
+        tc.TinhTrangSucKhoe
+      FROM dbo.ThuCung tc
+      WHERE tc.MaKhachHang = @MaKhachHang
+      ORDER BY tc.MaThuCung ASC
+    `;
+
+    const petsResult = await pool
+      .request()
+      .input("MaKhachHang", sql.Char(7), apt.MaKhachHang)
+      .query(petsQuery);
+
+    const appointment = {
+      maLichHen: apt.MaLichHen,
+      khachHang: {
+        maKhachHang: apt.MaKhachHang,
+        hoTen: apt.TenKhachHang,
+        sdt: apt.SDTKhachHang,
+        cccd: apt.CCCDKhachHang,
+        email: apt.EmailKhachHang,
+        gioiTinh: apt.GioiTinhKhachHang,
+        ngaySinh: formatDateForResponse(apt.NgaySinhKhachHang),
+      },
+      chiNhanh: {
+        maChiNhanh: apt.MaChiNhanh,
+        tenChiNhanh: apt.TenChiNhanh,
+        diaChi: apt.DiaChiChiNhanh,
+        sdt: apt.SDTChiNhanh,
+      },
+      loaiDichVu: apt.LoaiDichVu,
+      bacSi: apt.BacSiPhuTrach
+        ? {
+            maNhanVien: apt.BacSiPhuTrach,
+            hoTen: apt.TenBacSiPhuTrach,
+          }
+        : null,
+      thoiGianHen: formatDateForResponse(apt.ThoiGianHen),
+      ngayLap: formatDateForResponse(apt.NgayLap),
+      trangThai: apt.TrangThai,
+      thuCung: petsResult.recordset.map((pet) => ({
+        maThuCung: pet.MaThuCung,
+        tenThuCung: pet.TenThuCung,
+        gioiTinh: pet.GioiTinh,
+        loai: pet.Loai,
+        giong: pet.Giong,
+        ngaySinh: formatDateForResponse(pet.NgaySinh),
+        tinhTrangSucKhoe: pet.TinhTrangSucKhoe,
+      })),
+    };
+
+    return {
+      success: true,
+      status: 200,
+      data: appointment,
+    };
+  } catch (error) {
+    console.error("Error fetching appointment details:", error);
+    return {
+      success: false,
+      status: 500,
+      message: "Lỗi khi lấy chi tiết lịch hẹn",
+      error: error.message,
+    };
+  }
+}
+
 module.exports = {
   createAppointment,
   cancelAppointment,
   getAvailableSlots,
   getCustomerAppointments,
   getAvailableDoctors,
+  getAppointmentsSchedule,
+  getTodayAppointments,
+  getAppointmentDetails,
 };

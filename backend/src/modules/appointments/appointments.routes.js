@@ -57,34 +57,33 @@ router.get(
 
 /**
  * @route   GET /api/appointments/schedule
- * @desc    Lịch hẹn theo chi nhánh/bác sĩ/ngày
- * @access  Private - NHAN_VIEN
+ * @desc    Lịch hẹn theo chi nhánh/ngày/trạng thái (cho nhân viên)
+ * @access  Private - NHAN_VIEN, QUAN_TRI
+ * @query   MaChiNhanh?, NgayHen?, TrangThai?, page?, limit?
  */
-router.get('/schedule', authenticate, authorize(ROLES.EMPLOYEE, ROLES.ADMIN), (req, res) => {
-  res.json({ message: 'Get schedule' });
-});
+router.get(
+  '/schedule',
+  authenticate,
+  authorize(ROLES.EMPLOYEE, ROLES.ADMIN),
+  appointmentsController.getAppointmentsSchedule
+);
 
 /**
- * @route   GET /api/appointments/:id
- * @desc    Chi tiết lịch hẹn
- * @access  Private
+ * @route   GET /api/appointments/today
+ * @desc    Lịch hẹn hôm nay của chi nhánh với thống kê (cho nhân viên)
+ * @access  Private - NHAN_VIEN, QUAN_TRI
+ * @query   MaChiNhanh?
  */
-router.get('/:id', authenticate, (req, res) => {
-  res.json({ message: 'Get appointment details' });
-});
-
-/**
- * @route   PUT /api/appointments/:id
- * @desc    Cập nhật lịch hẹn
- * @access  Private
- */
-router.put('/:id', authenticate, (req, res) => {
-  res.json({ message: 'Update appointment' });
-});
+router.get(
+  '/today',
+  authenticate,
+  authorize(ROLES.EMPLOYEE, ROLES.ADMIN),
+  appointmentsController.getTodayAppointments
+);
 
 /**
  * @route   PUT /api/appointments/:id/cancel
- * @desc    Hủy lịch hẹn
+ * @desc    Hủy lịch hẹn (chỉ khách hàng)
  * @access  Private - KHACH_HANG
  */
 router.put(
@@ -95,22 +94,16 @@ router.put(
 );
 
 /**
- * @route   PUT /api/appointments/:id/confirm
- * @desc    Xác nhận lịch hẹn
- * @access  Private - NHAN_VIEN
+ * @route   GET /api/appointments/:id
+ * @desc    Chi tiết lịch hẹn (cho nhân viên và khách hàng)
+ * @access  Private - NHAN_VIEN, QUAN_TRI, KHACH_HANG
  */
-router.put('/:id/confirm', authenticate, authorize(ROLES.EMPLOYEE, ROLES.ADMIN), (req, res) => {
-  res.json({ message: 'Confirm appointment' });
-});
-
-/**
- * @route   PUT /api/appointments/:id/complete
- * @desc    Hoàn thành lịch hẹn
- * @access  Private - NHAN_VIEN
- */
-router.put('/:id/complete', authenticate, authorize(ROLES.EMPLOYEE, ROLES.ADMIN), (req, res) => {
-  res.json({ message: 'Complete appointment' });
-});
+router.get(
+  '/:id',
+  authenticate,
+  authorize(ROLES.EMPLOYEE, ROLES.ADMIN, ROLES.CUSTOMER),
+  appointmentsController.getAppointmentDetails
+);
 
 module.exports = router;
 

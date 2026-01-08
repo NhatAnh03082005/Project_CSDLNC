@@ -157,7 +157,6 @@ export default function CustomerInvoicesPage() {
   const handleDownloadInvoice = async (maHoaDon) => {
     // Hook sẵn: tuỳ backend bạn có endpoint download PDF thì gọi ở đây.
     // Ví dụ: await customerAPI.downloadInvoice(maHoaDon)
-    console.log("Download invoice:", maHoaDon);
   };
 
   if (loading)
@@ -242,7 +241,7 @@ export default function CustomerInvoicesPage() {
           {/* SEARCH BAR */}
           <div className="mt-8">
             <div className="relative">
-              <Search className="absolute left-5 top-1/2 -translate-y-1/2 h-5 w-5 text-blue-400" />
+              <Search className="absolute left-5 top-1/2 -translate-y-1/2 h-5 w-5 text-blue-400 pointer-events-none z-10" />
               <Input
                 type="text"
                 placeholder="Tìm theo mã hóa đơn, chi nhánh hoặc ngày lập (dd/mm/yyyy)..."

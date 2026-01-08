@@ -5,7 +5,7 @@ import {
   CardDescription,
   CardHeader,
   CardTitle,
-} from "../../../components/ui/card";
+} from "../../components/ui/card";
 import {
   Users,
   Building2,
@@ -16,8 +16,8 @@ import {
   Package,
   Syringe,
 } from "lucide-react";
-import AdminHeader from "../components/AdminHeader";
-import api from "../../../api/axios";
+import AdminHeader from "./components/AdminHeader";
+import api from "../../api/axios";
 
 export default function AdminDemo() {
   const [loading, setLoading] = useState(true);

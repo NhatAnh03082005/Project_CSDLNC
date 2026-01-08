@@ -24,16 +24,74 @@ router.post("/", vaccinationsController.createVaccine);
 
 /**
  * @route   POST /api/vaccinations/records
- * @desc    Ghi nhận tiêm phòng
+ * @desc    Ghi nhận tiêm phòng (tạo HoaDon + CTHD + CTHD_DVSucKhoe + CTHD_TiemPhong)
  * @access  Private - NHAN_VIEN, ADMIN
  */
 router.post(
   "/records",
   authenticate,
   authorize(ROLES.EMPLOYEE, ROLES.ADMIN),
-  (req, res) => {
-    res.json({ message: "Create vaccination record" });
-  }
+  vaccinationsController.createVaccinationRecord
+);
+
+/**
+ * @route   PUT /api/vaccinations/records/:maHoaDon/:stt
+ * @desc    Cập nhật hồ sơ tiêm phòng (chọn vaccine, bác sĩ)
+ * @access  Private - NHAN_VIEN (chỉ bác sĩ thú y), ADMIN
+ */
+router.put(
+  "/records/:maHoaDon/:stt",
+  authenticate,
+  authorize(ROLES.EMPLOYEE, ROLES.ADMIN),
+  vaccinationsController.updateVaccinationRecord
+);
+
+/**
+ * @route   GET /api/vaccinations/records/pending
+ * @desc    Lấy danh sách hồ sơ tiêm phòng chờ cập nhật (lịch hẹn đã xác nhận nhưng chưa chọn vaccine)
+ * @access  Private - NHAN_VIEN, ADMIN
+ */
+router.get(
+  "/records/pending",
+  authenticate,
+  authorize(ROLES.EMPLOYEE, ROLES.ADMIN),
+  vaccinationsController.getPendingVaccinationRecords
+);
+
+/**
+ * @route   GET /api/vaccinations/available/:maChiNhanh
+ * @desc    Lấy danh sách vaccine có tồn kho > 0 tại chi nhánh
+ * @access  Private - NHAN_VIEN, ADMIN
+ */
+router.get(
+  "/available/:maChiNhanh",
+  authenticate,
+  authorize(ROLES.EMPLOYEE, ROLES.ADMIN),
+  vaccinationsController.getAvailableVaccines
+);
+
+/**
+ * @route   GET /api/vaccinations/customer/:maKhachHang/subscriptions
+ * @desc    Lấy danh sách gói tiêm đã đăng ký của khách hàng (cho nhân viên)
+ * @access  Private - NHAN_VIEN, ADMIN
+ */
+router.get(
+  "/customer/:maKhachHang/subscriptions",
+  authenticate,
+  authorize(ROLES.EMPLOYEE, ROLES.ADMIN),
+  vaccinationsController.getCustomerSubscriptionsForEmployee
+);
+
+/**
+ * @route   GET /api/vaccinations/packages/:maGoiDK/vaccines
+ * @desc    Lấy danh sách vaccine trong gói đăng ký
+ * @access  Private - NHAN_VIEN, ADMIN
+ */
+router.get(
+  "/packages/:maGoiDK/vaccines",
+  authenticate,
+  authorize(ROLES.EMPLOYEE, ROLES.ADMIN),
+  vaccinationsController.getPackageVaccines
 );
 
 /**

@@ -106,6 +106,53 @@ class AppointmentsController {
             next(error);
         }
     }
+
+    /**
+     * Lấy lịch hẹn theo chi nhánh/ngày/trạng thái (cho nhân viên)
+     * GET /api/appointments/schedule
+     */
+    async getAppointmentsSchedule(req, res, next) {
+        try {
+            const maNhanVien = req.user.maNhanVien || null;
+            const { MaChiNhanh, NgayHen, TrangThai, page, limit } = req.query;
+            const response = await appointmentsService.getAppointmentsSchedule(
+                { MaChiNhanh, NgayHen, TrangThai, page, limit },
+                maNhanVien
+            );
+            return res.status(response.status || 200).json(response);
+        } catch (error) {
+            next(error);
+        }
+    }
+
+    /**
+     * Lấy lịch hẹn hôm nay với thống kê (cho nhân viên)
+     * GET /api/appointments/today
+     */
+    async getTodayAppointments(req, res, next) {
+        try {
+            const maNhanVien = req.user.maNhanVien || null;
+            const { MaChiNhanh, date } = req.query;
+            const response = await appointmentsService.getTodayAppointments(MaChiNhanh, maNhanVien, date);
+            return res.status(response.status || 200).json(response);
+        } catch (error) {
+            next(error);
+        }
+    }
+
+    /**
+     * Lấy chi tiết lịch hẹn (cho nhân viên)
+     * GET /api/appointments/:id
+     */
+    async getAppointmentDetails(req, res, next) {
+        try {
+            const { id: maLichHen } = req.params;
+            const response = await appointmentsService.getAppointmentDetails(maLichHen);
+            return res.status(response.status || 200).json(response);
+        } catch (error) {
+            next(error);
+        }
+    }
 }
 
 module.exports = new AppointmentsController();

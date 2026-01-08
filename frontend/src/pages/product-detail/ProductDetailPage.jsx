@@ -250,13 +250,16 @@ export default function ProductDetailPage() {
             <div className="h-10 w-10 bg-orange-600 rounded-xl flex items-center justify-center shadow-lg shadow-orange-200 group-hover:scale-110 transition-transform">
               <Heart className="h-6 w-6 text-white fill-white" />
             </div>
-            <span className="text-2xl font-black text-slate-800 tracking-tight">
-              PetCare
+            <span className="text-2xl font-black text-orange-600 tracking-tight">
+              PetCareX
             </span>
           </Link>
           <div className="flex items-center gap-4">
             <Link to={`/products-list?branch=${maChiNhanh}`}>
-              <Button variant="ghost" className="rounded-xl font-bold gap-2">
+              <Button
+                variant="ghost"
+                className="rounded-xl font-bold gap-2 hover:text-orange-600 hover:bg-orange-50"
+              >
                 <ShoppingBag className="h-5 w-5" />
                 Tiếp tục mua sắm
               </Button>
