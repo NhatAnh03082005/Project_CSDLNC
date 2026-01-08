@@ -201,9 +201,26 @@ export default function StaffDemoPage() {
               </Button>
             </Link>
             
-            <Link to="/staff/invoice">
-              <Button variant="ghost" className="w-full justify-start gap-3 h-11 rounded-xl text-base font-medium text-gray-600 hover:bg-gray-50 hover:text-gray-900 transition-all">
-                <Receipt className="h-5 w-5 text-gray-400" />Lập hóa đơn
+            {/* Nút Lập hóa đơn - vô hiệu hóa nếu là Bác sĩ thú y */}
+            <Link 
+              to="/staff/invoice" 
+              onClick={(e) => {
+                if (user?.ViTri === "Bác sĩ thú y") {
+                  e.preventDefault();
+                }
+              }}
+              className={user?.ViTri === "Bác sĩ thú y" ? "pointer-events-none" : ""}
+            >
+              <Button 
+                variant="ghost" 
+                disabled={user?.ViTri === "Bác sĩ thú y"}
+                className={`w-full justify-start gap-3 h-11 rounded-xl text-base font-medium transition-all ${
+                  user?.ViTri === "Bác sĩ thú y" 
+                    ? "text-gray-400 cursor-not-allowed opacity-50" 
+                    : "text-gray-600 hover:bg-gray-50 hover:text-gray-900"
+                }`}
+              >
+                <Receipt className={`h-5 w-5 ${user?.ViTri === "Bác sĩ thú y" ? "text-gray-300" : "text-gray-400"}`} />Lập hóa đơn
               </Button>
             </Link>
 
@@ -216,14 +233,48 @@ export default function StaffDemoPage() {
                 <Clock className="h-5 w-5 text-gray-400" />Lịch làm việc
               </Button>
             </Link>
-            <Link to="/staff/medical-records">
-              <Button variant="ghost" className="w-full justify-start gap-3 h-11 rounded-xl text-base font-medium text-gray-600 hover:bg-gray-50 hover:text-gray-900 transition-all">
-                <Stethoscope className="h-5 w-5 text-gray-400" />Hồ sơ khám bệnh
+            {/* Nút Hồ sơ khám bệnh - vô hiệu hóa nếu không phải Bác sĩ thú y */}
+            <Link 
+              to="/staff/medical-records" 
+              onClick={(e) => {
+                if (user?.ViTri !== "Bác sĩ thú y") {
+                  e.preventDefault();
+                }
+              }}
+              className={user?.ViTri !== "Bác sĩ thú y" ? "pointer-events-none" : ""}
+            >
+              <Button 
+                variant="ghost" 
+                disabled={user?.ViTri !== "Bác sĩ thú y"}
+                className={`w-full justify-start gap-3 h-11 rounded-xl text-base font-medium transition-all ${
+                  user?.ViTri !== "Bác sĩ thú y" 
+                    ? "text-gray-400 cursor-not-allowed opacity-50" 
+                    : "text-gray-600 hover:bg-gray-50 hover:text-gray-900"
+                }`}
+              >
+                <Stethoscope className={`h-5 w-5 ${user?.ViTri !== "Bác sĩ thú y" ? "text-gray-300" : "text-gray-400"}`} />Hồ sơ khám bệnh
               </Button>
             </Link>
-            <Link to="/staff/vaccination-records">
-              <Button variant="ghost" className="w-full justify-start gap-3 h-11 rounded-xl text-base font-medium text-gray-600 hover:bg-gray-50 hover:text-gray-900 transition-all">
-                <Syringe className="h-5 w-5 text-gray-400" />Hồ sơ tiêm phòng
+            {/* Nút Hồ sơ tiêm phòng - vô hiệu hóa nếu không phải Bác sĩ thú y */}
+            <Link 
+              to="/staff/vaccination-records" 
+              onClick={(e) => {
+                if (user?.ViTri !== "Bác sĩ thú y") {
+                  e.preventDefault();
+                }
+              }}
+              className={user?.ViTri !== "Bác sĩ thú y" ? "pointer-events-none" : ""}
+            >
+              <Button 
+                variant="ghost" 
+                disabled={user?.ViTri !== "Bác sĩ thú y"}
+                className={`w-full justify-start gap-3 h-11 rounded-xl text-base font-medium transition-all ${
+                  user?.ViTri !== "Bác sĩ thú y" 
+                    ? "text-gray-400 cursor-not-allowed opacity-50" 
+                    : "text-gray-600 hover:bg-gray-50 hover:text-gray-900"
+                }`}
+              >
+                <Syringe className={`h-5 w-5 ${user?.ViTri !== "Bác sĩ thú y" ? "text-gray-300" : "text-gray-400"}`} />Hồ sơ tiêm phòng
               </Button>
             </Link>
             
