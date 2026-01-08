@@ -1,4 +1,11 @@
-import { createContext, useContext, useEffect, useState, useMemo, useCallback } from "react";
+import {
+  createContext,
+  useContext,
+  useEffect,
+  useState,
+  useMemo,
+  useCallback,
+} from "react";
 import { authAPI } from "../api/services";
 import { useAuthStore } from "../store/authStore";
 
@@ -11,65 +18,71 @@ export const AuthProvider = ({ children }) => {
 
   useEffect(() => {
     let mounted = true;
-    
+
     const initializeAuth = async () => {
       // Lấy state từ store (sử dụng getState để tránh re-render)
       const storeState = useAuthStore.getState();
       const storeToken = storeState.token;
       const storeUser = storeState.user;
       const storeIsAuth = storeState.isAuthenticated;
-      
+
       // Kiểm tra token trong localStorage
       const localStorageToken = localStorage.getItem("token");
-      
+
       // Nếu có thông tin trong store và token khớp
       if (storeToken && storeUser && storeToken === localStorageToken) {
         // Khôi phục từ store
         const path = window.location.pathname;
         const userRole = storeUser.Role;
-        
+
         // Redirect ngay lập tức nếu cần (trước khi set state)
-        if (path === '/login' || path === '/register') {
+        if (path === "/login" || path === "/register") {
           if (userRole === "customer") {
-            window.location.href = '/customer';
+            window.location.href = "/customer";
             return;
           } else if (userRole === "admin") {
-            window.location.href = '/admin/demo';
+            window.location.href = "/admin";
             return;
           } else if (userRole === "staff") {
-            window.location.href = '/staff/demo';
+            window.location.href = "/staff/demo";
             return;
           }
         }
         // Nếu đang ở "/" (root), redirect đến trang phù hợp theo role
-        if (path === '/') {
+        if (path === "/") {
           if (userRole === "customer") {
-            window.location.href = '/customer';
+            window.location.href = "/customer";
             return;
           } else if (userRole === "admin") {
-            window.location.href = '/admin/demo';
+            window.location.href = "/admin";
             return;
           } else if (userRole === "staff") {
-            window.location.href = '/staff/demo';
+            window.location.href = "/staff/demo";
             return;
           }
         }
         // Nếu admin/staff đang ở trang customer, redirect về trang của họ
-        else if ((userRole === "admin" || userRole === "staff") && (path === '/customer' || path.startsWith('/customer'))) {
+        else if (
+          (userRole === "admin" || userRole === "staff") &&
+          (path === "/customer" || path.startsWith("/customer"))
+        ) {
           if (userRole === "admin") {
-            window.location.href = '/admin/demo';
+            window.location.href = "/admin";
             return;
           } else {
-            window.location.href = '/staff/demo';
+            window.location.href = "/staff/demo";
             return;
           }
         }
         // Nếu customer đang ở trang admin/staff, redirect về customer
-        else if (userRole === "customer" && (path.startsWith('/admin') || path.startsWith('/staff'))) {
-          window.location.href = '/customer';
+        else if (
+          userRole === "customer" &&
+          (path.startsWith("/admin") || path.startsWith("/staff"))
+        ) {
+          window.location.href = "/customer";
           return;
         }
-        
+
         // Nếu không cần redirect, set state bình thường
         if (mounted) {
           setUser(storeUser);
@@ -83,7 +96,7 @@ export const AuthProvider = ({ children }) => {
       if (localStorageToken) {
         const path = window.location.pathname;
         // Chỉ skip fetch nếu đang ở login/register (không skip ở "/" vì cần check role)
-        if (path === '/login' || path === '/register') {
+        if (path === "/login" || path === "/register") {
           if (mounted) setLoading(false);
           return;
         }
@@ -92,57 +105,65 @@ export const AuthProvider = ({ children }) => {
           // Fetch user từ API (dùng /auth/me cho tất cả roles)
           const response = await authAPI.getCurrentUser();
           if (!mounted) return;
-          
+
           if (response?.data?.success) {
             const userData = response.data.data;
             const currentPath = window.location.pathname;
             const userRole = userData.Role;
-            
+
             // Đồng bộ vào store
             useAuthStore.getState().login(userData, localStorageToken);
-            
+
             // Redirect ngay lập tức nếu cần (trước khi set state)
-            if (currentPath === '/login' || currentPath === '/register') {
+            if (currentPath === "/login" || currentPath === "/register") {
               if (userRole === "customer") {
-                window.location.href = '/customer';
+                window.location.href = "/customer";
                 return;
               } else if (userRole === "admin") {
-                window.location.href = '/admin/demo';
+                window.location.href = "/admin";
                 return;
               } else if (userRole === "staff") {
-                window.location.href = '/staff/demo';
+                window.location.href = "/staff/demo";
                 return;
               }
             }
             // Nếu đang ở "/" (root), redirect đến trang phù hợp theo role
-            if (currentPath === '/') {
+            if (currentPath === "/") {
               if (userRole === "customer") {
-                window.location.href = '/customer';
+                window.location.href = "/customer";
                 return;
               } else if (userRole === "admin") {
-                window.location.href = '/admin/demo';
+                window.location.href = "/admin";
                 return;
               } else if (userRole === "staff") {
-                window.location.href = '/staff/demo';
+                window.location.href = "/staff/demo";
                 return;
               }
             }
             // Nếu admin/staff đang ở trang customer, redirect về trang của họ
-            else if ((userRole === "admin" || userRole === "staff") && (currentPath === '/customer' || currentPath.startsWith('/customer'))) {
+            else if (
+              (userRole === "admin" || userRole === "staff") &&
+              (currentPath === "/customer" ||
+                currentPath.startsWith("/customer"))
+            ) {
               if (userRole === "admin") {
-                window.location.href = '/admin/demo';
+                window.location.href = "/admin";
                 return;
               } else {
-                window.location.href = '/staff/demo';
+                window.location.href = "/staff/demo";
                 return;
               }
             }
             // Nếu customer đang ở trang admin/staff, redirect về customer
-            else if (userRole === "customer" && (currentPath.startsWith('/admin') || currentPath.startsWith('/staff'))) {
-              window.location.href = '/customer';
+            else if (
+              userRole === "customer" &&
+              (currentPath.startsWith("/admin") ||
+                currentPath.startsWith("/staff"))
+            ) {
+              window.location.href = "/customer";
               return;
             }
-            
+
             // Nếu không cần redirect, set state bình thường
             if (mounted) {
               setUser(userData);
@@ -157,15 +178,15 @@ export const AuthProvider = ({ children }) => {
           }
         } catch (error) {
           if (!mounted) return;
-          
+
           console.error("Lỗi khi tải thông tin người dùng:", error);
           setUser(null);
           setIsAuthenticated(false);
           useAuthStore.getState().logout();
-          
+
           if (error.response?.status === 401) {
             const path = window.location.pathname;
-            if (!['/login', '/register', '/'].includes(path)) {
+            if (!["/login", "/register", "/"].includes(path)) {
               localStorage.removeItem("token");
             }
           }
@@ -177,18 +198,38 @@ export const AuthProvider = ({ children }) => {
         if (storeToken || storeUser) {
           useAuthStore.getState().logout();
         }
-        
+
         // Redirect về login nếu đang ở trang chủ hoặc trang customer mà chưa đăng nhập
         // Chỉ redirect nếu không phải đang ở trang login/register
         const path = window.location.pathname;
-        const publicPaths = ['/login', '/register', '/branches', '/products-list', '/product-detail'];
-        const isPublicPath = publicPaths.some(publicPath => path === publicPath || path.startsWith(publicPath));
-        
-        if (!isPublicPath && (path === '/' || path === '/customer' || path.startsWith('/customer') || path.startsWith('/profile') || path.startsWith('/pets') || path.startsWith('/appointments') || path.startsWith('/invoices') || path.startsWith('/orders') || path.startsWith('/reviews') || path.startsWith('/vaccination-packages'))) {
-          window.location.href = '/login';
+        const publicPaths = [
+          "/login",
+          "/register",
+          "/branches",
+          "/products-list",
+          "/product-detail",
+        ];
+        const isPublicPath = publicPaths.some(
+          (publicPath) => path === publicPath || path.startsWith(publicPath)
+        );
+
+        if (
+          !isPublicPath &&
+          (path === "/" ||
+            path === "/customer" ||
+            path.startsWith("/customer") ||
+            path.startsWith("/profile") ||
+            path.startsWith("/pets") ||
+            path.startsWith("/appointments") ||
+            path.startsWith("/invoices") ||
+            path.startsWith("/orders") ||
+            path.startsWith("/reviews") ||
+            path.startsWith("/vaccination-packages"))
+        ) {
+          window.location.href = "/login";
           return;
         }
-        
+
         if (mounted) {
           setUser(null);
           setIsAuthenticated(false);
@@ -196,15 +237,15 @@ export const AuthProvider = ({ children }) => {
         }
       }
     };
-    
+
     initializeAuth();
-    
+
     return () => {
       mounted = false;
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
-  
+
   const setUserMemo = useCallback((userData) => {
     setUser(userData);
     // Đồng bộ với store
@@ -218,13 +259,16 @@ export const AuthProvider = ({ children }) => {
     // Đồng bộ với store
     useAuthStore.getState().setIsAuthenticated(auth);
   }, []);
-  
-  const value = useMemo(() => ({
-    setUser: setUserMemo,
-    setIsAuthenticated: setIsAuthenticatedMemo,
-    user,
-    isAuthenticated,
-  }), [user, isAuthenticated, setUserMemo, setIsAuthenticatedMemo]);
+
+  const value = useMemo(
+    () => ({
+      setUser: setUserMemo,
+      setIsAuthenticated: setIsAuthenticatedMemo,
+      user,
+      isAuthenticated,
+    }),
+    [user, isAuthenticated, setUserMemo, setIsAuthenticatedMemo]
+  );
 
   if (loading) return <div>Loading</div>;
 

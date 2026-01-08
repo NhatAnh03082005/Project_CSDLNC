@@ -426,7 +426,7 @@ export default function EmployeeManagement() {
           </div>
 
           {/* LIST: 4 nhân viên / 1 dòng (xl:grid-cols-4) */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 xl:grid-cols-5 gap-4">
             {filteredEmployees.length === 0 ? (
               <div className="col-span-full text-center text-gray-500 py-12 bg-gray-50 rounded-xl">
                 {searchTerm.trim()
