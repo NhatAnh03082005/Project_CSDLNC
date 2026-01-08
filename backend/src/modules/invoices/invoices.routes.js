@@ -33,42 +33,6 @@ router.put('/:id/confirm', authenticate, authorize(ROLES.EMPLOYEE, ROLES.ADMIN),
 router.get('/:id', authenticate, invoicesController.getInvoiceDetails);
 
 /**
- * @route   GET /api/invoices
- * @desc    Danh sách hóa đơn (filter)
- * @access  Private
- */
-router.get('/', authenticate, (req, res) => {
-  res.json({ message: 'Get invoices list' });
-});
-
-/**
- * @route   GET /api/invoices/customer/:customerId
- * @desc    Lịch sử hóa đơn của khách hàng
- * @access  Private
- */
-router.get('/customer/:customerId', authenticate, (req, res) => {
-  res.json({ message: 'Get customer invoices' });
-});
-
-/**
- * @route   PUT /api/invoices/:id/payment
- * @desc    Cập nhật thanh toán
- * @access  Private - NHAN_VIEN
- */
-router.put('/:id/payment', authenticate, authorize(ROLES.EMPLOYEE, ROLES.ADMIN), (req, res) => {
-  res.json({ message: 'Update invoice payment' });
-});
-
-/**
- * @route   GET /api/invoices/:id/print
- * @desc    In hóa đơn
- * @access  Private
- */
-router.get('/:id/print', authenticate, (req, res) => {
-  res.json({ message: 'Print invoice' });
-});
-
-/**
  * @route   POST /api/invoices/:id/products
  * @desc    Thêm sản phẩm vào hóa đơn chưa xác nhận
  * @access  Private - NHAN_VIEN, QUAN_TRI
