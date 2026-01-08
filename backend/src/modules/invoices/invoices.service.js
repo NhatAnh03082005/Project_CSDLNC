@@ -366,11 +366,13 @@ class InvoicesService {
             hd.NgayLap,
             hd.TongTien,
             hd.MaKhuyenMai,
-            hd.TiLeGiamGia
+            km.TiLeGiamGia
           FROM dbo.HoaDon hd
           INNER JOIN dbo.KhachHang kh ON hd.MaKhachHang = kh.MaKhachHang
+          LEFT JOIN dbo.KhuyenMai km ON hd.MaKhuyenMai = km.MaKhuyenMai
           WHERE hd.NhanVienLap IS NULL
             AND hd.MaChiNhanh = @MaChiNhanh
+            AND CAST(hd.NgayLap AS DATE) = CAST(GETDATE() AS DATE)
           ORDER BY hd.NgayLap DESC, hd.MaHoaDon DESC
         `
         );
@@ -407,11 +409,131 @@ class InvoicesService {
   }
 
   /**
-   * Xác nhận đơn hàng (set NhanVienLap, trừ tồn kho, cộng điểm loyalty)
+   * Thêm sản phẩm vào hóa đơn chưa xác nhận
+   * @param {string} maHoaDon
+   * @param {string} maChiNhanh
+   * @param {array} products - [{ MaSanPham, SoLuong }]
+   */
+  async addProductToInvoice(maHoaDon, maChiNhanh, products) {
+    if (!products || products.length === 0) {
+      return { success: false, status: 400, message: "Danh sách sản phẩm trống" };
+    }
+
+    const pool = await poolPromise;
+    const transaction = new sql.Transaction(pool);
+
+    try {
+      await transaction.begin();
+
+      // Kiểm tra hóa đơn
+      const invoiceCheck = await transaction.request()
+        .input("MaHoaDon", sql.Char(8), maHoaDon)
+        .query("SELECT TongTien, NhanVienLap FROM dbo.HoaDon WHERE MaHoaDon = @MaHoaDon");
+      
+      if (invoiceCheck.recordset.length === 0) {
+        await transaction.rollback();
+        return { success: false, status: 404, message: "Không tìm thấy hóa đơn" };
+      }
+      if (invoiceCheck.recordset[0].NhanVienLap) {
+        await transaction.rollback();
+        return { success: false, status: 400, message: "Hóa đơn đã được xác nhận, không thể thêm sản phẩm" };
+      }
+
+      let currentTotal = parseFloat(invoiceCheck.recordset[0].TongTien || 0);
+
+      // Lấy STT tiếp theo
+      const sttResult = await transaction.request()
+        .input("MaHoaDon", sql.Char(8), maHoaDon)
+        .query("SELECT ISNULL(MAX(STT), 0) + 1 AS NextSTT FROM dbo.CTHD WHERE MaHoaDon = @MaHoaDon");
+      
+      let stt = sttResult.recordset[0].NextSTT;
+
+      for (const product of products) {
+        const { MaSanPham, SoLuong } = product;
+
+        // Kiểm tra tồn kho và lấy giá
+        const productInfo = await transaction.request()
+          .input("MaSanPham", sql.Char(5), MaSanPham)
+          .input("MaChiNhanh", sql.Char(4), maChiNhanh)
+          .query(`
+            SELECT TOP 1 sp.DonGia, tk.SoLuongTon 
+            FROM dbo.SanPham sp
+            LEFT JOIN dbo.SanPham_TonKho tk ON sp.MaSanPham = tk.MaSanPham AND tk.MaChiNhanh = @MaChiNhanh
+            WHERE sp.MaSanPham = @MaSanPham
+          `);
+
+        if (productInfo.recordset.length === 0) {
+          await transaction.rollback();
+          return { success: false, status: 404, message: `Sản phẩm ${MaSanPham} không tồn tại` };
+        }
+        
+        const { DonGia, SoLuongTon } = productInfo.recordset[0];
+        if (!SoLuongTon || SoLuongTon < SoLuong) {
+          await transaction.rollback();
+          return { success: false, status: 400, message: `Sản phẩm ${MaSanPham} không đủ tồn kho (còn ${SoLuongTon || 0})` };
+        }
+
+        const thanhTien = parseFloat(DonGia) * SoLuong;
+
+        // Thêm CTHD
+        await transaction.request()
+          .input("MaHoaDon", sql.Char(8), maHoaDon)
+          .input("STT", sql.Int, stt)
+          .input("LoaiDichVu", sql.NVarChar(50), "Mua hàng")
+          .input("ThanhTien", sql.Int, Math.round(thanhTien))
+          .query(`
+            INSERT INTO dbo.CTHD (MaHoaDon, STT, LoaiDichVu, ThanhTien)
+            VALUES (@MaHoaDon, @STT, @LoaiDichVu, @ThanhTien)
+          `);
+
+        // Thêm CTHD_MuaHang
+        await transaction.request()
+          .input("MaHoaDon", sql.Char(8), maHoaDon)
+          .input("STT", sql.Int, stt)
+          .input("MaSanPham", sql.Char(5), MaSanPham)
+          .input("SoLuong", sql.Int, SoLuong)
+          .query(`
+            INSERT INTO dbo.CTHD_MuaHang (MaHoaDon, STT, MaSanPham, SoLuong)
+            VALUES (@MaHoaDon, @STT, @MaSanPham, @SoLuong)
+          `);
+
+        currentTotal += thanhTien;
+        stt++;
+      }
+
+      // Cập nhật tổng tiền hóa đơn
+      await transaction.request()
+        .input("MaHoaDon", sql.Char(8), maHoaDon)
+        .input("TongTien", sql.Int, Math.round(currentTotal))
+        .query("UPDATE dbo.HoaDon SET TongTien = @TongTien WHERE MaHoaDon = @MaHoaDon");
+
+      await transaction.commit();
+
+      return {
+        success: true,
+        status: 200,
+        message: "Thêm sản phẩm thành công",
+        data: { maHoaDon, tongTienMoi: Math.round(currentTotal) }
+      };
+
+    } catch (error) {
+      await transaction.rollback();
+      console.error("Error adding product to invoice:", error);
+      return {
+        success: false,
+        status: 500,
+        message: error.message || "Lỗi khi thêm sản phẩm vào hóa đơn"
+      };
+    }
+  }
+
+  /**
+   * Xác nhận đơn hàng (set NhanVienLap, HinhThucThanhToan, trừ tồn kho, cộng điểm loyalty)
    * @param {string} maHoaDon
    * @param {string} maNhanVien
+   * @param {string} hinhThucThanhToan - 'Tiền mặt' hoặc 'Chuyển khoản'
    */
-  async confirmInvoice(maHoaDon, maNhanVien) {
+  async confirmInvoice(maHoaDon, maNhanVien, hinhThucThanhToan = 'Tiền mặt') {
     try {
       const pool = await poolPromise;
       const transaction = new sql.Transaction(pool);
@@ -548,15 +670,17 @@ class InvoicesService {
           );
         }
 
-        // Cập nhật NhanVienLap
+        // Cập nhật NhanVienLap và HinhThucThanhToan
         await transaction
           .request()
           .input("MaHoaDon", sql.Char(8), maHoaDon)
           .input("NhanVienLap", sql.Char(5), maNhanVien)
+          .input("HinhThucThanhToan", sql.NVarChar(20), hinhThucThanhToan)
           .query(
             `
             UPDATE dbo.HoaDon
-            SET NhanVienLap = @NhanVienLap
+            SET NhanVienLap = @NhanVienLap,
+                HinhThucThanhToan = @HinhThucThanhToan
             WHERE MaHoaDon = @MaHoaDon
           `
           );
@@ -614,11 +738,12 @@ class InvoicesService {
             hd.NhanVienLap,
             nv.HoTen AS TenNhanVienLap,
             hd.MaKhuyenMai,
-            hd.TiLeGiamGia
+            km.TiLeGiamGia
           FROM dbo.HoaDon hd
           INNER JOIN dbo.KhachHang kh ON hd.MaKhachHang = kh.MaKhachHang
           INNER JOIN dbo.ChiNhanh cn ON hd.MaChiNhanh = cn.MaChiNhanh
           LEFT JOIN dbo.NhanVien nv ON hd.NhanVienLap = nv.MaNhanVien
+          LEFT JOIN dbo.KhuyenMai km ON hd.MaKhuyenMai = km.MaKhuyenMai
           WHERE hd.MaHoaDon = @MaHoaDon
         `
         );

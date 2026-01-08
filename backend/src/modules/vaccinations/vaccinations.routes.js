@@ -71,6 +71,30 @@ router.get(
 );
 
 /**
+ * @route   GET /api/vaccinations/customer/:maKhachHang/subscriptions
+ * @desc    Lấy danh sách gói tiêm đã đăng ký của khách hàng (cho nhân viên)
+ * @access  Private - NHAN_VIEN, ADMIN
+ */
+router.get(
+  "/customer/:maKhachHang/subscriptions",
+  authenticate,
+  authorize(ROLES.EMPLOYEE, ROLES.ADMIN),
+  vaccinationsController.getCustomerSubscriptionsForEmployee
+);
+
+/**
+ * @route   GET /api/vaccinations/packages/:maGoiDK/vaccines
+ * @desc    Lấy danh sách vaccine trong gói đăng ký
+ * @access  Private - NHAN_VIEN, ADMIN
+ */
+router.get(
+  "/packages/:maGoiDK/vaccines",
+  authenticate,
+  authorize(ROLES.EMPLOYEE, ROLES.ADMIN),
+  vaccinationsController.getPackageVaccines
+);
+
+/**
  * @route   GET /api/vaccinations/records/:petId
  * @desc    Lịch sử tiêm phòng của thú cưng
  * @access  Private

@@ -132,8 +132,8 @@ class AppointmentsController {
     async getTodayAppointments(req, res, next) {
         try {
             const maNhanVien = req.user.maNhanVien || null;
-            const { MaChiNhanh } = req.query;
-            const response = await appointmentsService.getTodayAppointments(MaChiNhanh, maNhanVien);
+            const { MaChiNhanh, date } = req.query;
+            const response = await appointmentsService.getTodayAppointments(MaChiNhanh, maNhanVien, date);
             return res.status(response.status || 200).json(response);
         } catch (error) {
             next(error);

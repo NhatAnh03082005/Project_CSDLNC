@@ -356,11 +356,11 @@ class EmployeesService {
       }
       if (phone) {
         conditions.push("kh.SDT LIKE @Phone");
-        request.input("Phone", sql.Char(10), `%${phone.trim()}%`);
+        request.input("Phone", sql.NVarChar(20), `%${phone.trim()}%`);
       }
       if (cccd) {
         conditions.push("kh.CCCD LIKE @CCCD");
-        request.input("CCCD", sql.Char(12), `%${cccd.trim()}%`);
+        request.input("CCCD", sql.NVarChar(20), `%${cccd.trim()}%`);
       }
 
       const whereClause =
@@ -472,7 +472,7 @@ class EmployeesService {
 
       const pets = result.recordset.map((pet) => ({
         maKhachHang: pet.MaKhachHang,
-        maThuCung: pet.MaThuCung,
+        maThuCung: pet.MaThuCung,  // INT - số thứ tự thú cưng
         tenThuCung: pet.TenThuCung,
         gioiTinh: pet.GioiTinh,
         loai: pet.Loai,
@@ -684,9 +684,7 @@ class EmployeesService {
           SELECT 
             cn.MaChiNhanh,
             cn.TenChiNhanh,
-            cn.DiaChi,
-            cn.SDT,
-            cn.Email
+            cn.SDT
           FROM dbo.NhanVien nv
           INNER JOIN dbo.ChiNhanh cn ON nv.MaChiNhanh = cn.MaChiNhanh
           WHERE nv.MaNhanVien = @MaNhanVien
@@ -710,9 +708,7 @@ class EmployeesService {
         data: {
           maChiNhanh: branch.MaChiNhanh,
           tenChiNhanh: branch.TenChiNhanh,
-          diaChi: branch.DiaChi,
           sdt: branch.SDT,
-          email: branch.Email,
         },
       };
     } catch (error) {
@@ -740,22 +736,20 @@ class EmployeesService {
         .query(
           `
           SELECT 
-            llv.MaLichLamViec,
             llv.BacSi AS MaNhanVien,
-            llv.NgayLamViec,
+            llv.NgayLam,
             llv.GioBatDau,
             llv.GioKetThuc
           FROM dbo.LichLamViec llv
           WHERE llv.BacSi = @MaNhanVien
-          ORDER BY llv.NgayLamViec DESC, llv.GioBatDau ASC
+          ORDER BY llv.NgayLam DESC, llv.GioBatDau ASC
         `
         );
 
       const schedules = result.recordset.map((schedule) => ({
-        maLichLamViec: schedule.MaLichLamViec,
         maNhanVien: schedule.MaNhanVien,
-        ngayLamViec: schedule.NgayLamViec
-          ? schedule.NgayLamViec.toISOString().split("T")[0]
+        ngayLam: schedule.NgayLam
+          ? schedule.NgayLam.toISOString().split("T")[0]
           : null,
         gioBatDau: schedule.GioBatDau,
         gioKetThuc: schedule.GioKetThuc,
@@ -781,18 +775,31 @@ class EmployeesService {
   /**
    * Đăng ký lịch làm việc mới
    * @param {string} maNhanVien
-   * @param {object} scheduleData - { NgayLamViec, GioBatDau, GioKetThuc }
+   * @param {object} scheduleData - { NgayLam, GioBatDau, GioKetThuc }
    */
   async createWorkSchedule(maNhanVien, scheduleData) {
-    const { NgayLamViec, GioBatDau, GioKetThuc } = scheduleData;
+    let { NgayLam, GioBatDau, GioKetThuc } = scheduleData;
 
-    if (!NgayLamViec || !GioBatDau || !GioKetThuc) {
+    if (!NgayLam || !GioBatDau || !GioKetThuc) {
       return {
         success: false,
         status: 400,
-        message: "Thiếu thông tin bắt buộc: NgayLamViec, GioBatDau, GioKetThuc",
+        message: "Thiếu thông tin bắt buộc: NgayLam, GioBatDau, GioKetThuc",
       };
     }
+
+    // Normalize time format to HH:MM:SS for SQL Server
+    const normalizeTime = (time) => {
+      if (!time) return null;
+      const parts = time.toString().split(':');
+      const hours = parts[0] || '00';
+      const minutes = parts[1] || '00';
+      const seconds = parts[2] || '00';
+      return `${hours.padStart(2, '0')}:${minutes.padStart(2, '0')}:${seconds.padStart(2, '0')}`;
+    };
+
+    GioBatDau = normalizeTime(GioBatDau);
+    GioKetThuc = normalizeTime(GioKetThuc);
 
     try {
       const pool = await poolPromise;
@@ -826,19 +833,19 @@ class EmployeesService {
         };
       }
 
-      // Kiểm tra xung đột lịch
+      // Kiểm tra xung đột lịch (trùng ngày và giờ)
       const conflictCheck = await pool
         .request()
         .input("BacSi", sql.Char(5), maNhanVien)
-        .input("NgayLamViec", sql.Date, NgayLamViec)
-        .input("GioBatDau", sql.Time, GioBatDau)
-        .input("GioKetThuc", sql.Time, GioKetThuc)
+        .input("NgayLam", sql.Date, NgayLam)
+        .input("GioBatDau", sql.VarChar(8), GioBatDau)
+        .input("GioKetThuc", sql.VarChar(8), GioKetThuc)
         .query(
           `
-          SELECT TOP 1 MaLichLamViec
+          SELECT TOP 1 BacSi
           FROM dbo.LichLamViec
           WHERE BacSi = @BacSi
-            AND NgayLamViec = @NgayLamViec
+            AND NgayLam = @NgayLam
             AND (
               (@GioBatDau >= GioBatDau AND @GioBatDau < GioKetThuc)
               OR (@GioKetThuc > GioBatDau AND @GioKetThuc <= GioKetThuc)
@@ -859,13 +866,13 @@ class EmployeesService {
       await pool
         .request()
         .input("BacSi", sql.Char(5), maNhanVien)
-        .input("NgayLamViec", sql.Date, NgayLamViec)
-        .input("GioBatDau", sql.Time, GioBatDau)
-        .input("GioKetThuc", sql.Time, GioKetThuc)
+        .input("NgayLam", sql.Date, NgayLam)
+        .input("GioBatDau", sql.VarChar(8), GioBatDau)
+        .input("GioKetThuc", sql.VarChar(8), GioKetThuc)
         .query(
           `
-          INSERT INTO dbo.LichLamViec (BacSi, NgayLamViec, GioBatDau, GioKetThuc)
-          VALUES (@BacSi, @NgayLamViec, @GioBatDau, @GioKetThuc)
+          INSERT INTO dbo.LichLamViec (BacSi, NgayLam, GioBatDau, GioKetThuc)
+          VALUES (@BacSi, @NgayLam, @GioBatDau, @GioKetThuc)
         `
         );
 
@@ -888,23 +895,35 @@ class EmployeesService {
   /**
    * Xóa lịch làm việc
    * @param {string} maNhanVien
-   * @param {string} maLichLamViec
+   * @param {object} scheduleKey - { ngayLam, gioBatDau }
    */
-  async deleteWorkSchedule(maNhanVien, maLichLamViec) {
+  async deleteWorkSchedule(maNhanVien, scheduleKey) {
+    const { ngayLam, gioBatDau } = scheduleKey;
+
+    if (!ngayLam || !gioBatDau) {
+      return {
+        success: false,
+        status: 400,
+        message: "Thiếu thông tin: ngayLam, gioBatDau",
+      };
+    }
+
     try {
       const pool = await poolPromise;
 
       // Kiểm tra lịch làm việc có thuộc về nhân viên này không
       const scheduleCheck = await pool
         .request()
-        .input("MaLichLamViec", sql.Int, maLichLamViec)
-        .input("MaNhanVien", sql.Char(5), maNhanVien)
+        .input("BacSi", sql.Char(5), maNhanVien)
+        .input("NgayLam", sql.Date, ngayLam)
+        .input("GioBatDau", sql.Time, gioBatDau)
         .query(
           `
-          SELECT TOP 1 MaLichLamViec
+          SELECT TOP 1 BacSi
           FROM dbo.LichLamViec
-          WHERE MaLichLamViec = @MaLichLamViec
-            AND BacSi = @MaNhanVien
+          WHERE BacSi = @BacSi
+            AND NgayLam = @NgayLam
+            AND GioBatDau = @GioBatDau
         `
         );
 
@@ -919,11 +938,15 @@ class EmployeesService {
       // Xóa lịch làm việc
       await pool
         .request()
-        .input("MaLichLamViec", sql.Int, maLichLamViec)
+        .input("BacSi", sql.Char(5), maNhanVien)
+        .input("NgayLam", sql.Date, ngayLam)
+        .input("GioBatDau", sql.Time, gioBatDau)
         .query(
           `
           DELETE FROM dbo.LichLamViec
-          WHERE MaLichLamViec = @MaLichLamViec
+          WHERE BacSi = @BacSi
+            AND NgayLam = @NgayLam
+            AND GioBatDau = @GioBatDau
         `
         );
 
@@ -938,6 +961,204 @@ class EmployeesService {
         success: false,
         status: 500,
         message: "Lỗi khi xóa lịch làm việc",
+        error: error.message,
+      };
+    }
+  }
+
+  /**
+   * Tạo hồ sơ đa dịch vụ (1 HoaDon với nhiều CTHD)
+   * @param {object} recordData - { MaKhachHang, MaChiNhanh, MaThuCung, services: ['Khám bệnh', 'Tiêm phòng'] }
+   */
+  async createMultiServiceRecord(recordData) {
+    console.log('[createMultiServiceRecord] recordData:', recordData);
+    
+    const { MaKhachHang, MaChiNhanh, MaThuCung, services } = recordData;
+
+    if (!MaKhachHang || !MaChiNhanh || MaThuCung === undefined || MaThuCung === null) {
+      return {
+        success: false,
+        status: 400,
+        message: "Thiếu thông tin bắt buộc: MaKhachHang, MaChiNhanh, MaThuCung",
+      };
+    }
+
+    if (!services || !Array.isArray(services) || services.length === 0) {
+      return {
+        success: false,
+        status: 400,
+        message: "Vui lòng chọn ít nhất 1 loại dịch vụ",
+      };
+    }
+
+    // Validate services
+    const validServices = ['Khám bệnh', 'Tiêm phòng'];
+    for (const service of services) {
+      if (!validServices.includes(service)) {
+        return {
+          success: false,
+          status: 400,
+          message: `Loại dịch vụ không hợp lệ: ${service}`,
+        };
+      }
+    }
+
+    const maKhachHangStr = String(MaKhachHang).trim();
+    const maChiNhanhStr = String(MaChiNhanh).trim();
+    const maThuCungInt = parseInt(MaThuCung, 10);
+
+    try {
+      const pool = await poolPromise;
+      const transaction = new sql.Transaction(pool);
+
+      await transaction.begin();
+
+      try {
+        // Kiểm tra khách hàng
+        const customerCheck = await transaction
+          .request()
+          .input("MaKhachHang", sql.Char(7), maKhachHangStr)
+          .query(
+            `SELECT TOP 1 MaKhachHang FROM dbo.KhachHang WHERE MaKhachHang = @MaKhachHang`
+          );
+
+        if (customerCheck.recordset.length === 0) {
+          await transaction.rollback();
+          return {
+            success: false,
+            status: 404,
+            message: "Không tìm thấy khách hàng",
+          };
+        }
+
+        // Kiểm tra thú cưng
+        const petCheck = await transaction
+          .request()
+          .input("MaThuCung", sql.Int, maThuCungInt)
+          .input("MaKhachHang", sql.Char(7), maKhachHangStr)
+          .query(
+            `
+            SELECT TOP 1 MaThuCung, TenThuCung
+            FROM dbo.ThuCung
+            WHERE MaThuCung = @MaThuCung AND MaKhachHang = @MaKhachHang
+          `
+          );
+
+        if (petCheck.recordset.length === 0) {
+          await transaction.rollback();
+          return {
+            success: false,
+            status: 404,
+            message: "Không tìm thấy thú cưng hoặc thú cưng không thuộc khách hàng này",
+          };
+        }
+
+        // Tạo HoaDon
+        const createInvoice = await transaction
+          .request()
+          .input("MaKhachHang", sql.Char(7), maKhachHangStr)
+          .input("MaChiNhanh", sql.Char(4), maChiNhanhStr)
+          .query(
+            `
+            DECLARE @MaxID INT;
+            SELECT @MaxID = ISNULL(MAX(CAST(RIGHT(MaHoaDon, 6) AS INT)), 0) FROM HoaDon;
+            DECLARE @NewMaHoaDon CHAR(8) = 'HD' + RIGHT('000000' + CAST(@MaxID + 1 AS VARCHAR(6)), 6);
+            
+            INSERT INTO dbo.HoaDon (MaHoaDon, MaKhachHang, NgayLap, TongTien, HinhThucThanhToan, MaKhuyenMai, NhanVienLap, MaChiNhanh)
+            VALUES (@NewMaHoaDon, @MaKhachHang, GETDATE(), 0, NULL, NULL, NULL, @MaChiNhanh);
+            
+            SELECT @NewMaHoaDon AS MaHoaDon;
+          `
+          );
+
+        const maHoaDon = createInvoice.recordset[0].MaHoaDon;
+
+        // Tạo CTHD và các bảng con cho mỗi dịch vụ
+        const createdServices = [];
+        
+        for (let i = 0; i < services.length; i++) {
+          const loaiDichVu = services[i];
+          const stt = i + 1;
+
+          // Tạo CTHD
+          await transaction
+            .request()
+            .input("MaHoaDon", sql.Char(8), maHoaDon)
+            .input("STT", sql.Int, stt)
+            .input("LoaiDichVu", sql.NVarChar(20), loaiDichVu)
+            .query(
+              `
+              INSERT INTO dbo.CTHD (MaHoaDon, STT, LoaiDichVu, ThanhTien)
+              VALUES (@MaHoaDon, @STT, @LoaiDichVu, 0)
+            `
+            );
+
+          // Tạo CTHD_DVSucKhoe (chung cho cả 2 loại dịch vụ)
+          await transaction
+            .request()
+            .input("MaHoaDon", sql.Char(8), maHoaDon)
+            .input("STT", sql.Int, stt)
+            .input("MaKhachHang", sql.Char(7), maKhachHangStr)
+            .input("MaThuCung", sql.Int, maThuCungInt)
+            .input("LoaiDichVuSK", sql.NVarChar(20), loaiDichVu)
+            .query(
+              `
+              INSERT INTO dbo.CTHD_DVSucKhoe (MaHoaDon, STT, MaKhachHang, MaThuCung, BacSi, LoaiDichVuSK)
+              VALUES (@MaHoaDon, @STT, @MaKhachHang, @MaThuCung, NULL, @LoaiDichVuSK)
+            `
+            );
+
+          // Tạo bảng chi tiết cụ thể tùy loại dịch vụ
+          if (loaiDichVu === 'Khám bệnh') {
+            await transaction
+              .request()
+              .input("MaHoaDon", sql.Char(8), maHoaDon)
+              .input("STT", sql.Int, stt)
+              .query(
+                `
+                INSERT INTO dbo.CTHD_KhamBenh (MaHoaDon, STT, TrieuChung, ChanDoan, ToaThuoc, NgayTaiKham)
+                VALUES (@MaHoaDon, @STT, NULL, NULL, NULL, NULL)
+              `
+              );
+          } else if (loaiDichVu === 'Tiêm phòng') {
+            await transaction
+              .request()
+              .input("MaHoaDon", sql.Char(8), maHoaDon)
+              .input("STT", sql.Int, stt)
+              .query(
+                `
+                INSERT INTO dbo.CTHD_TiemPhong (MaHoaDon, STT, MaVacXin, MaGoiDK)
+                VALUES (@MaHoaDon, @STT, NULL, NULL)
+              `
+              );
+          }
+
+          createdServices.push({ stt, loaiDichVu });
+        }
+
+        await transaction.commit();
+
+        return {
+          success: true,
+          status: 201,
+          message: `Tạo hồ sơ thành công với ${services.length} dịch vụ`,
+          data: {
+            maHoaDon,
+            maThuCung: maThuCungInt,
+            tenThuCung: petCheck.recordset[0].TenThuCung,
+            services: createdServices,
+          },
+        };
+      } catch (innerError) {
+        await transaction.rollback();
+        throw innerError;
+      }
+    } catch (error) {
+      console.error("Error creating multi-service record:", error);
+      return {
+        success: false,
+        status: 500,
+        message: "Lỗi khi tạo hồ sơ: " + error.message,
         error: error.message,
       };
     }

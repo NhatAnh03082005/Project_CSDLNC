@@ -209,6 +209,7 @@ class AuthService {
           HoTen: staff.HoTen,
           MaNhanVien: staff.MaNhanVien,
           ViTri: staff.ViTri,
+          MaChiNhanh: staff.MaChiNhanh,
           Role: role, // Trả về role để frontend điều hướng
         },
       };

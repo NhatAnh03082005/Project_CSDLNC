@@ -199,16 +199,21 @@ class EmployeesController {
    */
   async getBranch(req, res, next) {
     try {
-      const maNhanVien = req.user.maNhanVien;
+      const maNhanVien = req.user?.maNhanVien;
+      console.log('[getBranch] req.user:', req.user);
+      console.log('[getBranch] maNhanVien:', maNhanVien);
+      
       if (!maNhanVien) {
         return res.status(401).json({
           success: false,
-          message: "Không tìm thấy thông tin nhân viên",
+          message: "Không tìm thấy thông tin nhân viên trong token. Vui lòng đăng nhập lại.",
         });
       }
       const response = await employeesService.getEmployeeBranch(maNhanVien);
+      console.log('[getBranch] response:', response);
       return res.status(response.status || 200).json(response);
     } catch (error) {
+      console.error('[getBranch] Error:', error);
       next(error);
     }
   }
@@ -259,7 +264,8 @@ class EmployeesController {
 
   /**
    * Xóa lịch làm việc
-   * DELETE /api/employees/work-schedule/:id
+   * DELETE /api/employees/work-schedule
+   * Body: { ngayLam, gioBatDau }
    */
   async deleteWorkSchedule(req, res, next) {
     try {
@@ -270,11 +276,43 @@ class EmployeesController {
           message: "Không tìm thấy thông tin nhân viên",
         });
       }
-      const { id } = req.params;
+      const scheduleKey = req.body; // { ngayLam, gioBatDau }
       const response = await employeesService.deleteWorkSchedule(
         maNhanVien,
-        id
+        scheduleKey
       );
+      return res.status(response.status || 200).json(response);
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  /**
+   * Tạo hồ sơ đa dịch vụ (1 HoaDon với nhiều CTHD)
+   * POST /api/employees/records
+   */
+  async createMultiServiceRecord(req, res, next) {
+    try {
+      const maNhanVien = req.user?.maNhanVien;
+      if (!maNhanVien) {
+        return res.status(401).json({
+          success: false,
+          message: "Không tìm thấy thông tin nhân viên",
+        });
+      }
+
+      // Lấy chi nhánh của nhân viên
+      const branchResponse = await employeesService.getEmployeeBranch(maNhanVien);
+      if (!branchResponse.success) {
+        return res.status(branchResponse.status || 400).json(branchResponse);
+      }
+
+      const recordData = {
+        ...req.body,
+        MaChiNhanh: branchResponse.data.maChiNhanh,
+      };
+
+      const response = await employeesService.createMultiServiceRecord(recordData);
       return res.status(response.status || 200).json(response);
     } catch (error) {
       next(error);

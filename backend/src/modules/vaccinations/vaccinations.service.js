@@ -410,19 +410,28 @@ class VaccinationsService {
 
   /**
    * Ghi nhận tiêm phòng (tạo HoaDon + CTHD + CTHD_DVSucKhoe + CTHD_TiemPhong)
-   * NhanVienLap = NULL, các trường trong CTHD_TiemPhong = NULL (trừ MaThuCung)
-   * @param {object} recordData - { MaKhachHang, MaChiNhanh, MaThuCung, MaDichVu }
+   * NhanVienLap = NULL, các trường trong CTHD_TiemPhong = NULL
+   * @param {object} recordData - { MaKhachHang, MaChiNhanh, MaThuCung }
    */
   async createVaccinationRecord(recordData) {
-    const { MaKhachHang, MaChiNhanh, MaThuCung, MaDichVu } = recordData;
+    console.log('[createVaccinationRecord] recordData:', recordData);
+    
+    const { MaKhachHang, MaChiNhanh, MaThuCung } = recordData;  // MaThuCung là INT
 
-    if (!MaKhachHang || !MaChiNhanh || !MaThuCung || !MaDichVu) {
+    if (!MaKhachHang || !MaChiNhanh || MaThuCung === undefined || MaThuCung === null) {
       return {
         success: false,
         status: 400,
-        message: "Thiếu thông tin bắt buộc: MaKhachHang, MaChiNhanh, MaThuCung, MaDichVu",
+        message: "Thiếu thông tin bắt buộc: MaKhachHang, MaChiNhanh, MaThuCung",
       };
     }
+
+    // Đảm bảo các giá trị đúng kiểu
+    const maKhachHangStr = String(MaKhachHang).trim();
+    const maChiNhanhStr = String(MaChiNhanh).trim();
+    const maThuCungInt = parseInt(MaThuCung, 10);
+
+    const LoaiDichVu = "Tiêm phòng"; // Loại dịch vụ cố định cho tiêm phòng
 
     try {
       const pool = await poolPromise;
@@ -434,7 +443,7 @@ class VaccinationsService {
         // Kiểm tra khách hàng
         const customerCheck = await transaction
           .request()
-          .input("MaKhachHang", sql.Char(7), MaKhachHang)
+          .input("MaKhachHang", sql.Char(7), maKhachHangStr)
           .query(
             `SELECT TOP 1 MaKhachHang FROM dbo.KhachHang WHERE MaKhachHang = @MaKhachHang`
           );
@@ -448,14 +457,14 @@ class VaccinationsService {
           };
         }
 
-        // Kiểm tra thú cưng
+        // Kiểm tra thú cưng bằng (MaKhachHang, MaThuCung)
         const petCheck = await transaction
           .request()
-          .input("MaThuCung", sql.Char(5), MaThuCung)
-          .input("MaKhachHang", sql.Char(7), MaKhachHang)
+          .input("MaThuCung", sql.Int, maThuCungInt)
+          .input("MaKhachHang", sql.Char(7), maKhachHangStr)
           .query(
             `
-            SELECT TOP 1 MaThuCung
+            SELECT TOP 1 MaThuCung, TenThuCung
             FROM dbo.ThuCung
             WHERE MaThuCung = @MaThuCung
               AND MaKhachHang = @MaKhachHang
@@ -471,43 +480,26 @@ class VaccinationsService {
           };
         }
 
-        // Kiểm tra dịch vụ
-        const serviceCheck = await transaction
-          .request()
-          .input("MaDichVu", sql.Char(5), MaDichVu)
-          .query(
-            `SELECT TOP 1 MaDichVu, GiaTien FROM dbo.DichVu WHERE MaDichVu = @MaDichVu`
-          );
-
-        if (serviceCheck.recordset.length === 0) {
-          await transaction.rollback();
-          return {
-            success: false,
-            status: 404,
-            message: "Không tìm thấy dịch vụ",
-          };
-        }
-
-        const giaTien = parseFloat(serviceCheck.recordset[0].GiaTien || 0);
-
         // Tạo hóa đơn với NhanVienLap = NULL
         await transaction
           .request()
-          .input("MaKhachHang", sql.Char(7), MaKhachHang)
-          .input("MaChiNhanh", sql.Char(4), MaChiNhanh)
-          .input("TongTien", sql.Int, Math.round(giaTien))
+          .input("MaKhachHang", sql.Char(7), maKhachHangStr)
+          .input("MaChiNhanh", sql.Char(4), maChiNhanhStr)
           .query(
             `
-            INSERT INTO dbo.HoaDon (MaKhachHang, MaChiNhanh, TongTien, NhanVienLap, MaKhuyenMai, TiLeGiamGia)
-            VALUES (@MaKhachHang, @MaChiNhanh, @TongTien, NULL, NULL, 0)
+            DECLARE @MaxID INT;
+            SELECT @MaxID = ISNULL(MAX(CAST(RIGHT(MaHoaDon, 6) AS INT)), 0) FROM HoaDon;
+            
+            INSERT INTO dbo.HoaDon (MaHoaDon, MaKhachHang, NgayLap, TongTien, HinhThucThanhToan, MaKhuyenMai, NhanVienLap, MaChiNhanh)
+            VALUES ('HD' + RIGHT('000000' + CAST(@MaxID + 1 AS VARCHAR(6)), 6), @MaKhachHang, GETDATE(), 0, NULL, NULL, NULL, @MaChiNhanh)
           `
           );
 
-        // Lấy MaHoaDon vừa tạo (trigger tự động tạo MaHoaDon)
+        // Lấy MaHoaDon vừa tạo
         const invoiceResult = await transaction
           .request()
-          .input("MaKhachHang", sql.Char(7), MaKhachHang)
-          .input("MaChiNhanh", sql.Char(4), MaChiNhanh)
+          .input("MaKhachHang", sql.Char(7), maKhachHangStr)
+          .input("MaChiNhanh", sql.Char(4), maChiNhanhStr)
           .query(
             `
             SELECT TOP 1 MaHoaDon
@@ -534,40 +526,51 @@ class VaccinationsService {
         await transaction
           .request()
           .input("MaHoaDon", sql.Char(8), maHoaDon)
-          .input("STT", sql.Int, 1)
-          .input("LoaiDichVu", sql.NVarChar(50), "Dịch vụ sức khỏe")
-          .input("ThanhTien", sql.Int, Math.round(giaTien))
+          .input("LoaiDichVu", sql.NVarChar(20), LoaiDichVu)
           .query(
             `
+            DECLARE @MaxSTT INT;
+            SELECT @MaxSTT = ISNULL(MAX(STT), 0) FROM CTHD WHERE MaHoaDon = @MaHoaDon;
+            
             INSERT INTO dbo.CTHD (MaHoaDon, STT, LoaiDichVu, ThanhTien)
-            VALUES (@MaHoaDon, @STT, @LoaiDichVu, @ThanhTien)
+            VALUES (@MaHoaDon, @MaxSTT + 1, @LoaiDichVu, 0)
           `
           );
 
-        // Tạo CTHD_DVSucKhoe
+        // Lấy STT vừa tạo
+        const sttResult = await transaction
+          .request()
+          .input("MaHoaDon", sql.Char(8), maHoaDon)
+          .query(`SELECT MAX(STT) AS STT FROM dbo.CTHD WHERE MaHoaDon = @MaHoaDon`);
+        
+        const stt = sttResult.recordset[0].STT;
+
+        // Tạo CTHD_DVSucKhoe (BacSi = NULL ban đầu)
+        // Schema: (MaHoaDon, STT, MaKhachHang, MaThuCung, BacSi, LoaiDichVuSK)
         await transaction
           .request()
           .input("MaHoaDon", sql.Char(8), maHoaDon)
-          .input("STT", sql.Int, 1)
-          .input("MaDichVu", sql.Char(5), MaDichVu)
-          .input("MaThuCung", sql.Char(5), MaThuCung)
+          .input("STT", sql.Int, stt)
+          .input("MaKhachHang", sql.Char(7), maKhachHangStr)
+          .input("MaThuCung", sql.Int, maThuCungInt)
+          .input("LoaiDichVuSK", sql.NVarChar(20), LoaiDichVu)
           .query(
             `
-            INSERT INTO dbo.CTHD_DVSucKhoe (MaHoaDon, STT, MaDichVu, MaThuCung)
-            VALUES (@MaHoaDon, @STT, @MaDichVu, @MaThuCung)
+            INSERT INTO dbo.CTHD_DVSucKhoe (MaHoaDon, STT, MaKhachHang, MaThuCung, BacSi, LoaiDichVuSK)
+            VALUES (@MaHoaDon, @STT, @MaKhachHang, @MaThuCung, NULL, @LoaiDichVuSK)
           `
           );
 
-        // Tạo CTHD_TiemPhong với các trường = NULL (trừ MaThuCung)
+        // Tạo CTHD_TiemPhong với các trường = NULL
+        // Schema: (MaHoaDon, STT, MaVacXin, MaGoiDK)
         await transaction
           .request()
           .input("MaHoaDon", sql.Char(8), maHoaDon)
-          .input("STT", sql.Int, 1)
-          .input("MaThuCung", sql.Char(5), MaThuCung)
+          .input("STT", sql.Int, stt)
           .query(
             `
-            INSERT INTO dbo.CTHD_TiemPhong (MaHoaDon, STT, MaThuCung, BacSi, MaVacXin, MaGoiDK)
-            VALUES (@MaHoaDon, @STT, @MaThuCung, NULL, NULL, NULL)
+            INSERT INTO dbo.CTHD_TiemPhong (MaHoaDon, STT, MaVacXin, MaGoiDK)
+            VALUES (@MaHoaDon, @STT, NULL, NULL)
           `
           );
 
@@ -579,7 +582,7 @@ class VaccinationsService {
           message: "Ghi nhận tiêm phòng thành công",
           data: {
             maHoaDon,
-            maThuCung: MaThuCung,
+            maThuCung: maThuCungInt,
             trangThai: "Chờ cập nhật",
           },
         };
@@ -668,17 +671,13 @@ class VaccinationsService {
         };
       }
 
-      // Cập nhật hồ sơ
-      const updateFields = [];
+      // Cập nhật CTHD_TiemPhong (MaVacXin, MaGoiDK)
+      const updateFields = ["MaVacXin = @MaVacXin"];
       const request = pool.request();
 
       request.input("MaHoaDon", sql.Char(8), maHoaDon);
       request.input("STT", sql.Int, stt);
-      request.input("BacSi", sql.Char(5), maNhanVien);
       request.input("MaVacXin", sql.NVarChar, MaVacXin);
-
-      updateFields.push("BacSi = @BacSi");
-      updateFields.push("MaVacXin = @MaVacXin");
 
       if (MaGoiDK !== undefined && MaGoiDK !== null) {
         updateFields.push("MaGoiDK = @MaGoiDK");
@@ -693,6 +692,21 @@ class VaccinationsService {
           AND STT = @STT
       `
       );
+
+      // Cập nhật BacSi trong CTHD_DVSucKhoe
+      await pool
+        .request()
+        .input("MaHoaDon", sql.Char(8), maHoaDon)
+        .input("STT", sql.Int, stt)
+        .input("BacSi", sql.Char(5), maNhanVien)
+        .query(
+          `
+          UPDATE dbo.CTHD_DVSucKhoe
+          SET BacSi = @BacSi
+          WHERE MaHoaDon = @MaHoaDon
+            AND STT = @STT
+        `
+        );
 
       return {
         success: true,
@@ -711,87 +725,75 @@ class VaccinationsService {
   }
 
   /**
-   * Lấy danh sách hồ sơ tiêm phòng chờ cập nhật
-   * (lịch hẹn đã xác nhận nhưng chưa chọn vaccine)
-   * @param {string} maChiNhanh
-   */
-  async getPendingVaccinationRecords(maChiNhanh) {
-    try {
-      const pool = await poolPromise;
+ * Lấy danh sách hồ sơ tiêm phòng chờ cập nhật
+ * (hồ sơ đã tạo nhưng chưa chọn vaccine - MaVacXin = NULL)
+ * @param {string} maChiNhanh
+ */
+async getPendingVaccinationRecords(maChiNhanh) {
+  try {
+    const pool = await poolPromise;
 
-      const result = await pool
-        .request()
-        .input("MaChiNhanh", sql.Char(4), maChiNhanh)
-        .query(
-          `
-          SELECT DISTINCT
-            tp.MaHoaDon,
-            tp.STT,
-            tp.MaThuCung,
-            tc.TenThuCung,
-            kh.MaKhachHang,
-            kh.HoTen AS TenKhachHang,
-            hd.NgayLap,
-            dvsk.MaDichVu,
-            dv.TenDichVu,
-            lh.ThoiGianHen,
-            lh.TrangThai AS TrangThaiLichHen
-          FROM dbo.CTHD_TiemPhong tp
-          INNER JOIN dbo.CTHD cthd ON tp.MaHoaDon = cthd.MaHoaDon AND tp.STT = cthd.STT
-          INNER JOIN dbo.CTHD_DVSucKhoe dvsk ON tp.MaHoaDon = dvsk.MaHoaDon AND tp.STT = dvsk.STT
-          INNER JOIN dbo.DichVu dv ON dvsk.MaDichVu = dv.MaDichVu
-          INNER JOIN dbo.ThuCung tc ON tp.MaThuCung = tc.MaThuCung
-          INNER JOIN dbo.KhachHang kh ON tc.MaKhachHang = kh.MaKhachHang
-          INNER JOIN dbo.HoaDon hd ON tp.MaHoaDon = hd.MaHoaDon
-          LEFT JOIN dbo.LichHen lh ON lh.MaKhachHang = kh.MaKhachHang
-            AND lh.MaThuCung = tp.MaThuCung
-            AND lh.LoaiDichVu = N'Tiêm phòng'
-            AND lh.TrangThai = N'DaXacNhan'
-          WHERE hd.MaChiNhanh = @MaChiNhanh
-            AND tp.MaVacXin IS NULL
-            AND hd.NhanVienLap IS NULL
-          ORDER BY hd.NgayLap DESC, lh.ThoiGianHen ASC
+    const result = await pool
+      .request()
+      .input("MaChiNhanh", sql.Char(4), maChiNhanh)
+      .query(
         `
-        );
+        SELECT DISTINCT
+          tp.MaHoaDon,
+          tp.STT,
+          dvsk.MaKhachHang,
+          dvsk.MaThuCung,
+          tc.TenThuCung,
+          tc.Loai AS LoaiThuCung,
+          tc.Giong AS GiongThuCung,
+          kh.HoTen AS TenKhachHang,
+          kh.SDT AS SDTKhachHang,
+          hd.NgayLap,
+          dvsk.LoaiDichVuSK AS LoaiDichVu
+        FROM dbo.CTHD_TiemPhong tp
+        INNER JOIN dbo.CTHD_DVSucKhoe dvsk ON tp.MaHoaDon = dvsk.MaHoaDon AND tp.STT = dvsk.STT
+        INNER JOIN dbo.ThuCung tc ON dvsk.MaKhachHang = tc.MaKhachHang AND dvsk.MaThuCung = tc.MaThuCung
+        INNER JOIN dbo.KhachHang kh ON dvsk.MaKhachHang = kh.MaKhachHang
+        INNER JOIN dbo.HoaDon hd ON tp.MaHoaDon = hd.MaHoaDon
+        WHERE hd.MaChiNhanh = @MaChiNhanh
+          AND tp.MaVacXin IS NULL
+        ORDER BY hd.NgayLap DESC
+      `
+      );
 
-      const records = result.recordset.map((record) => ({
-        maHoaDon: record.MaHoaDon,
-        stt: record.STT,
-        maThuCung: record.MaThuCung,
-        tenThuCung: record.TenThuCung,
-        khachHang: {
-          maKhachHang: record.MaKhachHang,
-          tenKhachHang: record.TenKhachHang,
-        },
-        dichVu: {
-          maDichVu: record.MaDichVu,
-          tenDichVu: record.TenDichVu,
-        },
-        ngayLap: record.NgayLap
-          ? record.NgayLap.toISOString().split("T")[0]
-          : null,
-        thoiGianHen: record.ThoiGianHen
-          ? record.ThoiGianHen.toISOString()
-          : null,
-        trangThai: "Chờ cập nhật",
-      }));
+    const records = result.recordset.map((record) => ({
+      maHoaDon: record.MaHoaDon?.trim(),
+      stt: record.STT,
+      maKhachHang: record.MaKhachHang?.trim(),
+      maThuCung: record.MaThuCung,
+      tenThuCung: record.TenThuCung?.trim(),
+      loaiThuCung: record.LoaiThuCung?.trim(),
+      giongThuCung: record.GiongThuCung?.trim(),
+      tenKhachHang: record.TenKhachHang?.trim(),
+      sdtKhachHang: record.SDTKhachHang?.trim(),
+      ngayLap: record.NgayLap
+        ? record.NgayLap.toISOString().split("T")[0]
+        : null,
+      loaiDichVu: record.LoaiDichVu?.trim(),
+      trangThai: "Chờ cập nhật",
+    }));
 
-      return {
-        success: true,
-        status: 200,
-        count: records.length,
-        data: records,
-      };
-    } catch (error) {
-      console.error("Error fetching pending vaccination records:", error);
-      return {
-        success: false,
-        status: 500,
-        message: "Lỗi khi lấy danh sách hồ sơ tiêm phòng chờ cập nhật",
-        error: error.message,
-      };
-    }
+    return {
+      success: true,
+      status: 200,
+      count: records.length,
+      data: records,
+    };
+  } catch (error) {
+    console.error("Error fetching pending vaccination records:", error);
+    return {
+      success: false,
+      status: 500,
+      message: "Lỗi khi lấy danh sách hồ sơ tiêm phòng chờ cập nhật",
+      error: error.message,
+    };
   }
+}
 
   /**
    * Lấy danh sách vaccine có tồn kho > 0 tại chi nhánh

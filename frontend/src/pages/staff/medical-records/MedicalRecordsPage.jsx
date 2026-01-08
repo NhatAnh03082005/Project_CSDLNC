@@ -1,8 +1,6 @@
-import React, { useState } from "react";
-// 1. Thay thế Next.js Link bằng React Router DOM Link
+import React, { useState, useEffect } from "react";
 import { Link } from "react-router-dom"; 
-
-// 2. Chuyển đổi imports alias (@/) sang đường dẫn tương đối (../...)
+import api from "../../../api/axios";
 import { Button } from "../../../components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../../../components/ui/card";
 import { Input } from "../../../components/ui/input";
@@ -10,14 +8,15 @@ import { Label } from "../../../components/ui/label";
 import { Textarea } from "../../../components/ui/textarea";
 import { Badge } from "../../../components/ui/badge";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "../../../components/ui/dialog";
-import { ArrowLeft, Save, Stethoscope } from "lucide-react";
-
-// Xóa bỏ "use client" và import type React
+import { ArrowLeft, Save, Stethoscope, Loader2, AlertCircle, RefreshCw, PawPrint, Calendar, User } from "lucide-react";
 
 export default function MedicalRecordsPage() {
-  // Loại bỏ khai báo kiểu TypeScript: <string | null>
+  const [pendingRecords, setPendingRecords] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
   const [selectedRecord, setSelectedRecord] = useState(null);
   const [showForm, setShowForm] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
 
   const [formData, setFormData] = useState({
     symptoms: "",
@@ -26,109 +25,164 @@ export default function MedicalRecordsPage() {
     followUpDate: "",
   });
 
-  const pendingRecords = [
-    {
-      id: "1",
-      customerName: "Trần Thị B",
-      petName: "Mèo Miu",
-      serviceType: "Khám bệnh",
-      date: "2024-01-15",
-      time: "09:00",
-      customerId: "KH001",
-      petId: "TC001",
-    },
-    {
-      id: "2",
-      customerName: "Lê Văn C",
-      petName: "Chó Lucky",
-      serviceType: "Khám bệnh",
-      date: "2024-01-15",
-      time: "10:30",
-      customerId: "KH002",
-      petId: "TC002",
-    },
-    {
-      id: "3",
-      customerName: "Phạm Thị D",
-      petName: "Chó Golden",
-      serviceType: "Khám định kỳ",
-      date: "2024-01-15",
-      time: "14:00",
-      customerId: "KH003",
-      petId: "TC003",
-    },
-  ];
+  // Fetch pending records on mount
+  useEffect(() => {
+    fetchPendingRecords();
+  }, []);
 
-  // Loại bỏ khai báo kiểu TypeScript: (recordId: string)
-  const handleSelectRecord = (recordId) => {
-    setSelectedRecord(recordId);
+  const fetchPendingRecords = async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const response = await api.get('/medical/records/pending');
+      if (response.data.success) {
+        setPendingRecords(response.data.data || []);
+      } else {
+        setError(response.data.message || 'Không thể lấy danh sách hồ sơ');
+      }
+    } catch (err) {
+      console.error('Error fetching pending records:', err);
+      setError(err.response?.data?.message || 'Lỗi khi lấy danh sách hồ sơ khám bệnh');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleSelectRecord = (record) => {
+    setSelectedRecord(record);
+    setFormData({
+      symptoms: "",
+      diagnosis: "",
+      prescription: "",
+      followUpDate: "",
+    });
     setShowForm(true);
   };
 
-  // Loại bỏ khai báo kiểu TypeScript: (e: React.FormEvent)
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    alert("Hồ sơ khám bệnh đã được cập nhật thành công!");
-    setShowForm(false);
-    setSelectedRecord(null);
-  };
+    
+    if (!formData.symptoms.trim() || !formData.diagnosis.trim() || !formData.prescription.trim()) {
+      alert('Vui lòng điền đầy đủ thông tin bắt buộc');
+      return;
+    }
 
-  const selectedRecordData = pendingRecords.find((r) => r.id === selectedRecord);
+    setSubmitting(true);
+    try {
+      const response = await api.put(
+        `/medical/records/${selectedRecord.maHoaDon}/${selectedRecord.stt}`,
+        {
+          TrieuChung: formData.symptoms,
+          ChanDoan: formData.diagnosis,
+          ToaThuoc: formData.prescription,
+          NgayTaiKham: formData.followUpDate || null,
+        }
+      );
+
+      if (response.data.success) {
+        alert('✅ Cập nhật hồ sơ khám bệnh thành công!');
+        setShowForm(false);
+        setSelectedRecord(null);
+        fetchPendingRecords(); // Refresh list
+      } else {
+        alert('❌ Lỗi: ' + (response.data.message || 'Không thể cập nhật hồ sơ'));
+      }
+    } catch (err) {
+      console.error('Error updating record:', err);
+      alert('❌ Lỗi: ' + (err.response?.data?.message || 'Không thể cập nhật hồ sơ khám bệnh'));
+    } finally {
+      setSubmitting(false);
+    }
+  };
 
   return (
     <div className="min-h-screen bg-gray-50 p-6">
       <div className="max-w-6xl mx-auto space-y-6">
-        {/* Sửa Link href -> to */}
         <Link to="/staff/demo">
           <Button variant="ghost" className="gap-2 text-slate-500 hover:bg-white hover:shadow-sm transition-all">
             <ArrowLeft className="h-4 w-4" /> Quay lại
           </Button>
         </Link>
 
-        <div>
-          <h1 className="text-3xl font-bold text-gray-900 flex items-center gap-3">
-            <Stethoscope className="h-8 w-8 text-blue-600" />
-            Cập nhật hồ sơ khám bệnh
-          </h1>
-          <p className="text-gray-500 mt-1">Chọn hồ sơ cần điền thông tin khám bệnh</p>
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-3xl font-bold text-gray-900 flex items-center gap-3">
+              <Stethoscope className="h-8 w-8 text-blue-600" />
+              Cập nhật hồ sơ khám bệnh
+            </h1>
+            <p className="text-gray-500 mt-1">Chọn hồ sơ cần điền thông tin khám bệnh</p>
+          </div>
+          <Button variant="outline" onClick={fetchPendingRecords} disabled={loading} className="gap-2">
+            <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} /> Làm mới
+          </Button>
         </div>
 
         <Card>
           <CardHeader>
-            <CardTitle>Danh sách hồ sơ chờ cập nhật</CardTitle>
+            <CardTitle className="flex items-center justify-between">
+              <span>Danh sách hồ sơ chờ cập nhật</span>
+              {!loading && <Badge variant="secondary">{pendingRecords.length} hồ sơ</Badge>}
+            </CardTitle>
             <CardDescription>Click vào hồ sơ để điền thông tin khám bệnh</CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="space-y-3">
-              {pendingRecords.map((record) => (
-                <Card
-                  key={record.id}
-                  className="cursor-pointer hover:border-blue-500 hover:bg-blue-50 transition-all"
-                  onClick={() => handleSelectRecord(record.id)}
-                >
-                  <CardContent className="flex items-center justify-between p-4">
-                    <div className="flex gap-4 items-center">
-                      <div className="text-center">
-                        <div className="text-xl font-bold text-blue-600">{record.time}</div>
-                        <div className="text-xs text-gray-500">{record.date}</div>
-                      </div>
-                      <div>
-                        <h4 className="font-semibold">
-                          {record.customerName} - {record.petName}
-                        </h4>
-                        <div className="text-sm text-gray-600">Loại dịch vụ: {record.serviceType}</div>
-                        <div className="text-xs text-gray-500 mt-1">
-                          Mã KH: {record.customerId} | Mã TC: {record.petId}
+            {loading ? (
+              <div className="text-center py-12">
+                <Loader2 className="h-10 w-10 mx-auto mb-4 text-blue-500 animate-spin" />
+                <p className="text-gray-500">Đang tải danh sách hồ sơ...</p>
+              </div>
+            ) : error ? (
+              <div className="flex items-center gap-3 p-4 bg-red-50 border border-red-200 rounded-lg text-red-600">
+                <AlertCircle className="h-6 w-6" />
+                <div>
+                  <p className="font-semibold">Lỗi</p>
+                  <p className="text-sm">{error}</p>
+                </div>
+              </div>
+            ) : pendingRecords.length === 0 ? (
+              <div className="text-center py-12 text-gray-500">
+                <Stethoscope className="h-12 w-12 mx-auto mb-4 text-gray-300" />
+                <p className="font-semibold">Không có hồ sơ nào chờ cập nhật</p>
+                <p className="text-sm mt-1">Tất cả hồ sơ khám bệnh đã được điền thông tin</p>
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {pendingRecords.map((record) => (
+                  <Card
+                    key={`${record.maHoaDon}-${record.stt}`}
+                    className="cursor-pointer hover:border-blue-500 hover:bg-blue-50 transition-all"
+                    onClick={() => handleSelectRecord(record)}
+                  >
+                    <CardContent className="flex items-center justify-between p-4">
+                      <div className="flex gap-4 items-center">
+                        <div className="h-12 w-12 rounded-full bg-blue-100 flex items-center justify-center">
+                          <PawPrint className="h-6 w-6 text-blue-600" />
+                        </div>
+                        <div>
+                          <h4 className="font-semibold text-lg">
+                            {record.tenKhachHang} - {record.tenThuCung}
+                          </h4>
+                          <div className="text-sm text-gray-600 flex items-center gap-4">
+                            <span className="flex items-center gap-1">
+                              <User className="h-3 w-3" /> {record.maKhachHang}
+                            </span>
+                            <span>{record.loaiThuCung} - {record.giongThuCung}</span>
+                          </div>
+                          <div className="text-xs text-gray-500 mt-1 flex items-center gap-1">
+                            <Calendar className="h-3 w-3" /> Ngày tạo: {record.ngayLap}
+                            <span className="mx-2">|</span>
+                            Mã HĐ: {record.maHoaDon}
+                          </div>
                         </div>
                       </div>
-                    </div>
-                    <Badge variant="outline" className="bg-orange-50 text-orange-700 border-orange-200">
-                      Chờ cập nhật
-                    </Badge>
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
+                      <Badge variant="outline" className="bg-orange-50 text-orange-700 border-orange-200">
+                        Chờ cập nhật
+                      </Badge>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            )}
           </CardContent>
         </Card>
 
@@ -137,7 +191,7 @@ export default function MedicalRecordsPage() {
             <DialogHeader>
               <DialogTitle>Cập nhật hồ sơ khám bệnh</DialogTitle>
               <DialogDescription>
-                Điền thông tin khám bệnh cho {selectedRecordData?.customerName} - {selectedRecordData?.petName}
+                Điền thông tin khám bệnh cho {selectedRecord?.tenKhachHang} - {selectedRecord?.tenThuCung}
               </DialogDescription>
             </DialogHeader>
 
@@ -146,16 +200,16 @@ export default function MedicalRecordsPage() {
                 <CardContent className="pt-4">
                   <div className="text-sm space-y-1">
                     <div>
-                      <span className="font-semibold">Khách hàng:</span> {selectedRecordData?.customerName}
+                      <span className="font-semibold">Khách hàng:</span> {selectedRecord?.tenKhachHang}
                     </div>
                     <div>
-                      <span className="font-semibold">Thú cưng:</span> {selectedRecordData?.petName}
+                      <span className="font-semibold">Thú cưng:</span> {selectedRecord?.tenThuCung} ({selectedRecord?.loaiThuCung} - {selectedRecord?.giongThuCung})
                     </div>
                     <div>
-                      <span className="font-semibold">Mã KH:</span> {selectedRecordData?.customerId}
+                      <span className="font-semibold">Mã KH:</span> {selectedRecord?.maKhachHang}
                     </div>
                     <div>
-                      <span className="font-semibold">Mã TC:</span> {selectedRecordData?.petId}
+                      <span className="font-semibold">Mã HĐ:</span> {selectedRecord?.maHoaDon} - STT: {selectedRecord?.stt}
                     </div>
                   </div>
                 </CardContent>
@@ -204,24 +258,34 @@ export default function MedicalRecordsPage() {
                   type="date"
                   value={formData.followUpDate}
                   onChange={(e) => setFormData({ ...formData, followUpDate: e.target.value })}
+                  min={new Date().toISOString().split('T')[0]}
                 />
               </div>
 
-              {/* Action Buttons - Đã căn chỉnh trực quan và thu gọn */}
               <div className="flex items-center justify-start gap-3 pt-6 border-t border-gray-100 mt-6 ml-4">
-                {/* Nút Chính: Lưu hồ sơ - Nổi bật và bo góc đồng bộ */}
                 <Button 
+                  type="submit"
+                  disabled={submitting}
                   className="flex-none px-6 h-10 bg-blue-600 hover:bg-blue-700 text-white text-sm font-bold rounded-xl shadow-md shadow-blue-100 gap-2 transition-all active:scale-95"
                 >
-                  <Save className="h-4 w-4" />
-                  Lưu hồ sơ khám bệnh
+                  {submitting ? (
+                    <>
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                      Đang lưu...
+                    </>
+                  ) : (
+                    <>
+                      <Save className="h-4 w-4" />
+                      Lưu hồ sơ khám bệnh
+                    </>
+                  )}
                 </Button>
 
-                {/* Nút Phụ: Hủy - Dạng ghost/outline để giảm sự chú ý, nhỏ gọn hơn */}
                 <Button 
                   type="button" 
                   variant="ghost" 
                   onClick={() => setShowForm(false)}
+                  disabled={submitting}
                   className="text-gray-500 hover:bg-gray-100 px-4 h-10 text-sm font-medium rounded-xl"
                 >
                   Hủy

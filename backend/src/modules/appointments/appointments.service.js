@@ -878,7 +878,7 @@ async function getAppointmentsSchedule(queryParams = {}, maNhanVien = null) {
  * @param {string} maNhanVien - Mã nhân viên (optional)
  * @returns {Promise<{success: boolean, status?: number, message?: string, data?: object, error?: string}>}
  */
-async function getTodayAppointments(maChiNhanh = null, maNhanVien = null) {
+async function getTodayAppointments(maChiNhanh = null, maNhanVien = null, date = null) {
   try {
     const pool = await poolPromise;
 
@@ -903,8 +903,14 @@ async function getTodayAppointments(maChiNhanh = null, maNhanVien = null) {
       };
     }
 
-    const today = new Date();
-    const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
+    let targetDateStr = null;
+    if (date) {
+        targetDateStr = date; // Expecting YYYY-MM-DD
+    } else {
+        // If no date provided, we want ALL appointments, so keep targetDateStr as null
+        // const today = new Date();
+        // targetDateStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
+    }
 
     // Lấy thống kê
     const statsQuery = `
@@ -915,13 +921,13 @@ async function getTodayAppointments(maChiNhanh = null, maNhanVien = null) {
         SUM(CASE WHEN TrangThai = N'Đã hủy' THEN 1 ELSE 0 END) AS DaHuy
       FROM dbo.LichHen
       WHERE MaChiNhanh = @MaChiNhanh
-        AND CAST(ThoiGianHen AS DATE) = CAST(@TodayDate AS DATE)
+        AND (@TodayDate IS NULL OR CAST(ThoiGianHen AS DATE) = CAST(@TodayDate AS DATE))
     `;
 
     const statsResult = await pool
       .request()
       .input("MaChiNhanh", sql.Char(4), finalMaChiNhanh)
-      .input("TodayDate", sql.NVarChar(10), todayStr)
+      .input("TodayDate", sql.NVarChar(10), targetDateStr)
       .query(statsQuery);
 
     const stats = statsResult.recordset[0];
@@ -946,14 +952,14 @@ async function getTodayAppointments(maChiNhanh = null, maNhanVien = null) {
       LEFT JOIN dbo.ChiNhanh cn ON lh.MaChiNhanh = cn.MaChiNhanh
       LEFT JOIN dbo.NhanVien nvBs ON lh.BacSiPhuTrach = nvBs.MaNhanVien
       WHERE lh.MaChiNhanh = @MaChiNhanh
-        AND CAST(lh.ThoiGianHen AS DATE) = CAST(@TodayDate AS DATE)
+        AND (@TodayDate IS NULL OR CAST(lh.ThoiGianHen AS DATE) = CAST(@TodayDate AS DATE))
       ORDER BY lh.ThoiGianHen ASC, lh.MaLichHen ASC
     `;
 
     const appointmentsResult = await pool
       .request()
       .input("MaChiNhanh", sql.Char(4), finalMaChiNhanh)
-      .input("TodayDate", sql.NVarChar(10), todayStr)
+      .input("TodayDate", sql.NVarChar(10), targetDateStr)
       .query(appointmentsQuery);
 
     const appointments = appointmentsResult.recordset.map((apt) => ({
@@ -975,7 +981,7 @@ async function getTodayAppointments(maChiNhanh = null, maNhanVien = null) {
       success: true,
       status: 200,
       data: {
-        ngayHen: todayStr,
+        ngayHen: targetDateStr,
         maChiNhanh: finalMaChiNhanh,
         thongKe: {
           tongSo: stats.TongSo || 0,
@@ -1023,7 +1029,6 @@ async function getAppointmentDetails(maLichHen) {
         lh.LoaiDichVu,
         lh.BacSiPhuTrach,
         nvBs.HoTen AS TenBacSiPhuTrach,
-        nvBs.SDT AS SDTBacSi,
         CONVERT(VARCHAR(10), lh.ThoiGianHen, 120) AS ThoiGianHen,
         CONVERT(VARCHAR(10), lh.NgayLap, 120) AS NgayLap,
         lh.TrangThai
@@ -1091,7 +1096,6 @@ async function getAppointmentDetails(maLichHen) {
         ? {
             maNhanVien: apt.BacSiPhuTrach,
             hoTen: apt.TenBacSiPhuTrach,
-            sdt: apt.SDTBacSi,
           }
         : null,
       thoiGianHen: formatDateForResponse(apt.ThoiGianHen),

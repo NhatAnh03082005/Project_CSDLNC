@@ -68,4 +68,11 @@ router.get('/:id/print', authenticate, (req, res) => {
   res.json({ message: 'Print invoice' });
 });
 
+/**
+ * @route   POST /api/invoices/:id/products
+ * @desc    Thêm sản phẩm vào hóa đơn chưa xác nhận
+ * @access  Private - NHAN_VIEN, QUAN_TRI
+ */
+router.post('/:id/products', authenticate, authorize(ROLES.EMPLOYEE, ROLES.ADMIN), invoicesController.addProductToInvoice);
+
 module.exports = router;

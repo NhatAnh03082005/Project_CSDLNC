@@ -292,6 +292,68 @@ class VaccinationsController {
       next(error);
     }
   }
+
+  /**
+   * Lấy danh sách gói tiêm đã đăng ký của khách hàng (cho nhân viên)
+   * GET /api/vaccinations/customer/:maKhachHang/subscriptions
+   */
+  async getCustomerSubscriptionsForEmployee(req, res, next) {
+    try {
+      const { maKhachHang } = req.params;
+      
+      if (!maKhachHang) {
+        return res.status(400).json({
+          success: false,
+          message: "Thiếu mã khách hàng",
+        });
+      }
+
+      const response = await vaccinationsService.getCustomerSubscriptions(maKhachHang);
+      return res.status(response.status || 200).json(response);
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  /**
+   * Lấy danh sách vaccine trong gói đăng ký
+   * GET /api/vaccinations/packages/:maGoiDK/vaccines
+   */
+  async getPackageVaccines(req, res, next) {
+    try {
+      const { maGoiDK } = req.params;
+      
+      if (!maGoiDK) {
+        return res.status(400).json({
+          success: false,
+          message: "Thiếu mã gói đăng ký",
+        });
+      }
+
+      // Gọi service để lấy vaccine trong gói
+      const { poolPromise } = require("../../config/database");
+      const sql = require("mssql");
+      const pool = await poolPromise;
+      
+      const result = await pool
+        .request()
+        .input("MaGoiDK", sql.Char(6), maGoiDK)
+        .query(`
+          SELECT vxgd.MaVacXin, vx.TenVacXin, vx.GiaTien AS GiaGoc, vxgd.GiaSauUuDai
+          FROM dbo.VacXin_GoiDK vxgd
+          INNER JOIN dbo.VacXin vx ON vxgd.MaVacXin = vx.MaVacXin
+          WHERE vxgd.MaGoiDK = @MaGoiDK
+        `);
+
+      return res.status(200).json({
+        success: true,
+        count: result.recordset.length,
+        data: result.recordset,
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
 }
 
 module.exports = new VaccinationsController();

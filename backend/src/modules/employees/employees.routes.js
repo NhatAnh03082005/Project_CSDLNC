@@ -126,15 +126,29 @@ router.post(
 );
 
 /**
- * @route   DELETE /api/employees/work-schedule/:id
+ * @route   DELETE /api/employees/work-schedule
  * @desc    Xóa lịch làm việc
  * @access  Private - NHAN_VIEN, QUAN_TRI
+ * @body    { ngayLam, gioBatDau }
  */
 router.delete(
-  "/work-schedule/:id",
+  "/work-schedule",
   authenticate,
   authorize(ROLES.EMPLOYEE, ROLES.ADMIN),
   employeesController.deleteWorkSchedule
+);
+
+/**
+ * @route   POST /api/employees/records
+ * @desc    Tạo hồ sơ đa dịch vụ (1 HoaDon với nhiều CTHD)
+ * @access  Private - NHAN_VIEN, QUAN_TRI
+ * @body    { MaKhachHang, MaThuCung, services: ['Khám bệnh', 'Tiêm phòng'] }
+ */
+router.post(
+  "/records",
+  authenticate,
+  authorize(ROLES.EMPLOYEE, ROLES.ADMIN),
+  employeesController.createMultiServiceRecord
 );
 
 /**
