@@ -422,7 +422,7 @@ export default function CheckoutPage() {
                     <Label htmlFor="cod" className="flex-1 cursor-pointer">
                       <div className="flex items-center gap-3 mb-1">
                         <span className="font-black text-slate-800 text-base">
-                          Tất toán khi nhận hàng (COD)
+                          Thanh toán khi nhận hàng (COD)
                         </span>
                         {paymentMethod === "cod" && (
                           <div className="h-2 w-2 rounded-full bg-blue-500 animate-pulse" />

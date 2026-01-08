@@ -37,7 +37,7 @@ import MedicalRecordsPage from "./pages/staff/medical-records/MedicalRecordsPage
 import VaccinationRecordsPage from "./pages/staff/vaccination-records/VaccinationRecordsPage.jsx";
 
 // Admin Base Pages
-import AdminDemo from "./pages/admin/demo/AdminDemo.jsx";
+import AdminDemo from "./pages/admin/AdminDemo.jsx";
 import ManagementPage from "./pages/admin/management/ManagementPage.jsx";
 import StatisticsPage from "./pages/admin/statistics/StatisticsPage.jsx";
 
@@ -110,7 +110,7 @@ function App() {
         />
 
         {/* === PHÂN KHU QUẢN TRỊ (ADMIN) === */}
-        <Route path="/admin/demo" element={<AdminDemo />} />
+        <Route path="/admin" element={<AdminDemo />} />
         <Route path="/admin/management" element={<ManagementPage />} />
 
         {/* Admin Management Detail Routes */}

@@ -14,20 +14,11 @@ import {
   DialogTitle,
 } from "../../../components/ui/dialog";
 import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "../../../components/ui/dropdown-menu";
-import {
   Calendar,
   FileText,
   CheckCircle,
   XCircle,
   Menu,
-  Bell,
   LogOut,
   Home,
   Receipt,
@@ -47,7 +38,6 @@ export default function StaffDemoPage() {
   const [searchTerm, setSearchTerm] = useState("");
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [selectedApp, setSelectedApp] = useState(null);
-  const [notifications, setNotifications] = useState(3);
   const [branchName, setBranchName] = useState("");
 
   // Fetch branch info on mount
@@ -165,40 +155,7 @@ export default function StaffDemoPage() {
             </div>
           </div>
           <div className="ml-auto flex items-center gap-4">
-            {/* Notifications */}
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="ghost" size="icon" className="relative rounded-full hover:bg-gray-100 transition-all">
-                  <Bell className="h-5 w-5 text-gray-500" />
-                  <span className="absolute top-2 right-2 h-2.5 w-2.5 rounded-full bg-red-500 ring-2 ring-white"></span>
-                </Button>
-              </DropdownMenuTrigger>
-                <DropdownMenuContent className="w-80 bg-white/95 backdrop-blur-xl shadow-2xl rounded-2xl border border-gray-100 p-0" align="end">
-                  <div className="p-4 border-b border-gray-50">
-                     <DropdownMenuLabel className="font-bold text-gray-900 text-base">Thông báo</DropdownMenuLabel>
-                  </div>
-                  <div className="max-h-[300px] overflow-y-auto p-2 space-y-1">
-                    <DropdownMenuItem className="flex flex-col items-start gap-1 p-3 rounded-xl focus:bg-blue-50 cursor-pointer transition-colors">
-                      <div className="flex items-center gap-2 w-full">
-                         <div className="h-2 w-2 rounded-full bg-blue-500"></div>
-                         <span className="font-bold text-[10px] text-blue-600 uppercase tracking-wider">Lịch hẹn mới</span>
-                         <span className="ml-auto text-[10px] text-gray-400 font-medium">10p trước</span>
-                      </div>
-                      <div className="text-sm font-medium text-gray-700 leading-snug pl-4">Khách hàng Nguyễn Văn A vừa đặt lịch tiêm phòng</div>
-                    </DropdownMenuItem>
-                    <DropdownMenuItem className="flex flex-col items-start gap-1 p-3 rounded-xl focus:bg-orange-50 cursor-pointer transition-colors">
-                       <div className="flex items-center gap-2 w-full">
-                         <div className="h-2 w-2 rounded-full bg-orange-500"></div>
-                         <span className="font-bold text-[10px] text-orange-600 uppercase tracking-wider">Nhắc nhở</span>
-                         <span className="ml-auto text-[10px] text-gray-400 font-medium">30p trước</span>
-                      </div>
-                      <div className="text-sm font-medium text-gray-700 leading-snug pl-4">Lịch khám của Bé Miu sắp bắt đầu (09:00)</div>
-                    </DropdownMenuItem>
-                  </div>
-                </DropdownMenuContent>
-              </DropdownMenu>
-
-            <div className="flex items-center gap-3 pl-4 border-l border-gray-200">
+            <div className="flex items-center gap-3 pl-4">
               <div className="text-right hidden md:block">
                 <div className="text-sm font-bold text-gray-900">{displayName}</div>
                 <div className="text-xs font-medium text-gray-500">{displayRole}</div>
@@ -441,66 +398,66 @@ export default function StaffDemoPage() {
 
         {/* DIALOG HIỂN THỊ CHI TIẾT LỊCH HẸN*/}
         <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-          <DialogContent className="max-w-md w-full rounded-3xl bg-white shadow-2xl border-0 p-0 overflow-hidden">
-            <div className="bg-gradient-to-r from-blue-600 to-blue-700 p-6 text-white relative overflow-hidden">
+          <DialogContent className="max-w-2xl w-full max-h-[90vh] rounded-3xl bg-white shadow-2xl border-0 p-0 overflow-hidden flex flex-col">
+            <div className="bg-gradient-to-r from-blue-600 to-blue-700 p-5 text-white relative overflow-hidden flex-shrink-0">
                <div className="absolute top-0 right-0 p-4 opacity-10">
                   <FileText className="h-24 w-24 transform rotate-12" />
                </div>
-               <DialogTitle className="text-xl font-bold flex items-center gap-2 relative z-10">
-                 <div className="bg-white/20 p-2 rounded-lg backdrop-blur-sm">
-                    <FileText className="h-5 w-5 text-white" />
+               <DialogTitle className="text-lg font-bold flex items-center gap-2 relative z-10">
+                 <div className="bg-white/20 p-1.5 rounded-lg backdrop-blur-sm">
+                    <FileText className="h-4 w-4 text-white" />
                  </div>
                  Chi tiết lịch hẹn
                </DialogTitle>
-               <DialogDescription className="text-blue-100 mt-1 relative z-10 font-medium opacity-90">
+               <DialogDescription className="text-blue-100 mt-1 relative z-10 font-medium opacity-90 text-sm">
                  Mã: {selectedApp?.maLichHen}
                </DialogDescription>
             </div>
             
             {selectedApp && (
-              <div className="p-6 space-y-6">
+              <div className="flex-1 overflow-y-auto p-5 space-y-4">
                 {/* Customer Info */}
-                <div className="space-y-3">
+                <div className="space-y-2">
                    <div className="flex items-center gap-2">
                       <span className="h-px flex-1 bg-gray-100"></span>
-                      <span className="text-xs font-bold text-gray-400 uppercase tracking-widest px-2 group-title"><User className="inline h-3 w-3 mr-1 mb-0.5" /> Khách hàng</span>
+                      <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest px-2"><User className="inline h-3 w-3 mr-1 mb-0.5" /> Khách hàng</span>
                       <span className="h-px flex-1 bg-gray-100"></span>
                    </div>
-                   <div className="bg-gray-50 rounded-2xl p-4 flex items-center gap-4">
-                      <div className="h-12 w-12 rounded-full bg-white flex items-center justify-center shadow-sm text-lg font-bold text-gray-700 border border-gray-100">
+                   <div className="bg-gray-50 rounded-xl p-3 flex items-center gap-3">
+                      <div className="h-10 w-10 rounded-full bg-white flex items-center justify-center shadow-sm text-base font-bold text-gray-700 border border-gray-100 flex-shrink-0">
                          {selectedApp.khachHang?.hoTen?.charAt(0) || "U"}
                       </div>
-                      <div>
-                         <p className="font-bold text-gray-900 text-lg leading-tight">{selectedApp.khachHang?.hoTen}</p>
-                         <p className="text-gray-500 text-sm font-medium mt-0.5">{selectedApp.khachHang?.sdt}</p>
+                      <div className="min-w-0 flex-1">
+                         <p className="font-bold text-gray-900 text-base leading-tight truncate">{selectedApp.khachHang?.hoTen}</p>
+                         <p className="text-gray-500 text-xs font-medium mt-0.5">{selectedApp.khachHang?.sdt}</p>
                       </div>
                    </div>
                 </div>
 
                 {/* Appointment Info */}
-                <div className="space-y-3">
+                <div className="space-y-2">
                    <div className="flex items-center gap-2">
                       <span className="h-px flex-1 bg-gray-100"></span>
-                      <span className="text-xs font-bold text-gray-400 uppercase tracking-widest px-2"><Calendar className="inline h-3 w-3 mr-1 mb-0.5" /> Thông tin</span>
+                      <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest px-2"><Calendar className="inline h-3 w-3 mr-1 mb-0.5" /> Thông tin</span>
                       <span className="h-px flex-1 bg-gray-100"></span>
                    </div>
-                   <div className="grid grid-cols-2 gap-3">
-                      <div className="bg-blue-50 rounded-2xl p-3 border border-blue-100">
-                         <span className="text-[10px] uppercase font-bold text-blue-400 tracking-wider">Thời gian</span>
-                         <p className="text-blue-900 font-bold text-base mt-0.5">{selectedApp.thoiGianHen}</p>
+                   <div className="grid grid-cols-2 gap-2">
+                      <div className="bg-blue-50 rounded-xl p-2.5 border border-blue-100">
+                         <span className="text-[9px] uppercase font-bold text-blue-400 tracking-wider block">Thời gian</span>
+                         <p className="text-blue-900 font-bold text-sm mt-0.5 break-words">{selectedApp.thoiGianHen}</p>
                       </div>
-                      <div className="bg-purple-50 rounded-2xl p-3 border border-purple-100">
-                         <span className="text-[10px] uppercase font-bold text-purple-400 tracking-wider">Dịch vụ</span>
-                         <p className="text-purple-900 font-bold text-base mt-0.5">{selectedApp.loaiDichVu}</p>
+                      <div className="bg-purple-50 rounded-xl p-2.5 border border-purple-100">
+                         <span className="text-[9px] uppercase font-bold text-purple-400 tracking-wider block">Dịch vụ</span>
+                         <p className="text-purple-900 font-bold text-sm mt-0.5 break-words">{selectedApp.loaiDichVu}</p>
                       </div>
                    </div>
-                   <div className="bg-white border border-gray-100 rounded-2xl p-3 flex justify-between items-center shadow-sm">
-                       <span className="text-sm text-gray-500 font-medium">Bác sĩ phụ trách</span>
-                       <span className="text-sm font-bold text-gray-800">{selectedApp.bacSi?.hoTen || "Chưa phân công"}</span>
+                   <div className="bg-white border border-gray-100 rounded-xl p-2.5 flex justify-between items-center shadow-sm">
+                       <span className="text-xs text-gray-500 font-medium">Bác sĩ phụ trách</span>
+                       <span className="text-xs font-bold text-gray-800 truncate ml-2">{selectedApp.bacSi?.hoTen || "Chưa phân công"}</span>
                    </div>
-                   <div className="flex justify-center pt-2">
+                   <div className="flex justify-center">
                       <Badge variant="outline" className={`
-                        px-4 py-1.5 text-sm font-bold border-2
+                        px-3 py-1 text-xs font-bold border-2
                         ${selectedApp.trangThai === 'Đã lên lịch' ? 'bg-orange-50 text-orange-600 border-orange-100' : 
                           selectedApp.trangThai === 'Đã xác nhận' ? 'bg-green-50 text-green-600 border-green-100' : 
                           selectedApp.trangThai === 'Đã hủy' ? 'bg-red-50 text-red-600 border-red-100' :
@@ -512,30 +469,30 @@ export default function StaffDemoPage() {
                 </div>
 
                 {/* Pets List */}
-                 <div className="space-y-3">
+                 <div className="space-y-2">
                    <div className="flex items-center gap-2">
                        <span className="h-px flex-1 bg-gray-100"></span>
-                       <span className="text-xs font-bold text-gray-400 uppercase tracking-widest px-2">Thú cưng ({selectedApp.thuCung?.length || 0})</span>
+                       <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest px-2">Thú cưng ({selectedApp.thuCung?.length || 0})</span>
                        <span className="h-px flex-1 bg-gray-100"></span>
                    </div>
-                  <div className="space-y-2 max-h-40 overflow-y-auto pr-1">
+                  <div className="space-y-1.5 max-h-[200px] overflow-y-auto pr-1 custom-scrollbar">
                     {selectedApp.thuCung?.map((pet) => (
-                      <div key={pet.maThuCung} className="flex items-center justify-between p-3 border border-gray-100 rounded-2xl hover:bg-gray-50 transition-colors group">
-                        <div className="flex items-center gap-3">
-                           <div className="h-9 w-9 rounded-full bg-gradient-to-br from-gray-100 to-gray-200 flex items-center justify-center text-gray-600 font-bold text-sm shadow-inner group-hover:from-blue-100 group-hover:to-blue-200 group-hover:text-blue-600 transition-all">
+                      <div key={pet.maThuCung} className="flex items-center justify-between p-2.5 border border-gray-100 rounded-xl hover:bg-gray-50 transition-colors group">
+                        <div className="flex items-center gap-2.5 min-w-0 flex-1">
+                           <div className="h-8 w-8 rounded-full bg-gradient-to-br from-gray-100 to-gray-200 flex items-center justify-center text-gray-600 font-bold text-xs shadow-inner group-hover:from-blue-100 group-hover:to-blue-200 group-hover:text-blue-600 transition-all flex-shrink-0">
                              {pet.tenThuCung.charAt(0)}
                            </div>
-                           <div>
-                             <p className="font-bold text-sm text-gray-800">{pet.tenThuCung}</p>
-                             <p className="text-[11px] text-gray-500 font-medium uppercase tracking-wide">{pet.giong} • {pet.loai}</p>
+                           <div className="min-w-0 flex-1">
+                             <p className="font-bold text-xs text-gray-800 truncate">{pet.tenThuCung}</p>
+                             <p className="text-[10px] text-gray-500 font-medium uppercase tracking-wide truncate">{pet.giong} • {pet.loai}</p>
                            </div>
                         </div>
-                        <Badge variant="secondary" className="text-xs font-bold bg-white border border-gray-100 shadow-sm">{pet.gioiTinh}</Badge>
+                        <Badge variant="secondary" className="text-[10px] font-bold bg-white border border-gray-100 shadow-sm flex-shrink-0 ml-2">{pet.gioiTinh}</Badge>
                       </div>
                     ))}
                      {(!selectedApp.thuCung || selectedApp.thuCung.length === 0) && (
-                        <div className="text-center py-4 bg-gray-50 rounded-2xl border border-dashed border-gray-200">
-                          <p className="text-gray-400 text-xs italic">Chưa có thông tin thú cưng</p>
+                        <div className="text-center py-3 bg-gray-50 rounded-xl border border-dashed border-gray-200">
+                          <p className="text-gray-400 text-[10px] italic">Chưa có thông tin thú cưng</p>
                         </div>
                      )}
                   </div>
@@ -543,8 +500,8 @@ export default function StaffDemoPage() {
               </div>
             )}
             
-            <div className="p-4 bg-gray-50 border-t border-gray-100 flex justify-end gap-3">
-              <Button onClick={() => setIsDialogOpen(false)} variant="outline" className="rounded-xl border-gray-200 font-bold text-gray-600 hover:text-gray-900 hover:border-gray-300">Đóng</Button>
+            <div className="p-4 bg-gray-50 border-t border-gray-100 flex justify-end gap-3 flex-shrink-0">
+              <Button onClick={() => setIsDialogOpen(false)} variant="outline" className="rounded-xl border-gray-200 font-bold text-gray-600 hover:text-gray-900 hover:border-gray-300 text-sm px-4 h-9">Đóng</Button>
             </div>
           </DialogContent>
         </Dialog>

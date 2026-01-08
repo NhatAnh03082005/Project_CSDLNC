@@ -31,6 +31,7 @@ import {
   AlertCircle,
 } from "lucide-react";
 import { vaccinationAPI } from "../../api/services";
+import { useAuth } from "../../context/AuthContext";
 
 // Helper function để format tên gói đẹp hơn
 const formatPackageName = (loaiGoi) => {
@@ -46,6 +47,9 @@ const formatPackageName = (loaiGoi) => {
 };
 
 export default function VaccinationPackagesPage() {
+  const { user } = useAuth();
+  const customerId = user?.maNguoiDung;
+
   const [subscriptions, setSubscriptions] = useState([]);
   const [availablePackages, setAvailablePackages] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -58,6 +62,12 @@ export default function VaccinationPackagesPage() {
   const [availableVaccines, setAvailableVaccines] = useState([]);
   const [selectedVaccines, setSelectedVaccines] = useState([]);
   const [loadingVaccines, setLoadingVaccines] = useState(false);
+
+  // States cho dialog chi tiết gói
+  const [detailDialogOpen, setDetailDialogOpen] = useState(false);
+  const [selectedSubscription, setSelectedSubscription] = useState(null);
+  const [packageVaccines, setPackageVaccines] = useState([]);
+  const [loadingPackageDetail, setLoadingPackageDetail] = useState(false);
 
   // Fetch danh sách gói đã đăng ký
   const fetchSubscriptions = async () => {
@@ -117,6 +127,22 @@ export default function VaccinationPackagesPage() {
     }
   };
 
+  // Fetch chi tiết gói (danh sách vaccine và giá)
+  const fetchPackageDetail = async (maGoiDK) => {
+    try {
+      setLoadingPackageDetail(true);
+      const response = await vaccinationAPI.getSubscriptionDetails(maGoiDK);
+      if (response.data.success) {
+        setPackageVaccines(response.data.data?.VacXin || []);
+      }
+    } catch (error) {
+      console.error("Lỗi khi tải chi tiết gói:", error);
+      setPackageVaccines([]);
+    } finally {
+      setLoadingPackageDetail(false);
+    }
+  };
+
   useEffect(() => {
     const loadData = async () => {
       setLoading(true);
@@ -134,6 +160,14 @@ export default function VaccinationPackagesPage() {
     setVaccineDialogOpen(true);
   };
 
+  const handleViewPackageDetail = async (e, subscription) => {
+    // Mở dialog chi tiết gói
+    e?.stopPropagation();
+    setSelectedSubscription(subscription);
+    setDetailDialogOpen(true);
+    await fetchPackageDetail(subscription.MaGoiDK);
+  };
+
   const handleRegister = async () => {
     try {
       if (!selectedPackage || selectedVaccines.length === 0) {
@@ -141,11 +175,11 @@ export default function VaccinationPackagesPage() {
         return;
       }
 
-      // Kiểm tra số lượng vaccine đã chọn
+      // Kiểm tra số lượng vaccine phải ĐÚNG bằng thời hạn gói
       const requiredCount = selectedPackage.ThoiHan;
       if (selectedVaccines.length !== requiredCount) {
         alert(
-          `Vui lòng chọn đúng ${requiredCount} vaccine cho gói ${selectedPackage.displayName}!`
+          `Gói ${selectedPackage.displayName} yêu cầu chọn ĐÚNG ${requiredCount} vaccine (hiện tại: ${selectedVaccines.length})`
         );
         return;
       }
@@ -182,10 +216,12 @@ export default function VaccinationPackagesPage() {
       if (prev.includes(maVacXin)) {
         return prev.filter((id) => id !== maVacXin);
       } else {
-        // Kiểm tra số lượng tối đa
+        // Kiểm tra số lượng không được vượt quá
         const maxCount = selectedPackage?.ThoiHan || 0;
         if (prev.length >= maxCount) {
-          alert(`Bạn chỉ được chọn tối đa ${maxCount} vaccine cho gói này!`);
+          alert(
+            `Gói này cần chọn ĐÚNG ${maxCount} vaccine. Bạn đã chọn ${prev.length} vaccine.`
+          );
           return prev;
         }
         return [...prev, maVacXin];
@@ -208,7 +244,7 @@ export default function VaccinationPackagesPage() {
         <div className="absolute top-0 right-0 -mt-20 -mr-20 w-96 h-96 bg-blue-50 rounded-full blur-3xl opacity-50" />
         <div className="absolute bottom-0 left-0 -mb-20 -ml-20 w-72 h-72 bg-gradient-to-br from-blue-50 to-cyan-50 rounded-full blur-3xl opacity-50" />
 
-        <div className="container mx-auto px-4 py-16 relative z-10 max-w-7xl">
+        <div className="container mx-auto px-4 py-12 relative z-10 max-w-7xl">
           <div className="flex flex-col md:flex-row md:items-end justify-between gap-8">
             <div className="space-y-4">
               <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-50 border border-emerald-100 text-emerald-600 text-xs font-bold uppercase tracking-wider">
@@ -338,7 +374,7 @@ export default function VaccinationPackagesPage() {
                         Chọn vaccine cho {selectedPackage?.displayName}
                       </DialogTitle>
                       <DialogDescription className="text-blue-50/90 text-lg mt-1 font-medium">
-                        Chọn {selectedPackage?.ThoiHan} vaccine từ danh sách (
+                        Chọn ĐÚNG {selectedPackage?.ThoiHan} vaccine (
                         {selectedVaccines.length}/
                         {selectedPackage?.ThoiHan || 0})
                       </DialogDescription>
@@ -424,10 +460,7 @@ export default function VaccinationPackagesPage() {
                     </Button>
                     <Button
                       onClick={handleRegister}
-                      disabled={
-                        selectedVaccines.length !== selectedPackage?.ThoiHan ||
-                        registering
-                      }
+                      disabled={selectedVaccines.length === 0 || registering}
                       className="h-12 px-8 rounded-xl font-bold bg-blue-600 hover:bg-blue-700 text-white shadow-lg shadow-blue-100"
                     >
                       {registering ? (
@@ -441,8 +474,7 @@ export default function VaccinationPackagesPage() {
                     </Button>
                   </div>
                   <p className="text-center text-xs text-slate-400 font-medium">
-                    * Bạn cần chọn đúng {selectedPackage?.ThoiHan} vaccine để
-                    tiếp tục
+                    * Bạn cần chọn ĐÚNG {selectedPackage?.ThoiHan} vaccine
                   </p>
                 </div>
               </DialogContent>
@@ -452,7 +484,7 @@ export default function VaccinationPackagesPage() {
       </div>
 
       {/* Main Content Grid */}
-      <main className="container mx-auto px-4 py-16 max-w-7xl">
+      <main className="container mx-auto px-4 py-2 max-w-7xl mb-10">
         {subscriptions.length === 0 ? (
           <div className="bg-white rounded-[3rem] border-2 border-dashed border-slate-200 p-20 text-center shadow-sm max-w-5xl mx-auto overflow-hidden relative">
             <div className="absolute -top-24 -right-24 w-64 h-64 bg-slate-50 rounded-full blur-3xl opacity-50" />
@@ -486,9 +518,10 @@ export default function VaccinationPackagesPage() {
               return (
                 <div
                   key={pkg.MaGoiDK}
-                  className={`group relative bg-white rounded-[2.5rem] border-2 shadow-sm hover:shadow-2xl hover:shadow-emerald-100/30 transition-all duration-500 overflow-hidden flex flex-col ${
+                  className={`group relative bg-white rounded-[2.5rem] border-2 shadow-sm hover:shadow-2xl hover:shadow-emerald-100/30 transition-all duration-500 overflow-hidden flex flex-col cursor-pointer ${
                     isActive ? "border-emerald-200" : "border-slate-300"
                   }`}
+                  onClick={(e) => handleViewPackageDetail(e, pkg)}
                 >
                   {/* Card Status Decoration */}
                   <div
@@ -580,6 +613,109 @@ export default function VaccinationPackagesPage() {
           </div>
         )}
       </main>
+
+      {/* Dialog chi tiết gói tiêm phòng */}
+      <Dialog open={detailDialogOpen} onOpenChange={setDetailDialogOpen}>
+        <DialogContent className="sm:max-w-[800px] p-0 overflow-hidden border-none shadow-2xl rounded-[2.5rem]">
+          <div className="bg-gradient-to-br from-emerald-600 via-teal-500 to-cyan-600 px-8 py-8 text-white relative">
+            <div className="absolute top-0 right-0 p-8 opacity-10">
+              <Syringe className="h-40 w-40 rotate-12" />
+            </div>
+            <div className="flex items-center gap-4 relative z-10">
+              <div className="p-3 bg-white/20 backdrop-blur-md rounded-[2rem] border border-white/30 shadow-inner">
+                <ShieldCheck className="h-10 w-10 text-white" />
+              </div>
+              <div>
+                <DialogTitle className="text-3xl font-black tracking-tight">
+                  {selectedSubscription?.displayName}
+                </DialogTitle>
+                <DialogDescription className="text-emerald-50/90 text-lg mt-1 font-medium">
+                  Chi tiết gói tiêm phòng
+                </DialogDescription>
+              </div>
+            </div>
+          </div>
+
+          <div className="p-6 space-y-6 max-h-[60vh] overflow-y-auto custom-scrollbar bg-slate-50/50">
+            {selectedSubscription && (
+              <>
+                {/* Vaccine List */}
+                <div className="space-y-4">
+                  <h3 className="text-lg font-black text-slate-800 uppercase tracking-tight">
+                    Danh sách Vaccine
+                  </h3>
+
+                  {loadingPackageDetail ? (
+                    <div className="text-center py-8 space-y-3">
+                      <Loader2 className="h-8 w-8 text-emerald-500 mx-auto animate-spin" />
+                      <p className="text-slate-500 font-medium">
+                        Đang tải danh sách vaccine...
+                      </p>
+                    </div>
+                  ) : packageVaccines.length === 0 ? (
+                    <div className="text-center py-8 space-y-3">
+                      <AlertCircle className="h-8 w-8 text-slate-300 mx-auto" />
+                      <p className="text-slate-500 font-medium">
+                        Hiện không có vaccine nào
+                      </p>
+                    </div>
+                  ) : (
+                    <div className="space-y-3">
+                      {packageVaccines.map((vaccine, idx) => (
+                        <div
+                          key={vaccine.MaVacXin || idx}
+                          className="p-4 rounded-2xl bg-white border border-slate-100 hover:border-emerald-200 hover:shadow-md transition-all"
+                        >
+                          <div className="flex items-start justify-between gap-4">
+                            <div className="flex-1 space-y-2">
+                              <div className="flex items-center gap-2">
+                                <div className="h-2 w-2 rounded-full bg-emerald-500" />
+                                <h4 className="font-bold text-slate-800">
+                                  {vaccine.TenVacXin || vaccine.tenVacXin}
+                                </h4>
+                              </div>
+                              <p className="text-sm text-slate-500 font-medium">
+                                Mã: {vaccine.MaVacXin || vaccine.maVacXin}
+                              </p>
+                              {(vaccine.MoTa || vaccine.moTa) && (
+                                <p className="text-xs text-slate-400 line-clamp-2">
+                                  {vaccine.MoTa || vaccine.moTa}
+                                </p>
+                              )}
+                            </div>
+                            {(vaccine.GiaSauUuDai || vaccine.giaSauUuDai) && (
+                              <div className="text-right space-y-1">
+                                <p className="text-xs font-bold text-slate-400 uppercase">
+                                  Giá
+                                </p>
+                                <p className="text-lg font-black text-emerald-600">
+                                  {Number(
+                                    vaccine.GiaSauUuDai || vaccine.giaSauUuDai
+                                  ).toLocaleString("vi-VN")}
+                                  đ
+                                </p>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </>
+            )}
+          </div>
+
+          <div className="p-6 pt-0 bg-slate-50/50">
+            <Button
+              onClick={() => setDetailDialogOpen(false)}
+              className="w-full h-12 rounded-xl font-bold bg-slate-200 hover:bg-slate-300 text-slate-800"
+            >
+              Đóng
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
