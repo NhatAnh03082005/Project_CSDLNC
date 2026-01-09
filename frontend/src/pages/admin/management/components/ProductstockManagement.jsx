@@ -44,7 +44,7 @@ export default function ProductstockManagement() {
 
   const [isAddProductDialogOpen, setIsAddProductDialogOpen] = useState(false);
   const [selectedProduct, setSelectedProduct] = useState("");
-  const [initialQuantity, setInitialQuantity] = useState("0");
+  const [initialQuantity, setInitialQuantity] = useState("1");
 
   // ✅ chỉ hiện sản phẩm CHƯA có trong kho của chi nhánh
   const availableProducts = useMemo(() => {
@@ -131,7 +131,7 @@ export default function ProductstockManagement() {
     setProductsStock([]);
     setLocalQty({});
     setSelectedProduct("");
-    setInitialQuantity("0");
+    setInitialQuantity("1");
     setIsAddProductDialogOpen(false);
     setError(null);
   };
@@ -159,13 +159,15 @@ export default function ProductstockManagement() {
       await fetchProductsStock(selectedBranch.MaChiNhanh);
 
       setSelectedProduct("");
-      setInitialQuantity("0");
+      setInitialQuantity("1");
       setIsAddProductDialogOpen(false);
 
       toast.success("Thêm sản phẩm vào kho thành công");
     } catch (err) {
       console.error("Lỗi khi thêm sản phẩm:", err);
-      toast.error(err.response?.data?.message || "Không thể thêm sản phẩm vào kho");
+      toast.error(
+        err.response?.data?.message || "Không thể thêm sản phẩm vào kho"
+      );
     }
   };
 
@@ -295,8 +297,8 @@ export default function ProductstockManagement() {
                           <Input
                             id="initialQuantity"
                             type="number"
-                            min="0"
-                            placeholder="0"
+                            min="1"
+                            placeholder="1"
                             value={initialQuantity}
                             onChange={(e) => setInitialQuantity(e.target.value)}
                             className="h-10"

@@ -38,7 +38,7 @@ export default function VaccinestockManagement() {
 
   const [isAddVaccineDialogOpen, setIsAddVaccineDialogOpen] = useState(false);
   const [selectedVaccine, setSelectedVaccine] = useState("");
-  const [initialQuantity, setInitialQuantity] = useState("0");
+  const [initialQuantity, setInitialQuantity] = useState("1");
 
   // ✅ chỉ hiện vaccine CHƯA có trong kho chi nhánh
   const availableVaccines = useMemo(() => {
@@ -122,7 +122,7 @@ export default function VaccinestockManagement() {
     setVaccinesStock([]);
     setLocalQty({});
     setSelectedVaccine("");
-    setInitialQuantity("0");
+    setInitialQuantity("1");
     setIsAddVaccineDialogOpen(false);
     setError(null);
   };
@@ -149,13 +149,15 @@ export default function VaccinestockManagement() {
       await fetchVaccinesStock(selectedBranch.MaChiNhanh);
 
       setSelectedVaccine("");
-      setInitialQuantity("0");
+      setInitialQuantity("1");
       setIsAddVaccineDialogOpen(false);
 
       toast.success("Thêm vắc-xin vào kho thành công");
     } catch (err) {
       console.error("Lỗi khi thêm vắc-xin:", err);
-      toast.error(err.response?.data?.message || "Không thể thêm vắc-xin vào kho");
+      toast.error(
+        err.response?.data?.message || "Không thể thêm vắc-xin vào kho"
+      );
     }
   };
 
@@ -277,8 +279,8 @@ export default function VaccinestockManagement() {
                           <Input
                             id="initialQuantity"
                             type="number"
-                            min="0"
-                            placeholder="0"
+                            min="1"
+                            placeholder="1"
                             value={initialQuantity}
                             onChange={(e) => setInitialQuantity(e.target.value)}
                             className="h-10"

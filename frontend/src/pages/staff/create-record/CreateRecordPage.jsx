@@ -1,5 +1,4 @@
 import React, { useState, useEffect } from "react";
-import { Link } from "react-router-dom";
 import api from "../../../api/axios";
 import { Button } from "../../../components/ui/button";
 import {
@@ -26,6 +25,8 @@ import {
   Loader2,
   Check,
   Plus,
+  Mail,
+  ChevronRight,
 } from "lucide-react";
 import StaffHeader from "../../../components/staff/StaffHeader";
 import StaffSidebar from "../../../components/staff/StaffSidebar";
@@ -35,12 +36,10 @@ import { toast } from "../../../lib/toast";
 export default function CreateRecordPage() {
   const [step, setStep] = useState("customer-list");
   const [selectedCustomer, setSelectedCustomer] = useState(null);
-  const [selectedPet, setSelectedPet] = useState(null); // Thú cưng đang chọn để thêm dịch vụ
-  const [selectedServices, setSelectedServices] = useState(["Khám bệnh"]); // Dịch vụ cho thú cưng đang chọn
-  // Mảng lưu các thú cưng đã chọn với dịch vụ của từng thú cưng
+  const [selectedPet, setSelectedPet] = useState(null);
+  const [selectedServices, setSelectedServices] = useState(["Khám bệnh"]);
   const [selectedPetsWithServices, setSelectedPetsWithServices] = useState([]);
 
-  // State cho tìm kiếm và loading
   const [searchQuery, setSearchQuery] = useState({
     name: "",
     phone: "",
@@ -57,10 +56,11 @@ export default function CreateRecordPage() {
     totalPages: 1,
     total: 0,
   });
+
   const [branchName, setBranchName] = useState("");
   const [isProfileOpen, setIsProfileOpen] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
 
-  // Load tất cả khách hàng khi mở trang
   useEffect(() => {
     loadAllCustomers();
     fetchBranch();
@@ -76,7 +76,6 @@ export default function CreateRecordPage() {
     }
   };
 
-  // Gọi API lấy tất cả khách hàng
   const loadAllCustomers = async (page = 1) => {
     try {
       setLoading(true);
@@ -109,15 +108,9 @@ export default function CreateRecordPage() {
     }
   };
 
-  // Gọi API tìm kiếm khách hàng
   const handleSearch = async () => {
-    // Nếu không có filter nào, load lại tất cả
-    if (
-      !searchQuery.name.trim() &&
-      !searchQuery.phone.trim() &&
-      !searchQuery.cccd.trim()
-    ) {
-      loadAllCustomers();
+    if (!searchQuery.phone.trim() && !searchQuery.cccd.trim()) {
+      toast.error("Vui lòng nhập số điện thoại hoặc CCCD để tìm kiếm");
       return;
     }
 
@@ -127,7 +120,6 @@ export default function CreateRecordPage() {
       setIsSearchMode(true);
 
       const params = {};
-      if (searchQuery.name.trim()) params.name = searchQuery.name.trim();
       if (searchQuery.phone.trim()) params.phone = searchQuery.phone.trim();
       if (searchQuery.cccd.trim()) params.cccd = searchQuery.cccd.trim();
 
@@ -153,12 +145,10 @@ export default function CreateRecordPage() {
     }
   };
 
-  // Xử lý khi chọn khách hàng
   const handleSelectCustomer = async (customer) => {
     setSelectedCustomer(customer);
     setStep("pet-list");
 
-    // Gọi API lấy danh sách thú cưng
     try {
       setPetsLoading(true);
       setError(null);
@@ -184,7 +174,6 @@ export default function CreateRecordPage() {
 
   const handleSelectPet = (petId) => {
     setSelectedPet(petId);
-    // Reset dịch vụ khi chọn thú cưng mới
     setSelectedServices(["Khám bệnh"]);
   };
 
@@ -194,20 +183,16 @@ export default function CreateRecordPage() {
     loadAllCustomers();
   };
 
-  // Toggle service selection (checkboxes)
   const toggleService = (service) => {
     setSelectedServices((prev) => {
       if (prev.includes(service)) {
-        // Không cho phép bỏ chọn nếu chỉ còn 1 dịch vụ
         if (prev.length === 1) return prev;
         return prev.filter((s) => s !== service);
-      } else {
-        return [...prev, service];
       }
+      return [...prev, service];
     });
   };
 
-  // Thêm thú cưng và dịch vụ vào danh sách đã chọn
   const handleAddPetWithServices = () => {
     if (!selectedPet || selectedServices.length === 0) {
       setError("Vui lòng chọn thú cưng và ít nhất 1 dịch vụ");
@@ -220,13 +205,11 @@ export default function CreateRecordPage() {
       return;
     }
 
-    // Kiểm tra thú cưng đã được thêm chưa
     const existingIndex = selectedPetsWithServices.findIndex(
       (item) => item.maThuCung === selectedPet
     );
 
     if (existingIndex >= 0) {
-      // Cập nhật dịch vụ cho thú cưng đã có
       const updated = [...selectedPetsWithServices];
       updated[existingIndex] = {
         ...updated[existingIndex],
@@ -234,7 +217,6 @@ export default function CreateRecordPage() {
       };
       setSelectedPetsWithServices(updated);
     } else {
-      // Thêm thú cưng mới
       setSelectedPetsWithServices((prev) => [
         ...prev,
         {
@@ -247,20 +229,17 @@ export default function CreateRecordPage() {
       ]);
     }
 
-    // Reset để chọn thú cưng tiếp theo
     setSelectedPet(null);
     setSelectedServices(["Khám bệnh"]);
     setError(null);
   };
 
-  // Xóa thú cưng khỏi danh sách đã chọn
   const handleRemovePet = (maThuCung) => {
     setSelectedPetsWithServices((prev) =>
       prev.filter((item) => item.maThuCung !== maThuCung)
     );
   };
 
-  // Chỉnh sửa dịch vụ của thú cưng đã chọn
   const handleEditPetServices = (maThuCung) => {
     const petData = selectedPetsWithServices.find(
       (item) => item.maThuCung === maThuCung
@@ -270,8 +249,6 @@ export default function CreateRecordPage() {
       setSelectedServices([...petData.services]);
     }
   };
-
-  const [submitting, setSubmitting] = useState(false);
 
   const handleSubmit = async () => {
     if (!selectedCustomer || selectedPetsWithServices.length === 0) {
@@ -283,13 +260,11 @@ export default function CreateRecordPage() {
       setSubmitting(true);
       setError(null);
 
-      // Chuẩn bị dữ liệu: mảng các thú cưng với dịch vụ của từng thú cưng
       const petsData = selectedPetsWithServices.map((item) => ({
         MaThuCung: item.maThuCung,
         services: item.services,
       }));
 
-      // Gọi API tạo hồ sơ đa dịch vụ - backend tự lấy chi nhánh từ token
       const recordData = {
         MaKhachHang: selectedCustomer.maKhachHang,
         pets: petsData,
@@ -298,16 +273,12 @@ export default function CreateRecordPage() {
       const response = await api.post("/employees/records", recordData);
 
       if (response.data.success) {
-        const petsText = selectedPetsWithServices
-          .map((item) => `${item.tenThuCung} (${item.services.join(" + ")})`)
-          .join(", ");
-
         toast.success(
-          `Hồ sơ đã được tạo thành công! Khách hàng: ${selectedCustomer.hoTen}, ${selectedPetsWithServices.length} thú cưng. Mã hóa đơn: ${response.data.data?.maHoaDon || "N/A"}`,
-          "Tạo hồ sơ thành công"
+          `Tạo hồ sơ thành công! KH: ${selectedCustomer.hoTen}. Mã HĐ: ${
+            response.data.data?.maHoaDon || "N/A"
+          }`
         );
 
-        // Reset về trạng thái ban đầu
         setStep("customer-list");
         setSelectedCustomer(null);
         setSelectedPet(null);
@@ -331,12 +302,12 @@ export default function CreateRecordPage() {
     }
   };
 
-  // Xử lý Enter key trong form tìm kiếm
-  const handleKeyPress = (e) => {
-    if (e.key === "Enter") {
-      e.preventDefault();
-      handleSearch();
-    }
+  const vipBadgeClass = (capHoiVien) => {
+    if (capHoiVien === "VIP")
+      return "bg-amber-50 text-amber-700 border-amber-200";
+    if (capHoiVien === "Thân thiết")
+      return "bg-purple-50 text-purple-700 border-purple-200";
+    return "bg-gray-50 text-gray-600 border-gray-200";
   };
 
   return (
@@ -352,84 +323,78 @@ export default function CreateRecordPage() {
 
         <main className="flex-1 p-8 min-w-0 bg-blue-50">
           <div className="max-w-6xl mx-auto space-y-6">
-            <div>
-              <h1 className="text-3xl font-bold text-gray-900 flex items-center gap-3">
+            {/* Page title */}
+            <div className="mb-2">
+              <h1 className="text-3xl font-bold text-blue-700 flex items-center gap-3">
                 <FilePlus className="h-8 w-8 text-blue-600" />
-                Tạo hồ sơ
+                Tạo hồ sơ khám & tiêm
               </h1>
-              <p className="text-gray-500 mt-1">
+              <p className="text-gray-600 mt-1">
                 {step === "customer-list"
-                  ? "Tra cứu khách hàng và tạo hồ sơ"
-                  : "Chọn thú cưng để tạo hồ sơ"}
+                  ? "Bước 1: Tìm khách hàng để tạo hồ sơ"
+                  : "Bước 2: Chọn thú cưng và dịch vụ"}
               </p>
+
+              {/* Step pills */}
+              <div className="mt-4 flex items-center gap-2">
+                <span
+                  className={`inline-flex items-center gap-2 rounded-full px-4 py-2 text-xs font-bold border ${
+                    step === "customer-list"
+                      ? "bg-blue-50 text-blue-700 border-blue-200"
+                      : "bg-white text-gray-500 border-gray-200"
+                  }`}
+                >
+                  <span className="h-2 w-2 rounded-full bg-blue-600" />
+                  1. Khách hàng
+                </span>
+                <span
+                  className={`inline-flex items-center gap-2 rounded-full px-4 py-2 text-xs font-bold border ${
+                    step === "pet-list"
+                      ? "bg-blue-50 text-blue-700 border-blue-200"
+                      : "bg-white text-gray-500 border-gray-200"
+                  }`}
+                >
+                  <span className="h-2 w-2 rounded-full bg-blue-600" />
+                  2. Thú cưng & dịch vụ
+                </span>
+              </div>
             </div>
 
-            {/* Step 1: Customer List with Search */}
+            {/* Global error */}
+            {error && (
+              <div className="bg-red-50 border border-red-200 rounded-2xl p-4 flex items-center gap-3 text-red-700">
+                <AlertCircle className="h-5 w-5 flex-shrink-0" />
+                <p className="font-medium">{error}</p>
+              </div>
+            )}
+
+            {/* STEP 1 */}
             {step === "customer-list" && (
-              <Card className="border-none shadow-md overflow-hidden bg-white">
-                <CardContent className="space-y-6 pt-6">
-                  {/* Vùng màu xanh chứa form tìm kiếm */}
-                  <div className="p-6 bg-blue-50/50 rounded-xl border border-blue-100 space-y-4">
-                    <div className="flex justify-between items-start">
+              <>
+                <Card className="border-0 shadow-lg shadow-gray-300 bg-white rounded-3xl overflow-hidden ring-1 ring-gray-100">
+                  <CardHeader className="bg-white px-8 pt-8 pb-0 border-b border-gray-50">
+                    <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6 mb-4">
                       <div>
-                        <h2 className="text-lg font-bold text-blue-700">
-                          Tìm kiếm khách hàng theo bộ lọc
-                        </h2>
-                        <p className="text-sm text-blue-500 mt-1">
-                          Nhập ít nhất một thông tin và nhấn "Tìm kiếm"
-                        </p>
+                        <CardTitle className="text-2xl font-bold text-blue-600 flex items-center gap-2">
+                          <span className="bg-blue-600 w-2 h-6 rounded-full block" />
+                          Chọn khách hàng
+                        </CardTitle>
+                        <CardDescription className="pl-4 mt-1 text-base text-gray-500 font-medium">
+                          {isSearchMode ? customers.length : pagination.total}{" "}
+                          khách hàng
+                        </CardDescription>
                       </div>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        className="text-gray-400 hover:text-red-500 hover:bg-red-50 transition-colors"
-                        onClick={handleClearSearch}
-                      >
-                        <X className="h-4 w-4 mr-2" />
-                        Xóa bộ lọc
-                      </Button>
                     </div>
 
-                    {/* Các ô nhập liệu */}
-                    <div className="grid md:grid-cols-3 gap-6">
-                      <div className="space-y-2">
-                        <Label
-                          htmlFor="search-name"
-                          className="text-blue-900 font-medium ml-1"
-                        >
-                          Tên khách hàng
-                        </Label>
-                        <div className="relative">
-                          <User className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-blue-300" />
+                    <div className="flex gap-4 items-end">
+                      <div className="flex-1 grid md:grid-cols-2 gap-4">
+                        <div className="relative group">
+                          <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                            <Phone className="h-4 w-4 text-gray-500 group-focus-within:text-blue-500 transition-colors" />
+                          </div>
                           <Input
-                            id="search-name"
-                            className="pl-10 bg-white border-blue-200 focus:ring-blue-500 rounded-lg placeholder:text-gray-300"
-                            placeholder="Họ tên khách hàng..."
-                            value={searchQuery.name}
-                            onChange={(e) =>
-                              setSearchQuery({
-                                ...searchQuery,
-                                name: e.target.value,
-                              })
-                            }
-                            onKeyPress={handleKeyPress}
-                          />
-                        </div>
-                      </div>
-
-                      <div className="space-y-2">
-                        <Label
-                          htmlFor="search-phone"
-                          className="text-blue-900 font-medium ml-1"
-                        >
-                          Số điện thoại
-                        </Label>
-                        <div className="relative">
-                          <Phone className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-blue-300" />
-                          <Input
-                            id="search-phone"
-                            className="pl-10 bg-white border-blue-200 focus:ring-blue-500 rounded-lg placeholder:text-gray-300"
-                            placeholder="0xxx xxx xxx"
+                            className="pl-10 border-gray-300 focus:bg-white focus:ring-2 focus:ring-blue-100 focus:border-blue-400 rounded-lg transition-all h-10 text-sm placeholder:text-gray-500"
+                            placeholder="Số điện thoại"
                             value={searchQuery.phone}
                             onChange={(e) =>
                               setSearchQuery({
@@ -437,24 +402,16 @@ export default function CreateRecordPage() {
                                 phone: e.target.value,
                               })
                             }
-                            onKeyPress={handleKeyPress}
                           />
                         </div>
-                      </div>
 
-                      <div className="space-y-2">
-                        <Label
-                          htmlFor="search-cccd"
-                          className="text-blue-900 font-medium ml-1"
-                        >
-                          Số CCCD
-                        </Label>
-                        <div className="relative">
-                          <CreditCard className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-blue-300" />
+                        <div className="relative group">
+                          <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                            <CreditCard className="h-4 w-4 text-gray-500 group-focus-within:text-blue-500 transition-colors" />
+                          </div>
                           <Input
-                            id="search-cccd"
-                            className="pl-10 bg-white border-blue-200 focus:ring-blue-500 rounded-lg placeholder:text-gray-300"
-                            placeholder="Số CCCD khách hàng..."
+                            className="pl-10 border-gray-300 focus:bg-white focus:ring-2 focus:ring-blue-100 focus:border-blue-400 rounded-lg transition-all h-10 text-sm placeholder:text-gray-500"
+                            placeholder="CCCD"
                             value={searchQuery.cccd}
                             onChange={(e) =>
                               setSearchQuery({
@@ -462,501 +419,509 @@ export default function CreateRecordPage() {
                                 cccd: e.target.value,
                               })
                             }
-                            onKeyPress={handleKeyPress}
                           />
                         </div>
                       </div>
-                    </div>
 
-                    {/* Nút tìm kiếm */}
-                    <div className="flex justify-end pt-2">
                       <Button
                         onClick={handleSearch}
-                        disabled={loading}
-                        className="bg-blue-600 hover:bg-blue-700 text-white px-6 gap-2"
+                        className="h-10 px-6 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-lg transition-all"
                       >
-                        {loading ? (
-                          <Loader2 className="h-4 w-4 animate-spin" />
-                        ) : (
-                          <Search className="h-4 w-4" />
-                        )}
-                        {loading ? "Đang tìm..." : "Tìm kiếm"}
+                        <Search className="h-4 w-4 mr-2" />
+                        Tìm kiếm
                       </Button>
                     </div>
-                  </div>
+                  </CardHeader>
 
-                  {/* Hiển thị lỗi */}
-                  {error && (
-                    <div className="flex items-center gap-2 p-4 bg-red-50 border border-red-200 rounded-lg text-red-600">
-                      <AlertCircle className="h-5 w-5" />
-                      <span>{error}</span>
-                    </div>
-                  )}
-
-                  {/* Kết quả tìm kiếm */}
-                  <div className="space-y-4 px-2">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-2">
-                        <div className="h-2 w-2 rounded-full bg-blue-500"></div>
-                        <span className="font-semibold text-gray-700">
-                          {isSearchMode
-                            ? "Kết quả tìm kiếm:"
-                            : "Danh sách khách hàng:"}{" "}
-                          <span className="text-blue-600">
-                            {isSearchMode ? customers.length : pagination.total}
-                          </span>{" "}
-                          khách hàng
-                        </span>
-                      </div>
-                      {isSearchMode && (
-                        <Badge
-                          variant="outline"
-                          className="bg-amber-50 text-amber-700 border-amber-200"
-                        >
-                          Đang lọc
-                        </Badge>
-                      )}
-                    </div>
-
+                  <CardContent className="p-0 bg-gray-50/50 h-[300px] pb-5">
                     {loading ? (
-                      <div className="text-center py-12">
-                        <Loader2 className="h-10 w-10 mx-auto mb-3 text-blue-500 animate-spin" />
-                        <p className="text-gray-500">
-                          {isSearchMode
-                            ? "Đang tìm kiếm..."
-                            : "Đang tải danh sách..."}
-                        </p>
+                      <div className="flex flex-col items-center justify-center py-12 gap-3">
+                        <Loader2 className="h-8 w-8 text-blue-600 animate-spin" />
+                        <p className="text-gray-600">Đang tải danh sách...</p>
                       </div>
-                    ) : customers.length === 0 ? (
-                      <div className="text-center py-12 text-gray-500">
-                        <Search className="h-12 w-12 mx-auto mb-3 text-gray-400" />
-                        <p>
-                          {isSearchMode
-                            ? "Không tìm thấy khách hàng phù hợp"
-                            : "Chưa có khách hàng nào trong hệ thống"}
-                        </p>
+                    ) : error ? (
+                      <div className="text-center py-8">
+                        <AlertCircle className="h-12 w-12 text-red-300 mx-auto mb-3" />
+                        <p className="text-red-600">{error}</p>
                       </div>
-                    ) : (
-                      <div className="grid gap-3 max-h-[500px] overflow-y-auto">
+                    ) : customers.length > 0 ? (
+                      <div className="space-y-2 h-full overflow-y-auto p-4">
                         {customers.map((customer) => (
-                          <Card
+                          <div
                             key={customer.maKhachHang}
-                            className="cursor-pointer hover:border-blue-500 hover:bg-blue-50 transition-all"
                             onClick={() => handleSelectCustomer(customer)}
+                            className="bg-white rounded-lg p-4 border border-gray-200 shadow-sm hover:shadow-xl hover:shadow-blue-500/10 hover:border-blue-400 hover:bg-gradient-to-r hover:from-blue-50/50 hover:to-transparent transition-all duration-300 group hover:-translate-y-0.5 relative overflow-hidden cursor-pointer"
                           >
-                            <CardContent className="p-4">
-                              <div className="flex items-start justify-between">
-                                <div className="space-y-1">
-                                  <h4 className="font-semibold text-lg">
-                                    {customer.hoTen}
-                                  </h4>
-                                  <div className="text-sm text-gray-600 space-y-0.5">
-                                    <div>
-                                      <span className="font-medium">
-                                        Mã KH:
-                                      </span>{" "}
-                                      {customer.maKhachHang}
-                                    </div>
-                                    <div>
-                                      <span className="font-medium">SĐT:</span>{" "}
-                                      {customer.sdt || "Chưa cập nhật"}
-                                    </div>
-                                    <div>
-                                      <span className="font-medium">
-                                        Email:
-                                      </span>{" "}
-                                      {customer.email || "Chưa cập nhật"}
-                                    </div>
-                                    <div>
-                                      <span className="font-medium">CCCD:</span>{" "}
-                                      {customer.cccd || "Chưa cập nhật"}
-                                    </div>
-                                  </div>
+                            <div className="absolute left-0 top-0 bottom-0 w-1 bg-blue-500 opacity-0 group-hover:opacity-100 transition-opacity duration-300 rounded-l-xl" />
+
+                            <div className="flex items-center justify-between">
+                              <div className="flex items-center gap-4 flex-1">
+                                <div className="w-12 h-12 rounded-full bg-gradient-to-br from-blue-100 to-blue-200 flex items-center justify-center flex-shrink-0">
+                                  <User className="h-6 w-6 text-blue-600" />
                                 </div>
-                                <div className="flex flex-col items-end gap-2">
-                                  <Badge
-                                    variant="outline"
-                                    className="bg-blue-50 text-blue-700 border-blue-200"
-                                  >
-                                    {customer.soLuongThuCung || 0} thú cưng
-                                  </Badge>
-                                  <Badge
-                                    variant="outline"
-                                    className={`
-                                ${
-                                  customer.capHoiVien === "VIP"
-                                    ? "bg-amber-50 text-amber-700 border-amber-200"
-                                    : customer.capHoiVien === "Thân thiết"
-                                    ? "bg-purple-50 text-purple-700 border-purple-200"
-                                    : "bg-gray-50 text-gray-600 border-gray-200"
-                                }
-                              `}
-                                  >
-                                    {customer.capHoiVien || "Cơ bản"}
-                                  </Badge>
+                                <div className="flex-1 min-w-0">
+                                  <p className="font-semibold text-gray-900 truncate">
+                                    {customer.hoTen}
+                                  </p>
+                                  <div className="flex flex-wrap gap-3 mt-2 text-xs text-gray-500">
+                                    <span className="flex items-center gap-1">
+                                      <Phone className="h-3 w-3" />
+                                      {customer.sdt || "N/A"}
+                                    </span>
+                                    <span className="flex items-center gap-1">
+                                      <CreditCard className="h-3 w-3" />
+                                      {customer.cccd || "N/A"}
+                                    </span>
+                                    {customer.soLuongThuCung ? (
+                                      <span className="flex items-center gap-1">
+                                        <PawPrint className="h-3 w-3" />
+                                        {customer.soLuongThuCung} thú cưng
+                                      </span>
+                                    ) : null}
+                                    {customer.capHoiVien && (
+                                      <Badge
+                                        variant="outline"
+                                        className={`${vipBadgeClass(
+                                          customer.capHoiVien
+                                        )} text-[10px] px-2 py-0`}
+                                      >
+                                        {customer.capHoiVien}
+                                      </Badge>
+                                    )}
+                                  </div>
                                 </div>
                               </div>
-                            </CardContent>
-                          </Card>
+                              <ChevronRight className="h-5 w-5 text-gray-400 group-hover:text-blue-600 transition-colors flex-shrink-0" />
+                            </div>
+                          </div>
                         ))}
                       </div>
-                    )}
-
-                    {/* Phân trang (chỉ hiển thị khi không ở chế độ tìm kiếm) */}
-                    {!isSearchMode && !loading && pagination.totalPages > 1 && (
-                      <div className="flex items-center justify-center gap-2 pt-4">
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          disabled={pagination.page <= 1}
-                          onClick={() => loadAllCustomers(pagination.page - 1)}
-                        >
-                          Trang trước
-                        </Button>
-                        <span className="text-sm text-gray-600">
-                          Trang {pagination.page} / {pagination.totalPages}
-                        </span>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          disabled={pagination.page >= pagination.totalPages}
-                          onClick={() => loadAllCustomers(pagination.page + 1)}
-                        >
-                          Trang sau
-                        </Button>
+                    ) : (
+                      <div className="text-center py-12">
+                        <User className="h-12 w-12 text-gray-300 mx-auto mb-3" />
+                        <p className="text-gray-600">Không có khách hàng nào</p>
                       </div>
                     )}
+                  </CardContent>
+                </Card>
+                {(searchQuery.phone || searchQuery.cccd) && (
+                  <div className="mt-4">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="border-red-200 text-red-600 hover:text-white hover:bg-red-600 hover:border-red-600 rounded-xl transition-all"
+                      onClick={handleClearSearch}
+                    >
+                      <X className="h-3 w-3 mr-1" />
+                      Xóa bộ lọc
+                    </Button>
                   </div>
-                </CardContent>
-              </Card>
+                )}
+              </>
             )}
 
-            {/* Step 2: Pet List */}
+            {/* STEP 2 */}
             {step === "pet-list" && selectedCustomer && (
-              <Card>
-                <CardHeader>
-                  <CardTitle>Chọn thú cưng</CardTitle>
-                  <CardDescription>
-                    Danh sách thú cưng của khách hàng
-                  </CardDescription>
+              <Card className="border-0 shadow-lg shadow-gray-300 bg-white rounded-3xl overflow-hidden ring-1 ring-gray-100">
+                <CardHeader className="bg-white px-8 pt-8 pb-0 border-b border-gray-50">
+                  <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6">
+                    <div>
+                      <CardTitle className="text-2xl font-bold text-blue-600 flex items-center gap-2">
+                        <span className="bg-blue-600 w-2 h-6 rounded-full block" />
+                        Chọn thú cưng & dịch vụ
+                      </CardTitle>
+                      <CardDescription className="pl-4 mt-1 text-base text-gray-500 font-medium">
+                        Chọn thú cưng, chọn dịch vụ, thêm vào danh sách rồi tạo
+                        hồ sơ
+                      </CardDescription>
+                    </div>
+                  </div>
                 </CardHeader>
-                <CardContent className="space-y-6">
-                  {/* Customer Info */}
-                  <Card className="bg-blue-50 border-blue-200">
-                    <CardContent className="pt-4">
-                      <div className="text-sm space-y-1">
+
+                <CardContent className="p-0 bg-gray-50/50">
+                  <div className="p-4 space-y-6">
+                    {/* Customer info (premium card) */}
+                    <div className="rounded-2xl border border-blue-200 bg-blue-50/60 p-4">
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm">
                         <div>
-                          <span className="font-semibold">Khách hàng:</span>{" "}
-                          {selectedCustomer.hoTen}
+                          <p className="text-xs font-bold text-blue-600 uppercase tracking-wider">
+                            Khách hàng
+                          </p>
+                          <p className="font-bold text-gray-900 mt-1">
+                            {selectedCustomer.hoTen}
+                          </p>
+                          <p className="text-gray-600 text-xs mt-1">
+                            Mã KH:{" "}
+                            <span className="font-semibold">
+                              {selectedCustomer.maKhachHang}
+                            </span>
+                          </p>
                         </div>
+
                         <div>
-                          <span className="font-semibold">Mã KH:</span>{" "}
-                          {selectedCustomer.maKhachHang}
-                        </div>
-                        <div>
-                          <span className="font-semibold">Số điện thoại:</span>{" "}
-                          {selectedCustomer.sdt || "Chưa cập nhật"}
-                        </div>
-                        <div>
-                          <span className="font-semibold">Email:</span>{" "}
-                          {selectedCustomer.email || "Chưa cập nhật"}
+                          <p className="text-xs font-bold text-blue-600 uppercase tracking-wider">
+                            Email liên hệ
+                          </p>
+                          <p className="inline-flex items-center gap-1 text-gray-900 font-semibold mt-1">
+                            <Mail className="h-3 w-3" />
+                            {selectedCustomer.email || "N/A"}
+                          </p>
                         </div>
                       </div>
-                    </CardContent>
-                  </Card>
 
-                  {/* Danh sách thú cưng đã chọn */}
-                  {selectedPetsWithServices.length > 0 && (
-                    <div className="space-y-3">
-                      <Label className="text-green-700 font-semibold">
-                        Thú cưng đã chọn ({selectedPetsWithServices.length})
-                      </Label>
-                      <div className="grid gap-3">
-                        {selectedPetsWithServices.map((item) => (
-                          <Card
-                            key={item.maThuCung}
-                            className="border-green-300 bg-green-50/50"
-                          >
-                            <CardContent className="p-4">
-                              <div className="flex items-start justify-between">
-                                <div className="flex-1">
-                                  <div className="flex items-center gap-2 mb-2">
-                                    <Check className="h-5 w-5 text-green-600" />
-                                    <h4 className="font-semibold text-green-800">
+                      <div className="mt-3 flex flex-wrap gap-2 text-xs">
+                        <span className="inline-flex items-center gap-1 rounded-full bg-white border border-blue-200 px-3 py-1 font-semibold text-blue-700">
+                          <Phone className="h-3 w-3" />
+                          {selectedCustomer.sdt || "N/A"}
+                        </span>
+                        <span className="inline-flex items-center gap-1 rounded-full bg-white border border-blue-200 px-3 py-1 font-semibold text-blue-700">
+                          <CreditCard className="h-3 w-3" />
+                          {selectedCustomer.cccd || "N/A"}
+                        </span>
+                        <span className="inline-flex items-center gap-1 rounded-full bg-white border border-blue-200 px-3 py-1 font-semibold text-blue-700">
+                          <PawPrint className="h-3 w-3" />
+                          {selectedCustomer.soLuongThuCung || 0} thú cưng
+                        </span>
+                      </div>
+                    </div>
+
+                    {/* Selected pets */}
+                    {selectedPetsWithServices.length > 0 && (
+                      <div className="space-y-3">
+                        <div className="flex items-center justify-between">
+                          <Label className="text-xs font-bold text-emerald-700 uppercase tracking-wider ml-1">
+                            Danh sách thú cưng đã chọn (
+                            {selectedPetsWithServices.length})
+                          </Label>
+                          <Badge className="bg-emerald-50 text-emerald-700 border border-emerald-200 font-bold">
+                            Sẵn sàng tạo hồ sơ
+                          </Badge>
+                        </div>
+
+                        <div className="grid gap-2">
+                          {selectedPetsWithServices.map((item) => (
+                            <div
+                              key={item.maThuCung}
+                              className="bg-white rounded-xl p-4 border border-emerald-200 shadow-sm"
+                            >
+                              <div className="flex items-start justify-between gap-3">
+                                <div className="min-w-0">
+                                  <div className="flex items-center gap-2">
+                                    <Check className="h-5 w-5 text-emerald-600" />
+                                    <p className="font-black text-gray-900 truncate">
                                       {item.tenThuCung}
-                                    </h4>
+                                    </p>
                                     <Badge
                                       variant="outline"
-                                      className="bg-green-100 text-green-700 border-green-300"
+                                      className="bg-emerald-50 text-emerald-700 border-emerald-200"
                                     >
-                                      {item.loai} - {item.giong}
+                                      {item.loai} • {item.giong}
                                     </Badge>
                                   </div>
-                                  <div className="flex gap-2 flex-wrap">
-                                    {item.services.map((service, idx) => (
+
+                                  <div className="mt-2 flex flex-wrap gap-2">
+                                    {item.services.map((s, idx) => (
                                       <Badge
                                         key={idx}
-                                        className="bg-blue-600 text-white"
+                                        className="bg-blue-600 text-white font-bold"
                                       >
-                                        {service}
+                                        {s}
                                       </Badge>
                                     ))}
                                   </div>
                                 </div>
-                                <div className="flex gap-2">
+
+                                <div className="flex items-center gap-2 flex-shrink-0">
                                   <Button
-                                    variant="ghost"
+                                    variant="outline"
                                     size="sm"
+                                    className="rounded-xl border-blue-200 text-blue-600 hover:bg-blue-600 hover:text-white hover:border-blue-600 transition-all font-semibold"
                                     onClick={() =>
                                       handleEditPetServices(item.maThuCung)
                                     }
-                                    className="text-blue-600 hover:text-blue-700 hover:bg-blue-50"
                                   >
                                     Sửa
                                   </Button>
                                   <Button
-                                    variant="ghost"
+                                    variant="outline"
                                     size="sm"
+                                    className="rounded-xl border-red-200 text-red-600 hover:bg-red-600 hover:text-white hover:border-red-600 transition-all"
                                     onClick={() =>
                                       handleRemovePet(item.maThuCung)
                                     }
-                                    className="text-red-600 hover:text-red-700 hover:bg-red-50"
                                   >
                                     <X className="h-4 w-4" />
                                   </Button>
                                 </div>
                               </div>
-                            </CardContent>
-                          </Card>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Pet Selection */}
-                  <div className="space-y-3">
-                    <Label>
-                      {selectedPetsWithServices.length > 0
-                        ? "Chọn thú cưng tiếp theo (nếu có)"
-                        : "Chọn thú cưng *"}
-                    </Label>
-
-                    {petsLoading ? (
-                      <div className="text-center py-8">
-                        <Loader2 className="h-8 w-8 mx-auto mb-3 text-blue-500 animate-spin" />
-                        <p className="text-gray-500">
-                          Đang tải danh sách thú cưng...
-                        </p>
-                      </div>
-                    ) : error ? (
-                      <div className="flex items-center gap-2 p-4 bg-red-50 border border-red-200 rounded-lg text-red-600">
-                        <AlertCircle className="h-5 w-5" />
-                        <span>{error}</span>
-                      </div>
-                    ) : pets.length === 0 ? (
-                      <div className="text-center py-8 text-gray-500">
-                        <PawPrint className="h-12 w-12 mx-auto mb-3 text-gray-300" />
-                        <p>Khách hàng này chưa có thú cưng nào</p>
-                      </div>
-                    ) : (
-                      <div className="grid gap-3">
-                        {pets.map((pet) => {
-                          const isAlreadySelected =
-                            selectedPetsWithServices.some(
-                              (item) => item.maThuCung === pet.maThuCung
-                            );
-                          const isCurrentlySelected =
-                            selectedPet === pet.maThuCung;
-
-                          return (
-                            <Card
-                              key={`${pet.maKhachHang}-${pet.maThuCung}`}
-                              className={`cursor-pointer transition-all ${
-                                isCurrentlySelected
-                                  ? "border-blue-500 bg-blue-50"
-                                  : isAlreadySelected
-                                  ? "border-green-300 bg-green-50/30 opacity-60"
-                                  : "hover:border-gray-300"
-                              }`}
-                              onClick={() =>
-                                !isAlreadySelected &&
-                                handleSelectPet(pet.maThuCung)
-                              }
-                            >
-                              <CardContent className="flex items-center gap-4 p-4">
-                                <div
-                                  className={`h-12 w-12 rounded-full flex items-center justify-center ${
-                                    isCurrentlySelected
-                                      ? "bg-blue-600"
-                                      : isAlreadySelected
-                                      ? "bg-green-500"
-                                      : "bg-gray-200"
-                                  }`}
-                                >
-                                  {isAlreadySelected ? (
-                                    <Check className="h-6 w-6 text-white" />
-                                  ) : (
-                                    <PawPrint
-                                      className={`h-6 w-6 ${
-                                        isCurrentlySelected
-                                          ? "text-white"
-                                          : "text-gray-500"
-                                      }`}
-                                    />
-                                  )}
-                                </div>
-                                <div className="flex-1">
-                                  <h4 className="font-semibold">
-                                    {pet.tenThuCung}
-                                  </h4>
-                                  <div className="text-sm text-gray-600">
-                                    {pet.loai || "N/A"} - {pet.giong || "N/A"} -{" "}
-                                    {pet.gioiTinh || "N/A"}
-                                    {pet.ngaySinh &&
-                                      ` - Sinh: ${new Date(
-                                        pet.ngaySinh
-                                      ).toLocaleDateString("vi-VN")}`}
-                                  </div>
-                                  {pet.tinhTrangSucKhoe && (
-                                    <div className="text-xs text-gray-400 mt-1">
-                                      Tình trạng: {pet.tinhTrangSucKhoe}
-                                    </div>
-                                  )}
-                                  {isAlreadySelected && (
-                                    <div className="text-xs text-green-600 mt-1 font-medium">
-                                      ✓ Đã thêm vào danh sách
-                                    </div>
-                                  )}
-                                </div>
-                              </CardContent>
-                            </Card>
-                          );
-                        })}
+                            </div>
+                          ))}
+                        </div>
                       </div>
                     )}
-                  </div>
 
-                  {/* Service Selection - Chỉ hiển thị khi đã chọn thú cưng */}
-                  {selectedPet && (
-                    <div className="space-y-3 mb-6">
-                      <Label className="text-blue-900 font-semibold">
-                        Chọn dịch vụ cho{" "}
-                        {
-                          pets.find((p) => p.maThuCung === selectedPet)
-                            ?.tenThuCung
-                        }{" "}
-                        * (có thể chọn nhiều)
+                    {/* Pets list */}
+                    <div className="space-y-3">
+                      <Label className="text-xs font-bold text-slate-500 uppercase tracking-wider ml-1">
+                        Chọn thú cưng
                       </Label>
-                      <div className="flex gap-4">
-                        <div
-                          onClick={() => toggleService("Khám bệnh")}
-                          className={`flex-1 p-3 rounded-lg border-2 cursor-pointer transition-all flex items-center justify-center gap-2 ${
-                            selectedServices.includes("Khám bệnh")
-                              ? "border-blue-600 bg-blue-50 text-blue-700"
-                              : "border-gray-100 bg-white text-gray-400 hover:border-gray-200"
-                          }`}
-                        >
-                          <div
-                            className={`h-4 w-4 rounded border-2 flex items-center justify-center ${
-                              selectedServices.includes("Khám bệnh")
-                                ? "border-blue-600 bg-blue-600"
-                                : "border-gray-300"
-                            }`}
-                          >
-                            {selectedServices.includes("Khám bệnh") && (
-                              <span className="text-white text-xs">✓</span>
-                            )}
-                          </div>
-                          <span className="text-sm font-medium">Khám bệnh</span>
-                        </div>
 
-                        <div
-                          onClick={() => toggleService("Tiêm phòng")}
-                          className={`flex-1 p-3 rounded-lg border-2 cursor-pointer transition-all flex items-center justify-center gap-2 ${
-                            selectedServices.includes("Tiêm phòng")
-                              ? "border-blue-600 bg-blue-50 text-blue-700"
-                              : "border-gray-100 bg-white text-gray-400 hover:border-gray-200"
-                          }`}
-                        >
-                          <div
-                            className={`h-4 w-4 rounded border-2 flex items-center justify-center ${
-                              selectedServices.includes("Tiêm phòng")
-                                ? "border-blue-600 bg-blue-600"
-                                : "border-gray-300"
-                            }`}
-                          >
-                            {selectedServices.includes("Tiêm phòng") && (
-                              <span className="text-white text-xs">✓</span>
-                            )}
+                      <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
+                        {petsLoading ? (
+                          <div className="flex flex-col items-center justify-center py-16 gap-3">
+                            <Loader2 className="h-8 w-8 text-blue-600 animate-spin" />
+                            <p className="text-gray-600">
+                              Đang tải danh sách thú cưng...
+                            </p>
                           </div>
-                          <span className="text-sm font-medium">
-                            Tiêm phòng
-                          </span>
-                        </div>
+                        ) : pets.length === 0 ? (
+                          <div className="text-center py-16 text-gray-500">
+                            <PawPrint className="h-12 w-12 mx-auto mb-3 text-gray-300" />
+                            <p className="font-semibold">
+                              Khách hàng chưa có thú cưng
+                            </p>
+                            <p className="text-sm mt-1">
+                              Hãy tạo thú cưng trước khi tạo hồ sơ
+                            </p>
+                          </div>
+                        ) : (
+                          <div className="max-h-[360px] overflow-y-auto p-4 space-y-2">
+                            {pets.map((pet) => {
+                              const isAlreadySelected =
+                                selectedPetsWithServices.some(
+                                  (it) => it.maThuCung === pet.maThuCung
+                                );
+                              const isCurrentlySelected =
+                                selectedPet === pet.maThuCung;
+
+                              return (
+                                <div
+                                  key={`${pet.maKhachHang}-${pet.maThuCung}`}
+                                  onClick={() =>
+                                    !isAlreadySelected &&
+                                    handleSelectPet(pet.maThuCung)
+                                  }
+                                  className={`rounded-lg p-4 border shadow-sm transition-all duration-300 relative overflow-hidden group ${
+                                    isCurrentlySelected
+                                      ? "bg-blue-50 border-blue-400 shadow-xl shadow-blue-500/10"
+                                      : isAlreadySelected
+                                      ? "bg-emerald-50/40 border-emerald-200 opacity-70"
+                                      : "bg-white border-gray-200 hover:border-blue-400 hover:bg-gradient-to-r hover:from-blue-50/50 hover:to-transparent hover:shadow-xl hover:shadow-blue-500/10 hover:-translate-y-0.5 cursor-pointer"
+                                  }`}
+                                >
+                                  <div
+                                    className={`absolute left-0 top-0 bottom-0 w-1 bg-blue-500 rounded-l-xl transition-opacity duration-300 ${
+                                      isCurrentlySelected
+                                        ? "opacity-100"
+                                        : "opacity-0 group-hover:opacity-100"
+                                    }`}
+                                  />
+
+                                  <div className="flex items-center gap-4">
+                                    <div
+                                      className={`h-12 w-12 rounded-xl flex items-center justify-center flex-shrink-0 ${
+                                        isAlreadySelected
+                                          ? "bg-emerald-600"
+                                          : isCurrentlySelected
+                                          ? "bg-blue-600"
+                                          : "bg-gray-100"
+                                      }`}
+                                    >
+                                      {isAlreadySelected ? (
+                                        <Check className="h-6 w-6 text-white" />
+                                      ) : (
+                                        <PawPrint
+                                          className={`h-6 w-6 ${
+                                            isCurrentlySelected
+                                              ? "text-white"
+                                              : "text-gray-500"
+                                          }`}
+                                        />
+                                      )}
+                                    </div>
+
+                                    <div className="min-w-0 flex-1">
+                                      <p className="font-black text-gray-900 truncate">
+                                        {pet.tenThuCung}
+                                      </p>
+                                      <p className="text-sm text-gray-600 mt-1">
+                                        {pet.loai || "N/A"} •{" "}
+                                        {pet.giong || "N/A"} •{" "}
+                                        {pet.gioiTinh || "N/A"}
+                                        {pet.ngaySinh
+                                          ? ` • Sinh: ${new Date(
+                                              pet.ngaySinh
+                                            ).toLocaleDateString("vi-VN")}`
+                                          : ""}
+                                      </p>
+                                      {pet.tinhTrangSucKhoe && (
+                                        <p className="text-xs text-gray-500 mt-1">
+                                          Tình trạng: {pet.tinhTrangSucKhoe}
+                                        </p>
+                                      )}
+                                      {isAlreadySelected && (
+                                        <p className="text-xs text-emerald-700 mt-2 font-bold">
+                                          ✓ Đã thêm vào danh sách
+                                        </p>
+                                      )}
+                                    </div>
+
+                                    <div className="flex-shrink-0">
+                                      {isCurrentlySelected && (
+                                        <Badge className="bg-blue-600 text-white font-bold">
+                                          Đang chọn
+                                        </Badge>
+                                      )}
+                                    </div>
+                                  </div>
+                                </div>
+                              );
+                            })}
+                          </div>
+                        )}
                       </div>
-                      {selectedServices.length === 2 && (
-                        <p className="text-xs text-green-600 mt-1">
-                          ✓ Đã chọn cả 2 dịch vụ
-                        </p>
-                      )}
+                    </div>
 
-                      {/* Nút thêm thú cưng vào danh sách */}
+                    {/* Service picker */}
+                    {selectedPet && (
+                      <div className="space-y-3">
+                        <Label className="text-xs font-bold text-slate-500 uppercase tracking-wider ml-1">
+                          Dịch vụ cho{" "}
+                          <span className="text-blue-700 font-black">
+                            {pets.find((p) => p.maThuCung === selectedPet)
+                              ?.tenThuCung || "thú cưng"}
+                          </span>
+                        </Label>
+
+                        <div className="grid md:grid-cols-2 gap-3">
+                          {/* Khám bệnh */}
+                          <div
+                            onClick={() => toggleService("Khám bệnh")}
+                            className={`rounded-2xl border p-4 cursor-pointer transition-all ${
+                              selectedServices.includes("Khám bệnh")
+                                ? "bg-blue-50 border-blue-300 shadow-sm"
+                                : "bg-white border-gray-200 hover:border-gray-300"
+                            }`}
+                          >
+                            <div className="flex items-center gap-3">
+                              <div
+                                className={`h-5 w-5 rounded-full border-2 flex items-center justify-center ${
+                                  selectedServices.includes("Khám bệnh")
+                                    ? "border-blue-600"
+                                    : "border-gray-300"
+                                }`}
+                              >
+                                {selectedServices.includes("Khám bệnh") && (
+                                  <div className="h-2.5 w-2.5 rounded-full bg-blue-600" />
+                                )}
+                              </div>
+
+                              <div className="flex-1">
+                                <p className="font-black text-gray-900">
+                                  Khám bệnh
+                                </p>
+                                <p className="text-xs text-gray-500 mt-1">
+                                  Tạo hồ sơ khám và chờ bác sĩ cập nhật
+                                </p>
+                              </div>
+                            </div>
+                          </div>
+
+                          {/* Tiêm phòng */}
+                          <div
+                            onClick={() => toggleService("Tiêm phòng")}
+                            className={`rounded-2xl border p-4 cursor-pointer transition-all ${
+                              selectedServices.includes("Tiêm phòng")
+                                ? "bg-blue-50 border-blue-300 shadow-sm"
+                                : "bg-white border-gray-200 hover:border-gray-300"
+                            }`}
+                          >
+                            <div className="flex items-center gap-3">
+                              <div
+                                className={`h-5 w-5 rounded-full border-2 flex items-center justify-center ${
+                                  selectedServices.includes("Tiêm phòng")
+                                    ? "border-blue-600"
+                                    : "border-gray-300"
+                                }`}
+                              >
+                                {selectedServices.includes("Tiêm phòng") && (
+                                  <div className="h-2.5 w-2.5 rounded-full bg-blue-600" />
+                                )}
+                              </div>
+
+                              <div className="flex-1">
+                                <p className="font-black text-gray-900">
+                                  Tiêm phòng
+                                </p>
+                                <p className="text-xs text-gray-500 mt-1">
+                                  Tạo hồ sơ tiêm và chờ chọn vaccine
+                                </p>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+
+                        <Button
+                          onClick={handleAddPetWithServices}
+                          disabled={selectedServices.length === 0}
+                          className="h-11 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold gap-2 shadow-md shadow-emerald-100"
+                        >
+                          <Plus className="h-4 w-4" />
+                          {selectedPetsWithServices.some(
+                            (it) => it.maThuCung === selectedPet
+                          )
+                            ? "Cập nhật dịch vụ cho thú cưng này"
+                            : "Thêm thú cưng này vào danh sách"}
+                        </Button>
+
+                        {selectedServices.length === 2 && (
+                          <p className="text-xs text-emerald-700 font-bold">
+                            ✓ Đã chọn cả 2 dịch vụ
+                          </p>
+                        )}
+                      </div>
+                    )}
+
+                    {/* Footer actions */}
+                    <div className="flex items-center justify-between pt-6 border-t border-gray-100">
                       <Button
-                        onClick={handleAddPetWithServices}
-                        disabled={selectedServices.length === 0}
-                        className="w-full bg-green-600 hover:bg-green-700 text-white gap-2"
+                        variant="outline"
+                        className="h-11 rounded-xl border-green-600 text-green-700 hover:bg-green-700 hover:text-white hover:border-green-700 transition-all font-bold gap-2"
+                        onClick={() => {
+                          setStep("customer-list");
+                          setSelectedCustomer(null);
+                          setSelectedPet(null);
+                          setSelectedServices(["Khám bệnh"]);
+                          setSelectedPetsWithServices([]);
+                          setPets([]);
+                          setError(null);
+                        }}
+                        disabled={submitting}
                       >
-                        <Plus className="h-4 w-4" />
-                        {selectedPetsWithServices.some(
-                          (item) => item.maThuCung === selectedPet
-                        )
-                          ? "Cập nhật dịch vụ cho thú cưng này"
-                          : "Thêm thú cưng này vào danh sách"}
+                        <ArrowLeft className="h-4 w-4 mr-2" />
+                        Quay lại bước trước
+                      </Button>
+
+                      <Button
+                        onClick={handleSubmit}
+                        disabled={
+                          selectedPetsWithServices.length === 0 || submitting
+                        }
+                        className="px-6 h-11 bg-blue-600 hover:bg-blue-700 text-white font-black rounded-xl shadow-md shadow-blue-100 gap-2 transition-all active:scale-95"
+                      >
+                        {submitting ? (
+                          <>
+                            <Loader2 className="h-4 w-4 animate-spin" />
+                            Đang tạo...
+                          </>
+                        ) : (
+                          <>
+                            <Save className="h-4 w-4" />
+                            Tạo hồ sơ ({selectedPetsWithServices.length})
+                          </>
+                        )}
                       </Button>
                     </div>
-                  )}
-
-                  <div className="flex items-center justify-between pt-5 border-t border-gray-100 mt-6">
-                    <Button
-                      variant="ghost"
-                      className="text-gray-500 hover:bg-gray-100 px-6"
-                      onClick={() => {
-                        setStep("customer-list");
-                        setSelectedCustomer(null);
-                        setSelectedPet(null);
-                        setSelectedServices(["Khám bệnh"]);
-                        setSelectedPetsWithServices([]);
-                        setPets([]);
-                        setError(null);
-                      }}
-                    >
-                      <ArrowLeft className="h-4 w-4 mr-2" />
-                      Quay lại bước trước
-                    </Button>
-
-                    <Button
-                      onClick={handleSubmit}
-                      disabled={
-                        selectedPetsWithServices.length === 0 || submitting
-                      }
-                      className={`gap-2 px-4 py-2 text-xs font-semibold transition-all ${
-                        selectedPetsWithServices.length === 0 || submitting
-                          ? "bg-gray-200 text-gray-400"
-                          : "bg-blue-700 hover:bg-blue-700 text-white hover:shadow-blue-200"
-                      }`}
-                    >
-                      {submitting ? (
-                        <>
-                          <Loader2 className="h-3 w-3 animate-spin" />
-                          ĐANG TẠO...
-                        </>
-                      ) : (
-                        <>
-                          <Save className="h-3 w-3" />
-                          TẠO HỒ SƠ ({selectedPetsWithServices.length} thú cưng)
-                        </>
-                      )}
-                    </Button>
                   </div>
                 </CardContent>
               </Card>

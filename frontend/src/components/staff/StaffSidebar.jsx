@@ -65,7 +65,7 @@ export default function StaffSidebar() {
                       : "text-gray-400"
                   }`}
                 />
-                <span>Tra cứu hồ sơ</span>
+                <span>Tạo hồ sơ</span>
               </Button>
             </Link>
 

@@ -1,5 +1,4 @@
 import React, { useState, useEffect } from "react";
-import { Link } from "react-router-dom";
 import api from "../../../api/axios";
 import { employeeAPI } from "../../../api/services";
 import StaffHeader from "../../../components/staff/StaffHeader";
@@ -17,12 +16,9 @@ import { Badge } from "../../../components/ui/badge";
 import {
   Dialog,
   DialogContent,
-  DialogDescription,
-  DialogHeader,
   DialogTitle,
 } from "../../../components/ui/dialog";
 import {
-  ArrowLeft,
   Search,
   Pill,
   Loader2,
@@ -30,19 +26,21 @@ import {
   Box,
   DollarSign,
   Package,
+  X,
 } from "lucide-react";
 
 export default function MedicinesPage() {
   const [medicines, setMedicines] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+
   const [searchTerm, setSearchTerm] = useState("");
   const [showDetail, setShowDetail] = useState(false);
   const [selectedMedicine, setSelectedMedicine] = useState(null);
+
   const [branchName, setBranchName] = useState("");
   const [isProfileOpen, setIsProfileOpen] = useState(false);
 
-  // Fetch medicines on mount
   useEffect(() => {
     fetchMedicines();
     fetchBranch();
@@ -62,11 +60,12 @@ export default function MedicinesPage() {
     setLoading(true);
     setError(null);
     try {
-      // Get medicines from branch inventory (products with type = 'Thuốc')
       const response = await api.get("/branches/inventory/medicines");
+      // nếu endpoint của bạn là /branches/inventory/medicines thì sửa lại đúng:
+      // const response = await api.get("/branches/inventory/medicines");
+
       if (response.data.success) {
-        const medicinesList = response.data.data || [];
-        setMedicines(medicinesList);
+        setMedicines(response.data.data || []);
       } else {
         setError(response.data.message || "Không thể lấy danh sách thuốc");
       }
@@ -84,13 +83,12 @@ export default function MedicinesPage() {
   };
 
   const filteredMedicines = medicines.filter((medicine) => {
-    const matchSearch =
-      (medicine.tenSanPham &&
-        medicine.tenSanPham.toLowerCase().includes(searchTerm.toLowerCase())) ||
-      (medicine.maSanPham &&
-        medicine.maSanPham.toLowerCase().includes(searchTerm.toLowerCase()));
-
-    return matchSearch;
+    const q = searchTerm.trim().toLowerCase();
+    if (!q) return true;
+    return (
+      (medicine.tenSanPham && medicine.tenSanPham.toLowerCase().includes(q)) ||
+      (medicine.maSanPham && medicine.maSanPham.toLowerCase().includes(q))
+    );
   });
 
   const getStockStatus = (soLuong) => {
@@ -114,8 +112,9 @@ export default function MedicinesPage() {
 
         <main className="flex-1 p-8 min-w-0 bg-blue-50">
           <div className="max-w-6xl mx-auto">
+            {/* Title */}
             <div className="mb-8">
-              <h1 className="text-3xl font-bold text-gray-900">
+              <h1 className="text-3xl font-bold text-blue-600">
                 Tra cứu thuốc
               </h1>
               <p className="text-gray-600 mt-1">
@@ -123,185 +122,146 @@ export default function MedicinesPage() {
               </p>
             </div>
 
-            {/* Filter Bar */}
-            <Card className="mb-6">
-              <CardHeader>
-                <CardTitle className="text-lg">Bộ lọc</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="flex gap-4 flex-wrap">
-                  <div className="flex-1 min-w-64">
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Tìm kiếm
-                    </label>
-                    <Input
-                      placeholder="Tìm theo tên thuốc, mã..."
-                      value={searchTerm}
-                      onChange={(e) => setSearchTerm(e.target.value)}
-                      className="w-full"
-                      icon={<Search className="h-4 w-4" />}
-                    />
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* Error State */}
+            {/* Error */}
             {error && (
-              <Card className="mb-6 border-red-200 bg-red-50">
-                <CardContent className="pt-6 flex items-center gap-3 text-red-700">
-                  <AlertCircle className="h-5 w-5 flex-shrink-0" />
-                  <p>{error}</p>
-                </CardContent>
-              </Card>
-            )}
-
-            {/* Loading State */}
-            {loading ? (
-              <Card>
-                <CardContent className="pt-12 pb-12 flex flex-col items-center justify-center gap-3">
-                  <Loader2 className="h-8 w-8 text-blue-600 animate-spin" />
-                  <p className="text-gray-600">Đang tải dữ liệu...</p>
-                </CardContent>
-              </Card>
-            ) : filteredMedicines.length === 0 ? (
-              <Card>
-                <CardContent className="pt-12 pb-12 text-center">
-                  <Pill className="h-12 w-12 text-gray-300 mx-auto mb-3" />
-                  <p className="text-gray-600 text-lg">
-                    Không tìm thấy thuốc nào
-                  </p>
-                  <p className="text-gray-500 text-sm mt-1">
-                    Thử tìm kiếm với từ khóa khác
-                  </p>
-                </CardContent>
-              </Card>
-            ) : (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                {filteredMedicines.map((medicine) => {
-                  const stockStatus = getStockStatus(medicine.soLuong);
-                  return (
-                    <Card
-                      key={medicine.maSanPham}
-                      className="hover:shadow-md transition-shadow cursor-pointer"
-                      onClick={() => handleViewDetail(medicine)}
-                    >
-                      <CardContent className="pt-6">
-                        <div className="space-y-3">
-                          <div className="flex items-start justify-between gap-2">
-                            <div>
-                              <h3 className="font-semibold text-gray-900 line-clamp-2">
-                                {medicine.tenSanPham}
-                              </h3>
-                              <p className="text-xs text-gray-500 mt-1">
-                                Mã: {medicine.maSanPham}
-                              </p>
-                            </div>
-                            <Badge className={stockStatus.color}>
-                              {stockStatus.label}
-                            </Badge>
-                          </div>
-
-                          <div className="space-y-2 border-t pt-3">
-                            <div className="flex items-center justify-between text-sm">
-                              <span className="text-gray-600">Loại</span>
-                              <span className="text-gray-900 font-medium">
-                                {medicine.loaiSanPham}
-                              </span>
-                            </div>
-                            <div className="flex items-center justify-between text-sm">
-                              <span className="text-gray-600 flex items-center gap-1">
-                                <DollarSign className="h-3 w-3" />
-                                Giá bán
-                              </span>
-                              <span className="text-gray-900 font-medium">
-                                {medicine.giaBan?.toLocaleString("vi-VN")} đ
-                              </span>
-                            </div>
-                            <div className="flex items-center justify-between text-sm">
-                              <span className="text-gray-600 flex items-center gap-1">
-                                <Box className="h-3 w-3" />
-                                Tồn kho
-                              </span>
-                              <span
-                                className={`font-medium ${
-                                  medicine.soLuong === 0
-                                    ? "text-red-600"
-                                    : "text-gray-900"
-                                }`}
-                              >
-                                {medicine.soLuong}
-                              </span>
-                            </div>
-                          </div>
-                        </div>
-                      </CardContent>
-                    </Card>
-                  );
-                })}
+              <div className="bg-red-50 border border-red-200 rounded-2xl p-4 flex items-center gap-3 text-red-700">
+                <AlertCircle className="h-5 w-5 flex-shrink-0" />
+                <p className="font-medium">{error}</p>
               </div>
             )}
 
-            {/* Detail Dialog */}
-            <Dialog open={showDetail} onOpenChange={setShowDetail}>
-              <DialogContent className="max-w-md">
-                <DialogHeader>
-                  <DialogTitle>Chi tiết thuốc</DialogTitle>
-                </DialogHeader>
-                {selectedMedicine && (
-                  <div className="space-y-4">
+            {/* Filter/Search Card */}
+            <div className="space-y-6">
+              <Card className="border-0 shadow-lg shadow-gray-300 bg-white rounded-3xl overflow-hidden ring-1 ring-gray-100">
+                <CardHeader className="bg-white px-8 pb-0 border-b border-gray-50">
+                  <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6">
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
-                        Tên thuốc
-                      </label>
-                      <p className="text-gray-900 font-medium">
-                        {selectedMedicine.tenSanPham}
-                      </p>
+                      <CardTitle className="text-2xl font-bold text-blue-600 flex items-center gap-2">
+                        <span className="bg-blue-600 w-2 h-6 rounded-full block"></span>
+                        Danh sách thuốc ({branchName})
+                      </CardTitle>
+                      <CardDescription className="pl-4 mt-1 text-base text-gray-500 font-medium">
+                        {filteredMedicines.length} sản phẩm thuốc
+                      </CardDescription>
                     </div>
-                    <div className="grid grid-cols-2 gap-4">
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">
-                          Mã
-                        </label>
-                        <p className="text-gray-900">
-                          {selectedMedicine.maSanPham}
-                        </p>
+                    {/* Search input */}
+                    <div className="relative w-full lg:w-[500px] group">
+                      <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                        <Search className="h-4 w-4 text-gray-500 group-focus-within:text-blue-500 transition-colors" />
                       </div>
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">
-                          Loại
-                        </label>
-                        <p className="text-gray-900">
-                          {selectedMedicine.loaiSanPham}
-                        </p>
-                      </div>
-                    </div>
-                    <div className="grid grid-cols-2 gap-4">
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">
-                          Giá bán
-                        </label>
-                        <p className="text-gray-900 font-medium">
-                          {selectedMedicine.giaBan?.toLocaleString("vi-VN")} đ
-                        </p>
-                      </div>
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">
-                          Tồn kho
-                        </label>
-                        <Badge
-                          className={
-                            getStockStatus(selectedMedicine.soLuong).color
-                          }
-                        >
-                          {selectedMedicine.soLuong}
-                        </Badge>
-                      </div>
+                      <Input
+                        value={searchTerm}
+                        placeholder="Tìm theo tên hoặc mã sản phẩm..."
+                        onChange={(e) => setSearchTerm(e.target.value)}
+                        className="pl-10 border-gray-300 focus:bg-white focus:ring-2 focus:ring-blue-100 focus:border-blue-400 rounded-xl transition-all h-11 text-sm placeholder:text-gray-500"
+                      />
                     </div>
                   </div>
-                )}
-              </DialogContent>
-            </Dialog>
+                </CardHeader>
+
+                <CardContent className="p-0 bg-gray-50/50 pb-5">
+                  {loading ? (
+                    <div className="flex flex-col items-center justify-center py-12 gap-3">
+                      <Loader2 className="h-8 w-8 text-blue-600 animate-spin" />
+                      <p className="text-gray-600">Đang tải dữ liệu...</p>
+                    </div>
+                  ) : filteredMedicines.length === 0 ? (
+                    <div className="text-center py-12">
+                      <Pill className="h-12 w-12 text-gray-300 mx-auto mb-3" />
+                      <p className="text-gray-600 text-lg">
+                        Không tìm thấy thuốc
+                      </p>
+                      <p className="text-gray-500 text-sm mt-1">
+                        Thử từ khóa khác hoặc kiểm tra lại mã sản phẩm
+                      </p>
+                    </div>
+                  ) : (
+                    <div className="p-4">
+                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                        {filteredMedicines.map((medicine) => {
+                          const stockStatus = getStockStatus(medicine.soLuong);
+                          return (
+                            <Card
+                              key={medicine.maSanPham}
+                              className="border border-blue-200 rounded-2xl bg-white hover:shadow-lg transition-shadow cursor-pointer"
+                            >
+                              <CardContent>
+                                <div className="flex items-start justify-between gap-3">
+                                  <div className="flex items-start gap-3 min-w-0">
+                                    <div className="w-11 h-11 rounded-xl bg-blue-50 border border-blue-200 flex items-center justify-center flex-shrink-0">
+                                      <Pill className="h-6 w-6 text-blue-700" />
+                                    </div>
+
+                                    <div className="min-w-0">
+                                      <h3 className="font-semibold text-gray-900 line-clamp-2">
+                                        {medicine.tenSanPham}
+                                      </h3>
+                                      <p className="text-xs text-gray-500 mt-1">
+                                        Mã:{" "}
+                                        <span className="font-medium text-gray-700">
+                                          {medicine.maSanPham}
+                                        </span>
+                                      </p>
+                                    </div>
+                                  </div>
+
+                                  <Badge
+                                    className={`${stockStatus.color} border-none`}
+                                  >
+                                    {stockStatus.label}
+                                  </Badge>
+                                </div>
+
+                                <div className="mt-4 rounded-xl border border-gray-200 bg-gray-50/60 p-3 space-y-2">
+                                  <div className="flex items-center justify-between text-sm">
+                                    <span className="text-gray-600 flex items-center gap-1">
+                                      <Package className="h-3.5 w-3.5" />
+                                      Loại
+                                    </span>
+                                    <span className="text-gray-900 font-medium">
+                                      {medicine.loaiSanPham || "Thuốc"}
+                                    </span>
+                                  </div>
+
+                                  <div className="flex items-center justify-between text-sm">
+                                    <span className="text-gray-600 flex items-center gap-1">
+                                      <DollarSign className="h-3.5 w-3.5" />
+                                      Giá bán
+                                    </span>
+                                    <span className="text-gray-900 font-semibold">
+                                      {medicine.giaBan?.toLocaleString("vi-VN")}{" "}
+                                      đ
+                                    </span>
+                                  </div>
+
+                                  <div className="flex items-center justify-between text-sm">
+                                    <span className="text-gray-600 flex items-center gap-1">
+                                      <Box className="h-3.5 w-3.5" />
+                                      Tồn kho
+                                    </span>
+                                    <span
+                                      className={`font-bold ${
+                                        medicine.soLuong === 0
+                                          ? "text-red-600"
+                                          : medicine.soLuong < 10
+                                          ? "text-yellow-700"
+                                          : "text-emerald-700"
+                                      }`}
+                                    >
+                                      {medicine.soLuong}
+                                    </span>
+                                  </div>
+                                </div>
+                              </CardContent>
+                            </Card>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            </div>
           </div>
         </main>
       </div>

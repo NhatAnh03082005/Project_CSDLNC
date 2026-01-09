@@ -321,7 +321,7 @@ export default function StaffDemoPage() {
 
             {/* Danh sách lịch hẹn - tìm kiếm */}
             <Card className="border-0 shadow-lg shadow-gray-300 bg-white rounded-3xl overflow-hidden ring-1 ring-gray-100">
-              <CardHeader className="bg-white px-8 pt-8 pb-6 border-b border-gray-50">
+              <CardHeader className="bg-white px-8 pt-8 pb-0 border-b border-gray-50">
                 <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6">
                   <div>
                     <CardTitle className="text-2xl font-bold text-blue-600 flex items-center gap-2">
@@ -361,7 +361,7 @@ export default function StaffDemoPage() {
                 </div>
               </CardHeader>
               <CardContent className="p-0 bg-gray-50/50">
-                <div className="space-y-3">
+                <div className="space-y-2 p-4">
                   {filteredAppointments.length === 0 ? (
                     <div className="flex flex-col items-center justify-center py-20 text-center">
                       <div className="bg-white p-4 rounded-full shadow-sm mb-4">
@@ -399,7 +399,7 @@ export default function StaffDemoPage() {
                         <div
                           key={app.maLichHen}
                           onClick={() => handleShowDetail(app)}
-                          className="bg-white rounded-xl p-4 border border-blue-200 shadow-sm hover:shadow-xl hover:shadow-blue-500/10 hover:border-blue-400 hover:bg-gradient-to-r hover:from-blue-50/50 hover:to-transparent transition-all duration-300 group hover:-translate-y-0.5 relative overflow-hidden cursor-pointer"
+                          className="bg-white rounded-lg p-4 border border-gray-200 shadow-sm hover:shadow-xl hover:shadow-blue-500/10 hover:border-blue-400 hover:bg-gradient-to-r hover:from-blue-50/50 hover:to-transparent transition-all duration-300 group hover:-translate-y-0.5 relative overflow-hidden cursor-pointer"
                         >
                           {/* Hover Effect Background */}
                           <div className="absolute left-0 top-0 bottom-0 w-1 bg-blue-500 opacity-0 group-hover:opacity-100 transition-opacity duration-300 rounded-l-xl"></div>
@@ -492,6 +492,22 @@ export default function StaffDemoPage() {
                 </div>
               </CardContent>
             </Card>
+            {(selectedDate || searchTerm) && (
+              <div className="px-4 pb-3 pt-3">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="border-red-200 text-red-600 hover:text-white hover:bg-red-600 hover:border-red-600 rounded-xl transition-all"
+                  onClick={() => {
+                    setSelectedDate("");
+                    setSearchTerm("");
+                  }}
+                >
+                  <X className="h-3 w-3 mr-1" />
+                  Xóa bộ lọc
+                </Button>
+              </div>
+            )}
           </div>
         </main>
 

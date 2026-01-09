@@ -32,8 +32,11 @@ import {
   Loader2,
   AlertCircle,
   MapPin,
+  Sparkles,
   ChevronRight,
   X,
+  Pill,
+  Pencil,
 } from "lucide-react";
 
 export default function MedicalHistoryPage() {
@@ -56,6 +59,12 @@ export default function MedicalHistoryPage() {
   const [selectedPet, setSelectedPet] = useState(null);
   const [showDetail, setShowDetail] = useState(false);
   const [selectedRecord, setSelectedRecord] = useState(null);
+
+  // Medical history filter states
+  const [medicalSearchQuery, setMedicalSearchQuery] = useState("");
+  const [selectedBranchFilter, setSelectedBranchFilter] = useState("");
+  const [selectedDoctorFilter, setSelectedDoctorFilter] = useState("");
+  const [selectedDateFilter, setSelectedDateFilter] = useState("");
 
   // Load tất cả khách hàng và chi nhánh khi mở trang
   useEffect(() => {
@@ -218,6 +227,50 @@ export default function MedicalHistoryPage() {
     return matchSearch;
   });
 
+  // Filter medical records
+  const filteredMedicalRecords = medicalRecords.filter((record) => {
+    const matchSearch =
+      !medicalSearchQuery ||
+      (record.maHoaDon &&
+        record.maHoaDon
+          .toLowerCase()
+          .includes(medicalSearchQuery.toLowerCase()));
+
+    const matchBranch =
+      !selectedBranchFilter ||
+      (record.chiNhanh &&
+        record.chiNhanh
+          .toLowerCase()
+          .includes(selectedBranchFilter.toLowerCase()));
+
+    const matchDoctor =
+      !selectedDoctorFilter ||
+      (record.bacSi &&
+        record.bacSi
+          .toLowerCase()
+          .includes(selectedDoctorFilter.toLowerCase()));
+
+    const matchDate =
+      !selectedDateFilter ||
+      (record.ngayKham && record.ngayKham.includes(selectedDateFilter));
+
+    return matchSearch && matchBranch && matchDoctor && matchDate;
+  });
+
+  // Extract unique doctors and branches from medical records
+  const uniqueDoctors = [
+    ...new Set(medicalRecords.map((r) => r.bacSi).filter(Boolean)),
+  ];
+  const uniqueBranches = [
+    ...new Set(medicalRecords.map((r) => r.chiNhanh).filter(Boolean)),
+  ];
+
+  const formatDate = (dateStr) => {
+    if (!dateStr) return "N/A";
+    const date = new Date(dateStr);
+    return `${date.getDate()}/${date.getMonth() + 1}/${date.getFullYear()}`;
+  };
+
   return (
     <div className="min-h-screen bg-blue-50 font-sans selection:bg-blue-100">
       <StaffHeader
@@ -232,7 +285,7 @@ export default function MedicalHistoryPage() {
         <main className="flex-1 p-8 min-w-0 bg-blue-50">
           <div className="max-w-6xl mx-auto">
             <div className="mb-8">
-              <h1 className="text-3xl font-bold text-gray-900">
+              <h1 className="text-3xl font-bold text-blue-600">
                 Lịch sử khám bệnh thú cưng
               </h1>
               <p className="text-gray-600 mt-1">
@@ -253,54 +306,34 @@ export default function MedicalHistoryPage() {
             {/* Step 1: Customer List */}
             {step === "customer-list" && (
               <div className="space-y-6">
-                {/* Filter Bar */}
-                <Card className="border-0 shadow-lg">
-                  <CardHeader className="pb-4">
-                    <CardTitle className="text-lg">
-                      Bộ lọc và tìm kiếm
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent className="space-y-4">
-                    {/* Search input */}
-                    <div className="relative">
-                      <Search className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
-                      <Input
-                        placeholder="Tìm theo tên khách hàng hoặc SĐT..."
-                        value={searchQuery}
-                        onChange={(e) => setSearchQuery(e.target.value)}
-                        className="pl-10"
-                      />
-                    </div>
-
-                    {/* Clear filters button */}
-                    {(searchQuery || selectedBranch || selectedDate) && (
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => {
-                          setSearchQuery("");
-                          setSelectedBranch("");
-                          setSelectedDate("");
-                          loadInitialData();
-                        }}
-                        className="w-full"
-                      >
-                        <X className="h-4 w-4 mr-2" />
-                        Xóa bộ lọc
-                      </Button>
-                    )}
-                  </CardContent>
-                </Card>
-
                 {/* Customers List */}
-                <Card>
-                  <CardHeader>
-                    <CardTitle>Danh sách khách hàng</CardTitle>
-                    <CardDescription>
-                      {filteredCustomers.length} khách hàng
-                    </CardDescription>
+                <Card className="border-0 shadow-lg shadow-gray-300 bg-white rounded-3xl overflow-hidden ring-1 ring-gray-100">
+                  <CardHeader className="bg-white px-8 pb-0 border-b border-gray-50">
+                    <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6">
+                      <div>
+                        <CardTitle className="text-2xl font-bold text-blue-600 flex items-center gap-2">
+                          <span className="bg-blue-600 w-2 h-6 rounded-full block"></span>
+                          Danh sách khách hàng
+                        </CardTitle>
+                        <CardDescription className="pl-4 mt-1 text-base text-gray-500 font-medium">
+                          {filteredCustomers.length} khách hàng
+                        </CardDescription>
+                      </div>
+                      {/* Search input */}
+                      <div className="relative w-full lg:w-[500px] group">
+                        <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                          <Search className="h-4 w-4 text-gray-500 group-focus-within:text-blue-500 transition-colors" />
+                        </div>
+                        <Input
+                          value={searchQuery}
+                          placeholder="Tìm theo tên khách hàng hoặc số điện thoại..."
+                          onChange={(e) => setSearchQuery(e.target.value)}
+                          className="pl-10 border-gray-300 focus:bg-white focus:ring-2 focus:ring-blue-100 focus:border-blue-400 rounded-xl transition-all h-11 text-sm placeholder:text-gray-500"
+                        />
+                      </div>
+                    </div>
                   </CardHeader>
-                  <CardContent>
+                  <CardContent className="p-0 bg-gray-50/50 h-[300px] pb-5">
                     {loading ? (
                       <div className="flex flex-col items-center justify-center py-12 gap-3">
                         <Loader2 className="h-8 w-8 text-blue-600 animate-spin" />
@@ -312,13 +345,15 @@ export default function MedicalHistoryPage() {
                         <p className="text-red-600">{error}</p>
                       </div>
                     ) : filteredCustomers.length > 0 ? (
-                      <div className="space-y-3 max-h-96 overflow-y-auto pr-4">
+                      <div className="space-y-2 h-full overflow-y-auto p-4">
                         {filteredCustomers.map((customer) => (
                           <div
                             key={`customer-${customer.maKhachHang}`}
                             onClick={() => handleSelectCustomer(customer)}
-                            className="p-4 border border-gray-200 rounded-lg hover:bg-blue-50 hover:border-blue-400 cursor-pointer transition-all group"
+                            className="bg-white rounded-lg p-4 border border-gray-200 shadow-sm hover:shadow-xl hover:shadow-blue-500/10 hover:border-blue-400 hover:bg-gradient-to-r hover:from-blue-50/50 hover:to-transparent transition-all duration-300 group hover:-translate-y-0.5 relative overflow-hidden cursor-pointer"
                           >
+                            <div className="absolute left-0 top-0 bottom-0 w-1 bg-blue-500 opacity-0 group-hover:opacity-100 transition-opacity duration-300 rounded-l-xl"></div>
+
                             <div className="flex items-center justify-between">
                               <div className="flex items-center gap-4 flex-1">
                                 <div className="w-12 h-12 rounded-full bg-gradient-to-br from-blue-100 to-blue-200 flex items-center justify-center flex-shrink-0">
@@ -335,9 +370,8 @@ export default function MedicalHistoryPage() {
                                     </span>
                                     {customer.diemLoyalty && (
                                       <span className="flex items-center gap-1">
-                                        <Badge className="text-xs">
-                                          {customer.capHoiVien}
-                                        </Badge>
+                                        <Sparkles className="h-3 w-3" />
+                                        {customer.capHoiVien}
                                       </span>
                                     )}
                                     {customer.soLuongThuCung && (
@@ -367,36 +401,30 @@ export default function MedicalHistoryPage() {
 
             {/* Step 2: Select Pet */}
             {step === "pet-select" && selectedCustomer && (
-              <div className="space-y-4">
-                {/* Back button and header */}
-                <div className="flex items-center gap-2 mb-6">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={handleBack}
-                    className="gap-2"
-                  >
-                    <ArrowLeft className="h-4 w-4" />
-                    Quay lại
-                  </Button>
-                  <div>
-                    <h2 className="font-semibold text-gray-900">
-                      {selectedCustomer.hoTen}
-                    </h2>
-                    <p className="text-sm text-gray-500">
-                      {selectedCustomer.sdt}
-                    </p>
-                  </div>
-                </div>
-
-                <Card>
-                  <CardHeader>
-                    <CardTitle>Danh sách thú cưng</CardTitle>
-                    <CardDescription>
-                      Chọn thú cưng để xem lịch sử khám bệnh
-                    </CardDescription>
+              <div className="space-y-6">
+                <Card className="border-0 shadow-lg shadow-gray-300 bg-white rounded-3xl overflow-hidden ring-1 ring-gray-100">
+                  <CardHeader className="bg-white px-8 pb-0 border-b border-gray-50">
+                    <div className="flex items-center justify-start gap-4">
+                      <Button
+                        variant="outline"
+                        size="icon"
+                        className="bg-blue-50 text-blue-600 border-blue-200 hover:bg-blue-600 hover:text-white transition-colors"
+                        onClick={handleBack}
+                      >
+                        <ArrowLeft className="h-4 w-4" />
+                      </Button>
+                      <div>
+                        <CardTitle className="text-2xl font-bold text-blue-600 flex items-center gap-2">
+                          Danh sách thú cưng ({selectedCustomer.hoTen})
+                        </CardTitle>
+                        <CardDescription className="mt-1 text-base text-gray-500 font-medium">
+                          {pets.length} thú cưng • Chọn thú cưng để xem lịch sử
+                          khám bệnh
+                        </CardDescription>
+                      </div>
+                    </div>
                   </CardHeader>
-                  <CardContent>
+                  <CardContent className="p-0 bg-gray-50/50 h-[300px] pb-5">
                     {loading ? (
                       <div className="flex flex-col items-center justify-center py-12 gap-3">
                         <Loader2 className="h-8 w-8 text-blue-600 animate-spin" />
@@ -412,13 +440,15 @@ export default function MedicalHistoryPage() {
                         </p>
                       </div>
                     ) : (
-                      <div className="space-y-3">
+                      <div className="space-y-2 h-full overflow-y-auto p-4">
                         {pets.map((pet) => (
                           <div
                             key={`pet-${pet.maThuCung}`}
                             onClick={() => handleSelectPet(pet)}
-                            className="p-4 border border-gray-200 rounded-lg hover:bg-blue-50 hover:border-blue-400 cursor-pointer transition-all group"
+                            className="bg-white rounded-lg p-4 border border-gray-200 shadow-sm hover:shadow-xl hover:shadow-blue-500/10 hover:border-blue-400 hover:bg-gradient-to-r hover:from-blue-50/50 hover:to-transparent transition-all duration-300 group hover:-translate-y-0.5 relative overflow-hidden cursor-pointer"
                           >
+                            <div className="absolute left-0 top-0 bottom-0 w-1 bg-blue-500 opacity-0 group-hover:opacity-100 transition-opacity duration-300 rounded-l-xl"></div>
+
                             <div className="flex items-center justify-between">
                               <div className="flex items-center gap-4 flex-1">
                                 <div className="w-12 h-12 rounded-full bg-gradient-to-br from-purple-100 to-purple-200 flex items-center justify-center flex-shrink-0">
@@ -429,11 +459,17 @@ export default function MedicalHistoryPage() {
                                     {pet.tenThuCung}
                                   </p>
                                   <div className="flex flex-wrap gap-3 mt-2 text-xs text-gray-500">
-                                    <span>{pet.giong}</span>
+                                    <span>
+                                      Giống: <strong>{pet.giong}</strong>
+                                    </span>
                                     <span>•</span>
-                                    <span>{pet.loai}</span>
+                                    <span>
+                                      Loài: <strong>{pet.loai}</strong>
+                                    </span>
                                     <span>•</span>
-                                    <span>{pet.gioiTinh}</span>
+                                    <span>
+                                      Giới tính: <strong>{pet.gioiTinh}</strong>
+                                    </span>
                                   </div>
                                 </div>
                               </div>
@@ -450,37 +486,91 @@ export default function MedicalHistoryPage() {
 
             {/* Step 3: Medical History */}
             {step === "history" && selectedPet && (
-              <div className="space-y-4">
-                {/* Back button and header */}
-                <div className="flex items-center gap-2 mb-6">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={handleBack}
-                    className="gap-2"
-                  >
-                    <ArrowLeft className="h-4 w-4" />
-                    Quay lại
-                  </Button>
-                  <div>
-                    <h2 className="font-semibold text-gray-900">
-                      {selectedPet.tenThuCung}
-                    </h2>
-                    <p className="text-sm text-gray-500">
-                      {selectedCustomer.hoTen} • {selectedPet.giong}
-                    </p>
-                  </div>
-                </div>
+              <div className="space-y-6">
+                <Card className="border-0 shadow-lg shadow-gray-300 bg-white rounded-3xl overflow-hidden ring-1 ring-gray-100">
+                  <CardHeader className="bg-white px-8 pb-0 border-b border-gray-50">
+                    <div className="flex items-center justify-start gap-4 mb-4">
+                      <Button
+                        variant="outline"
+                        size="icon"
+                        className="bg-blue-50 text-blue-600 border-blue-200 hover:bg-blue-600 hover:text-white transition-colors"
+                        onClick={handleBack}
+                      >
+                        <ArrowLeft className="h-4 w-4" />
+                      </Button>
+                      <div>
+                        <CardTitle className="text-2xl font-bold text-blue-600 flex items-center gap-2">
+                          Lịch sử khám bệnh ({selectedPet.tenThuCung})
+                        </CardTitle>
+                        <CardDescription className="mt-1 text-base text-gray-500 font-medium">
+                          Chủ: {selectedCustomer?.hoTen}
+                        </CardDescription>
+                      </div>
+                      <Badge className="bg-blue-50 text-blue-600 border-none px-4 py-1 rounded-full font-bold w-fit">
+                        {filteredMedicalRecords.length} lần khám
+                      </Badge>
+                    </div>
 
-                {/* Medical Records List */}
-                <Card>
-                  <CardHeader>
-                    <CardTitle>Lịch sử khám bệnh</CardTitle>
-                    <CardDescription>
-                      Các cuộc khám bệnh của {selectedPet.tenThuCung}
-                    </CardDescription>
+                    {/* Filter Controls */}
+                    <div className="grid grid-cols-1 lg:grid-cols-4 gap-4">
+                      {/* Search by Invoice */}
+                      <div className="relative group">
+                        <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                          <Search className="h-4 w-4 text-gray-500 group-focus-within:text-blue-500 transition-colors" />
+                        </div>
+                        <Input
+                          placeholder="Tìm theo hóa đơn..."
+                          value={medicalSearchQuery}
+                          onChange={(e) =>
+                            setMedicalSearchQuery(e.target.value)
+                          }
+                          className="pl-10 border-gray-300 focus:bg-white focus:ring-2 focus:ring-blue-100 focus:border-blue-400 rounded-lg transition-all h-10 text-sm placeholder:text-gray-500"
+                        />
+                      </div>
+
+                      {/* Filter by Branch */}
+                      <select
+                        value={selectedBranchFilter}
+                        onChange={(e) =>
+                          setSelectedBranchFilter(e.target.value)
+                        }
+                        className="px-3 h-10 border border-gray-300 rounded-lg text-sm text-gray-600 focus:ring-2 focus:ring-blue-100 focus:border-blue-400 transition-all"
+                      >
+                        <option value="">Tất cả chi nhánh</option>
+                        {uniqueBranches.map((branch) => (
+                          <option key={branch} value={branch}>
+                            {branch}
+                          </option>
+                        ))}
+                      </select>
+
+                      {/* Filter by Doctor */}
+                      <select
+                        value={selectedDoctorFilter}
+                        onChange={(e) =>
+                          setSelectedDoctorFilter(e.target.value)
+                        }
+                        className="px-3 h-10 border border-gray-300 rounded-lg text-sm text-gray-600 focus:ring-2 focus:ring-blue-100 focus:border-blue-400 transition-all"
+                      >
+                        <option value="">Tất cả bác sĩ</option>
+                        {uniqueDoctors.map((doctor) => (
+                          <option key={doctor} value={doctor}>
+                            {doctor}
+                          </option>
+                        ))}
+                      </select>
+
+                      {/* Filter by Date */}
+                      <Input
+                        type="date"
+                        value={selectedDateFilter}
+                        onChange={(e) => setSelectedDateFilter(e.target.value)}
+                        className="border-gray-300 focus:ring-2 focus:ring-blue-100 focus:border-blue-400 rounded-lg transition-all h-10 text-sm"
+                      />
+                    </div>
                   </CardHeader>
-                  <CardContent>
+
+                  <CardContent className="p-0 bg-gray-50/50 h-[300px] pb-5">
                     {loading ? (
                       <div className="flex flex-col items-center justify-center py-12 gap-3">
                         <Loader2 className="h-8 w-8 text-blue-600 animate-spin" />
@@ -489,65 +579,57 @@ export default function MedicalHistoryPage() {
                     ) : medicalRecords.length === 0 ? (
                       <div className="text-center py-12">
                         <Stethoscope className="h-12 w-12 text-gray-300 mx-auto mb-3" />
-                        <p className="text-gray-600 text-lg">
+                        <p className="text-gray-600">
                           Không có lịch sử khám bệnh
                         </p>
                       </div>
+                    ) : filteredMedicalRecords.length === 0 ? (
+                      <div className="text-center py-12">
+                        <AlertCircle className="h-12 w-12 text-gray-300 mx-auto mb-3" />
+                        <p className="text-gray-600">
+                          Không tìm thấy kết quả khớp với bộ lọc
+                        </p>
+                      </div>
                     ) : (
-                      <div className="space-y-3">
-                        {medicalRecords.map((record, index) => (
+                      <div className="space-y-2 h-full overflow-y-auto p-4">
+                        {filteredMedicalRecords.map((record, index) => (
                           <div
                             key={`record-${record.maHoaDon}-${record.stt}-${index}`}
                             onClick={() => handleViewDetail(record)}
-                            className="p-4 border border-gray-200 rounded-lg hover:bg-blue-50 hover:border-blue-400 cursor-pointer transition-all group"
+                            className="bg-white rounded-lg p-4 border border-gray-200 shadow-sm hover:shadow-xl hover:shadow-blue-500/10 hover:border-blue-400 hover:bg-gradient-to-r hover:from-blue-50/50 hover:to-transparent transition-all duration-300 group hover:-translate-y-0.5 relative overflow-hidden cursor-pointer"
                           >
+                            <div className="absolute left-0 top-0 bottom-0 w-1 bg-blue-500 opacity-0 group-hover:opacity-100 transition-opacity duration-300 rounded-l-xl"></div>
+
                             <div className="flex items-start justify-between gap-4">
-                              <div className="flex-1">
-                                <div className="flex items-center gap-3 mb-2">
-                                  <div className="flex items-center justify-center w-8 h-8 rounded-full bg-green-100">
-                                    <Stethoscope className="h-4 w-4 text-green-600" />
-                                  </div>
-                                  <h3 className="font-semibold text-gray-900">
-                                    Lần khám #{record.stt}
-                                  </h3>
+                              <div className="flex items-start gap-4 flex-1">
+                                <div className="w-12 h-12 rounded-full bg-blue-50 border border-blue-200 flex items-center justify-center flex-shrink-0">
+                                  <Stethoscope className="h-6 w-6 text-blue-700" />
                                 </div>
-                                <div className="grid grid-cols-2 gap-4 mt-3 ml-11 text-sm">
-                                  <div>
-                                    <p className="text-gray-500">Ngày khám</p>
-                                    <p className="font-medium text-gray-900 flex items-center gap-2">
+
+                                <div className="flex-1 min-w-0">
+                                  <p className="font-semibold text-gray-900">
+                                    {record.maHoaDon} - {record.stt}
+                                  </p>
+
+                                  <div className="flex flex-wrap gap-3 mt-2 text-xs text-gray-500">
+                                    <span className="flex items-center gap-1">
                                       <Calendar className="h-3 w-3" />
-                                      {record.ngayKham}
-                                    </p>
-                                  </div>
-                                  <div>
-                                    <p className="text-gray-500">Bác sĩ</p>
-                                    <p className="font-medium text-gray-900">
+                                      {formatDate(record.ngayKham)}
+                                    </span>
+                                    <span>•</span>
+                                    <span className="flex items-center gap-1">
+                                      <User className="h-3 w-3" />
                                       {record.bacSi || "N/A"}
-                                    </p>
-                                  </div>
-                                  <div className="col-span-2">
-                                    <p className="text-gray-500">Chi nhánh</p>
-                                    <p className="font-medium text-gray-900 flex items-center gap-2">
+                                    </span>
+                                    <span>•</span>
+                                    <span className="flex items-center gap-1">
                                       <MapPin className="h-3 w-3" />
                                       {record.chiNhanh || "N/A"}
-                                    </p>
+                                    </span>
                                   </div>
                                 </div>
-                                {record.trieuChung && (
-                                  <div className="mt-3 ml-11 p-2 bg-yellow-50 rounded border border-yellow-200">
-                                    <p className="text-xs font-medium text-yellow-700">
-                                      Triệu chứng: {record.trieuChung}
-                                    </p>
-                                  </div>
-                                )}
-                                {record.chanDoan && (
-                                  <div className="mt-2 ml-11 p-2 bg-blue-50 rounded border border-blue-200">
-                                    <p className="text-xs font-medium text-blue-700">
-                                      Chẩn đoán: {record.chanDoan}
-                                    </p>
-                                  </div>
-                                )}
                               </div>
+
                               <ChevronRight className="h-5 w-5 text-gray-400 group-hover:text-blue-600 transition-colors flex-shrink-0 mt-2" />
                             </div>
                           </div>
@@ -556,66 +638,124 @@ export default function MedicalHistoryPage() {
                     )}
                   </CardContent>
                 </Card>
+                {(medicalSearchQuery ||
+                  selectedBranchFilter ||
+                  selectedDoctorFilter ||
+                  selectedDateFilter) && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="border-red-600 text-red-600 hover:text-white hover:bg-red-600"
+                    onClick={() => {
+                      setMedicalSearchQuery("");
+                      setSelectedBranchFilter("");
+                      setSelectedDoctorFilter("");
+                      setSelectedDateFilter("");
+                    }}
+                  >
+                    <X className="h-3 w-3 mr-1" />
+                    Xóa bộ lọc
+                  </Button>
+                )}
               </div>
             )}
           </div>
 
           {/* Detail Dialog */}
           <Dialog open={showDetail} onOpenChange={setShowDetail}>
-            <DialogContent className="max-w-2xl max-h-96 overflow-y-auto">
-              <DialogHeader>
-                <DialogTitle>Chi tiết khám bệnh</DialogTitle>
-              </DialogHeader>
-              {selectedRecord && (
-                <div className="space-y-4">
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
-                        Ngày khám
-                      </label>
-                      <p className="text-gray-900">{selectedRecord.ngayKham}</p>
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
-                        Bác sĩ
-                      </label>
-                      <p className="text-gray-900">{selectedRecord.bacSi}</p>
-                    </div>
-                  </div>
+            <DialogContent className="max-w-2xl p-0 overflow-hidden rounded-2xl">
+              {/* Header */}
+              <div className="px-6 py-5 border border-blue-200 bg-gradient-to-br from-blue-50 via-white to-white">
+                <div className="flex items-start justify-between gap-4">
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Triệu chứng
-                    </label>
-                    <p className="text-gray-900">
-                      {selectedRecord.trieuChung || "Không có"}
-                    </p>
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Chẩn đoán
-                    </label>
-                    <p className="text-gray-900">
-                      {selectedRecord.chanDoan || "Không có"}
-                    </p>
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Đơn thuốc
-                    </label>
-                    <p className="text-gray-900">
-                      {selectedRecord.donThuoc || "Không có"}
-                    </p>
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Ghi chú
-                    </label>
-                    <p className="text-gray-900">
-                      {selectedRecord.ghiChu || "Không có"}
-                    </p>
+                    <DialogTitle className="text-xl font-bold text-blue-600">
+                      Chi tiết khám bệnh
+                    </DialogTitle>
+                    <DialogDescription className="mt-1 text-sm text-slate-500">
+                      Thông tin chẩn đoán, đơn thuốc và ghi chú
+                    </DialogDescription>
                   </div>
                 </div>
-              )}
+
+                {selectedRecord && (
+                  <div className="flex flex-wrap gap-2 mt-4">
+                    <span className="inline-flex items-center gap-2 rounded-full bg-white border border-slate-200 px-3 py-1 text-xs font-semibold text-slate-700">
+                      <Calendar className="h-3.5 w-3.5 text-blue-600" />
+                      {formatDate(selectedRecord.ngayKham)}
+                    </span>
+
+                    <span className="inline-flex items-center gap-2 rounded-full bg-white border border-slate-200 px-3 py-1 text-xs font-semibold text-slate-700">
+                      <User className="h-3.5 w-3.5 text-emerald-600" />
+                      {selectedRecord.bacSi || "N/A"}
+                    </span>
+
+                    {selectedRecord.chiNhanh && (
+                      <span className="inline-flex items-center gap-2 rounded-full bg-white border border-slate-200 px-3 py-1 text-xs font-semibold text-slate-700">
+                        <MapPin className="h-3.5 w-3.5 text-violet-600" />
+                        {selectedRecord.chiNhanh}
+                      </span>
+                    )}
+                  </div>
+                )}
+              </div>
+
+              {/* Body */}
+              <div className="px-6 pb-5 max-h-[70vh] overflow-y-auto bg-white">
+                {selectedRecord ? (
+                  <div className="space-y-5">
+                    {/* Symptoms */}
+                    <div className="rounded-xl border border-rose-200 bg-rose-50 p-4">
+                      <div className="flex items-center gap-2 text-sm font-bold text-rose-800">
+                        <AlertCircle className="h-4 w-4" />
+                        Triệu chứng
+                      </div>
+                      <p className="mt-2 text-sm text-slate-800 leading-relaxed">
+                        {selectedRecord.trieuChung || "Không có"}
+                      </p>
+                    </div>
+
+                    {/* Diagnosis */}
+                    <div className="rounded-xl border border-blue-200 bg-blue-50 p-4">
+                      <div className="flex items-center gap-2 text-sm font-bold text-blue-800">
+                        <Stethoscope className="h-4 w-4" />
+                        Chẩn đoán
+                      </div>
+                      <p className="mt-2 text-sm text-slate-800 leading-relaxed">
+                        {selectedRecord.chanDoan || "Không có"}
+                      </p>
+                    </div>
+
+                    {/* Prescription */}
+                    <div className="rounded-xl border border-green-200 bg-green-50 p-4">
+                      <div className="flex items-center justify-between gap-3">
+                        <div className="flex items-center gap-2 text-sm font-bold text-green-800">
+                          <Pill className="h-4 w-4" />
+                          Đơn thuốc
+                        </div>
+                      </div>
+
+                      <p className="mt-2 text-sm text-slate-800 leading-relaxed">
+                        {selectedRecord.donThuoc || "Không có"}
+                      </p>
+                    </div>
+
+                    {/* Notes */}
+                    <div className="rounded-xl border border-slate-200 bg-slate-50 p-4">
+                      <div className="flex items-center gap-2 text-sm font-bold text-slate-800">
+                        <Pencil className="h-4 w-4" />
+                        Ghi chú
+                      </div>
+                      <p className="mt-2 text-sm text-slate-800 leading-relaxed">
+                        {selectedRecord.ghiChu || "Không có"}
+                      </p>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="py-10 text-center text-slate-500">
+                    Không có dữ liệu để hiển thị
+                  </div>
+                )}
+              </div>
             </DialogContent>
           </Dialog>
         </main>

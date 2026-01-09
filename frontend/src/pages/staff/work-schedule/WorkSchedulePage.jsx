@@ -57,7 +57,7 @@ export default function WorkSchedulePage() {
   const [shiftToDelete, setShiftToDelete] = useState(null);
 
   const shiftPresets = [
-    { label: "Ca Sáng", start: "08:00", end: "12:00", id: "morning" },
+    { label: "Ca Sáng", start: "08:00", end: "00:00", id: "morning" },
     { label: "Ca Chiều", start: "13:00", end: "17:00", id: "afternoon" },
     { label: "Cả Ngày", start: "08:00", end: "17:00", id: "fullday" },
   ];
@@ -124,7 +124,9 @@ export default function WorkSchedulePage() {
       }
     } catch (err) {
       console.error(err);
-      toast.error(err.response?.data?.message || "Lỗi khi đăng ký lịch làm việc");
+      toast.error(
+        err.response?.data?.message || "Lỗi khi đăng ký lịch làm việc"
+      );
     } finally {
       setSubmitting(false);
     }
@@ -212,7 +214,7 @@ export default function WorkSchedulePage() {
     const end = parseInt(formatTime(endTime).split(":")[0]);
     if (start < 12 && end <= 12) return "Ca sáng";
     if (start >= 12) return "Ca chiều";
-    return "Ca sáng + chiều";
+    return "Cả ngày";
   };
 
   return (
@@ -239,8 +241,8 @@ export default function WorkSchedulePage() {
             {/* ✅ 2 card cùng chiều cao */}
             <div className="grid lg:grid-cols-12 gap-8 items-stretch">
               {/* LEFT */}
-              <Card className="lg:col-span-7 border-none bg-white rounded-3xl overflow-hidden shadow-[0_8px_30px_rgba(0,0,0,0.04)] flex flex-col h-[565px]">
-                <CardHeader className="border-b border-blue-200 bg-white px-6 py-4 flex-shrink-0">
+              <Card className="lg:col-span-7 border-blue-200 bg-white rounded-3xl overflow-hidden shadow-[0_8px_30px_rgba(0,0,0,0.04)] hover:shadow-[0_12px_40px_rgba(0,0,0,0.08)] transition-shadow duration-300 flex flex-col h-[565px]">
+                <div className="bg-white px-6 flex-shrink-0">
                   <div className="flex justify-between items-center">
                     <div className="space-y-1">
                       <CardTitle className="text-2xl font-bold text-blue-600 flex items-center gap-2">
@@ -255,10 +257,10 @@ export default function WorkSchedulePage() {
                       {schedules.length} Lịch làm việc
                     </Badge>
                   </div>
-                </CardHeader>
+                </div>
 
                 {/* ✅ phần content scroll */}
-                <CardContent className="p-0 flex-1 min-h-0">
+                <div className="p-0 flex-1 min-h-0 ">
                   {loading ? (
                     <div className="flex justify-center items-center h-full">
                       <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
@@ -274,13 +276,13 @@ export default function WorkSchedulePage() {
                       {schedules.map((schedule, index) => (
                         <div
                           key={`${schedule.ngayLam}-${schedule.gioBatDau}-${index}`}
-                          className="p-5 flex items-center gap-6 hover:bg-slate-50/60 transition-all group"
+                          className="p-5 flex items-center gap-6 hover:bg-blue-50 transition-all group"
                         >
                           <div className="flex-1 min-w-0">
                             <div className="flex items-center gap-2 mb-1">
                               <Calendar className="h-4 w-4 text-blue-500 flex-shrink-0" />
                               <span className="text-base font-bold text-slate-800">
-                                {getDayOfWeek(schedule.ngayLam)},{" "}
+                                {getDayOfWeek(schedule.ngayLam)}, ngày{" "}
                                 {new Date(schedule.ngayLam).toLocaleDateString(
                                   "vi-VN"
                                 )}
@@ -290,7 +292,7 @@ export default function WorkSchedulePage() {
                             <div className="flex items-center gap-2">
                               <Clock className="h-4 w-4 text-amber-500 flex-shrink-0" />
                               <span className="text-sm font-medium text-slate-600">
-                                {formatTime(schedule.gioBatDau)} —{" "}
+                                {formatTime(schedule.gioBatDau)} -{" "}
                                 {formatTime(schedule.gioKetThuc)}
                               </span>
                               <span className="text-sm text-gray-500">
@@ -324,18 +326,18 @@ export default function WorkSchedulePage() {
                       ))}
                     </div>
                   )}
-                </CardContent>
+                </div>
               </Card>
 
               {/* RIGHT (cùng height) */}
               <div className="lg:col-span-5">
-                <Card className="border-none bg-white rounded-3xl shadow-[0_20px_50px_rgba(8,112,184,0.07)] border-t-4 border-t-blue-600 flex flex-col h-[565px]">
-                  <CardHeader className="p-6 flex-shrink-0">
-                    <CardTitle className="text-xl font-bold text-slate-800 flex items-center gap-2">
+                <Card className="border-blue-200 bg-white rounded-3xl shadow-[0_20px_50px_rgba(8,112,184,0.07)] hover:shadow-[0_24px_60px_rgba(8,112,184,0.12)] transition-shadow duration-300 border-t-4 border-t-blue-600 flex flex-col h-[565px]">
+                  <CardHeader className=" flex-shrink-0">
+                    <CardTitle className="text-2xl font-bold text-blue-600 flex items-center gap-2">
                       <Sparkles className="h-5 w-5 text-blue-500" />
                       Đăng ký lịch mới
                     </CardTitle>
-                    <CardDescription className="text-xs">
+                    <CardDescription className="text-md text-gray-600">
                       Chọn nhanh ca làm việc hoặc tùy chỉnh thời gian
                     </CardDescription>
                   </CardHeader>
@@ -343,14 +345,14 @@ export default function WorkSchedulePage() {
                   <CardContent className="p-6 pt-0 flex-1 min-h-0">
                     {/* ✅ nếu nội dung nhiều vẫn không vỡ layout */}
                     <div className="h-full overflow-y-auto pr-1">
-                      <form onSubmit={handleAddShift} className="space-y-5">
+                      <div onSubmit={handleAddShift} className="space-y-4">
                         <div className="space-y-2">
                           <Label className="text-xs font-bold text-slate-500 uppercase ml-1">
                             Ngày làm việc
                           </Label>
                           <Input
                             type="date"
-                            className="h-12 rounded-xl border-slate-100 bg-slate-50/60 focus:bg-white focus:ring-2 focus:ring-blue-100 transition-all font-medium"
+                            className="h-12 rounded-xl border-slate-200 focus:bg-white text-gray-700 focus:ring-2 focus:ring-blue-100 transition-all font-medium"
                             value={newShift.NgayLam}
                             onChange={(e) =>
                               setNewShift((prev) => ({
@@ -376,7 +378,7 @@ export default function WorkSchedulePage() {
                                 className={`flex-1 py-2.5 px-3 rounded-xl text-sm font-bold transition-all ${
                                   selectedShift === preset.id
                                     ? "bg-blue-600 text-white shadow-lg shadow-blue-200"
-                                    : "bg-slate-50 text-slate-600 hover:bg-slate-100 border border-slate-200"
+                                    : "bg-slate-50 text-slate-600 hover:bg-blue-100 border border-blue-200 hover:text-blue-600"
                                 }`}
                               >
                                 {preset.label}
@@ -385,44 +387,42 @@ export default function WorkSchedulePage() {
                           </div>
                         </div>
 
-                        <div className="grid grid-cols-2 gap-4">
-                          <div className="space-y-2">
-                            <Label className="text-xs font-bold text-slate-500 uppercase ml-1">
-                              Bắt đầu
-                            </Label>
-                            <Input
-                              type="time"
-                              className="h-12 rounded-xl border-slate-100 bg-slate-50/60 focus:bg-white focus:ring-2 focus:ring-blue-100 transition-all"
-                              value={newShift.GioBatDau}
-                              onChange={(e) => {
-                                setNewShift((prev) => ({
-                                  ...prev,
-                                  GioBatDau: e.target.value,
-                                }));
-                                setSelectedShift(null);
-                              }}
-                              required
-                            />
-                          </div>
+                        <div className="space-y-2">
+                          <Label className="text-xs font-bold text-slate-500 uppercase ml-1">
+                            Bắt đầu
+                          </Label>
+                          <Input
+                            type="time"
+                            className="h-12 rounded-xl border-slate-200 focus:bg-white text-gray-700 font-medium focus:ring-2 focus:ring-blue-100 transition-all"
+                            value={newShift.GioBatDau}
+                            onChange={(e) => {
+                              setNewShift((prev) => ({
+                                ...prev,
+                                GioBatDau: e.target.value,
+                              }));
+                              setSelectedShift(null);
+                            }}
+                            required
+                          />
+                        </div>
 
-                          <div className="space-y-2">
-                            <Label className="text-xs font-bold text-slate-500 uppercase ml-1">
-                              Kết thúc
-                            </Label>
-                            <Input
-                              type="time"
-                              className="h-12 rounded-xl border-slate-100 bg-slate-50/60 focus:bg-white focus:ring-2 focus:ring-blue-100 transition-all"
-                              value={newShift.GioKetThuc}
-                              onChange={(e) => {
-                                setNewShift((prev) => ({
-                                  ...prev,
-                                  GioKetThuc: e.target.value,
-                                }));
-                                setSelectedShift(null);
-                              }}
-                              required
-                            />
-                          </div>
+                        <div className="space-y-2">
+                          <Label className="text-xs font-bold text-slate-500 uppercase ml-1">
+                            Kết thúc
+                          </Label>
+                          <Input
+                            type="time"
+                            className="h-12 rounded-xl border-slate-200 focus:bg-white text-gray-700 font-medium focus:ring-2 focus:ring-blue-100 transition-all"
+                            value={newShift.GioKetThuc}
+                            onChange={(e) => {
+                              setNewShift((prev) => ({
+                                ...prev,
+                                GioKetThuc: e.target.value,
+                              }));
+                              setSelectedShift(null);
+                            }}
+                            required
+                          />
                         </div>
 
                         {user?.ViTri !== "Bác sĩ thú y" && (
@@ -448,7 +448,7 @@ export default function WorkSchedulePage() {
                             "Xác nhận đăng ký"
                           )}
                         </Button>
-                      </form>
+                      </div>
                     </div>
                   </CardContent>
                 </Card>
@@ -462,11 +462,18 @@ export default function WorkSchedulePage() {
       <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Xác nhận xóa</AlertDialogTitle>
-            <AlertDialogDescription>
-              {shiftToDelete
-                ? `Bạn có chắc chắn muốn xóa lịch làm việc ngày ${shiftToDelete.ngayLam}?`
-                : "Bạn có chắc chắn muốn xóa lịch làm việc này?"}
+            <AlertDialogTitle className="text-lg text-red-600 font-medium">
+              Xác nhận xóa
+            </AlertDialogTitle>
+            <AlertDialogDescription className="text-md">
+              {shiftToDelete ? (
+                <>
+                  Bạn có chắc chắn muốn xóa lịch làm việc ngày{" "}
+                  <strong>{shiftToDelete.ngayLam}</strong>
+                </>
+              ) : (
+                "Bạn có chắc chắn muốn xóa lịch làm việc này?"
+              )}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -474,7 +481,7 @@ export default function WorkSchedulePage() {
             <AlertDialogAction
               onClick={handleConfirmDelete}
               disabled={deleting}
-              className="bg-red-600 hover:bg-red-700"
+              className="bg-red-600 hover:bg-red-700 text-white"
             >
               {deleting ? (
                 <>
