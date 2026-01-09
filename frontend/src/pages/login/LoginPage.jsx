@@ -24,6 +24,7 @@ import {
 import axios from "axios";
 import { useAuth } from "../../context/AuthContext";
 import { useAuthStore } from "../../store/authStore";
+import { toast } from "../../lib/toast";
 
 export default function LoginPage() {
   const navigate = useNavigate();
@@ -72,11 +73,11 @@ export default function LoginPage() {
           setUser(adminUser);
           setIsAuthenticated(true);
 
-          alert("Đăng nhập quyền Quản trị viên thành công!");
+          toast.success("Đăng nhập quyền Quản trị viên thành công!");
           navigate("/admin");
           return; // Exit early
         } else {
-          alert("Mã quản trị viên không hợp lệ!");
+          toast.error("Mã quản trị viên không hợp lệ!");
           return;
         }
       }
@@ -95,7 +96,7 @@ export default function LoginPage() {
         setUser(userData);
         setIsAuthenticated(true);
 
-        alert("Đăng nhập thành công!");
+        toast.success("Đăng nhập thành công!");
 
         // Điều hướng dựa trên Role trả về từ Server
         const userRole = userData.Role;
@@ -110,7 +111,7 @@ export default function LoginPage() {
       }
     } catch (error) {
       console.error("Lỗi đăng nhập:", error);
-      alert(error.response?.data?.message || "Đăng nhập thất bại!");
+      toast.error(error.response?.data?.message || "Đăng nhập thất bại!");
     }
   };
 

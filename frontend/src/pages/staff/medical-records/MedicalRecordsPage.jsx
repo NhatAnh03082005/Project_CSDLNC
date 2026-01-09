@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import api from "../../../api/axios";
 import { employeeAPI } from "../../../api/services";
+import { toast } from "../../../lib/toast";
 import StaffHeader from "../../../components/staff/StaffHeader";
 import StaffSidebar from "../../../components/staff/StaffSidebar";
 import { Button } from "../../../components/ui/button";
@@ -107,7 +108,7 @@ export default function MedicalRecordsPage() {
       !formData.diagnosis.trim() ||
       !formData.prescription.trim()
     ) {
-      alert("Vui lòng điền đầy đủ thông tin bắt buộc");
+      toast.warning("Vui lòng điền đầy đủ thông tin bắt buộc");
       return;
     }
 
@@ -124,20 +125,17 @@ export default function MedicalRecordsPage() {
       );
 
       if (response.data.success) {
-        alert("✅ Cập nhật hồ sơ khám bệnh thành công!");
+        toast.success("Cập nhật hồ sơ khám bệnh thành công!");
         setShowForm(false);
         setSelectedRecord(null);
         fetchPendingRecords(); // Refresh list
       } else {
-        alert(
-          "❌ Lỗi: " + (response.data.message || "Không thể cập nhật hồ sơ")
-        );
+        toast.error(response.data.message || "Không thể cập nhật hồ sơ");
       }
     } catch (err) {
       console.error("Error updating record:", err);
-      alert(
-        "❌ Lỗi: " +
-          (err.response?.data?.message || "Không thể cập nhật hồ sơ khám bệnh")
+      toast.error(
+        err.response?.data?.message || "Không thể cập nhật hồ sơ khám bệnh"
       );
     } finally {
       setSubmitting(false);

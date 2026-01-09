@@ -38,6 +38,7 @@ import {
   Receipt,
 } from "lucide-react";
 import { ratingAPI } from "../../api/services";
+import { toast } from "../../lib/toast";
 
 export default function ReviewsPage() {
   const navigate = useNavigate();
@@ -118,15 +119,15 @@ export default function ReviewsPage() {
       }
 
       if (response.data.success) {
-        alert(response.data.message || "Đánh giá thành công!");
+        toast.success(response.data.message || "Đánh giá thành công!");
         setDialogOpen(false);
         fetchServices();
       } else {
-        alert(response.data.message || "Có lỗi xảy ra");
+        toast.error(response.data.message || "Có lỗi xảy ra");
       }
     } catch (error) {
       console.error("Lỗi khi gửi đánh giá:", error);
-      alert(error.response?.data?.message || "Có lỗi xảy ra khi gửi đánh giá");
+      toast.error(error.response?.data?.message || "Có lỗi xảy ra khi gửi đánh giá");
     } finally {
       setSubmitting(false);
     }
@@ -148,16 +149,16 @@ export default function ReviewsPage() {
       );
 
       if (response.data.success) {
-        alert("Xóa đánh giá thành công!");
+        toast.success("Xóa đánh giá thành công!");
         setDeleteDialogOpen(false);
         setServiceToDelete(null);
         fetchServices();
       } else {
-        alert(response.data.message || "Có lỗi xảy ra");
+        toast.error(response.data.message || "Có lỗi xảy ra");
       }
     } catch (error) {
       console.error("Lỗi khi xóa đánh giá:", error);
-      alert(error.response?.data?.message || "Có lỗi xảy ra khi xóa đánh giá");
+      toast.error(error.response?.data?.message || "Có lỗi xảy ra khi xóa đánh giá");
     } finally {
       setSubmitting(false);
     }

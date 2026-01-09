@@ -25,6 +25,7 @@ import {
 } from "lucide-react";
 import { useCartStore } from "../../store/cartStore";
 import { orderAPI, promotionAPI } from "../../api/services";
+import { toast } from "../../lib/toast";
 import Header from "../../components/layout/header";
 
 export default function CheckoutPage() {
@@ -87,12 +88,12 @@ export default function CheckoutPage() {
 
   const handlePlaceOrder = async () => {
     if (cartItems.length === 0) {
-      alert("Giỏ hàng trống!");
+      toast.warning("Giỏ hàng trống!");
       return;
     }
 
     if (!paymentMethod) {
-      alert("Vui lòng chọn phương thức thanh toán!");
+      toast.warning("Vui lòng chọn phương thức thanh toán!");
       return;
     }
 
@@ -123,13 +124,13 @@ export default function CheckoutPage() {
         setOrderSuccess(true);
         clearCart();
 
-        // Hiển thị alert để xác nhận thành công
-        alert("Đặt hàng thành công! Đơn hàng đang chờ nhân viên xác nhận.");
+        // Hiển thị toast để xác nhận thành công
+        toast.success("Đặt hàng thành công! Đơn hàng đang chờ nhân viên xác nhận.");
       } else {
         console.error("Order creation failed:", response.data);
         const errorMsg =
           response?.data?.message || response?.message || "Đặt hàng thất bại!";
-        alert(errorMsg);
+        toast.error(errorMsg);
       }
     } catch (error) {
       console.error("Error placing order:", error);
@@ -138,7 +139,7 @@ export default function CheckoutPage() {
         error.response?.data?.message ||
         error.response?.data?.error ||
         "Đặt hàng thất bại. Vui lòng thử lại!";
-      alert(errorMessage);
+      toast.error(errorMessage);
     } finally {
       setSubmitting(false);
     }

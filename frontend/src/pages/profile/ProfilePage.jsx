@@ -20,6 +20,7 @@ import {
 import { Badge } from "../../components/ui/badge";
 import { Crown, TrendingUp, Award, Loader2, ShieldCheck } from "lucide-react";
 import { useAuth } from "../../context/AuthContext";
+import { toast } from "../../lib/toast";
 import { customerAPI } from "../../api/services";
 
 export default function ProfilePage() {
@@ -119,7 +120,7 @@ export default function ProfilePage() {
       const response = await customerAPI.updateProfile(formData);
 
       if (response.data.success) {
-        alert("Cập nhật thông tin thành công");
+        toast.success("Cập nhật thông tin thành công");
         setIsEditing(false);
         setErrors({});
         const updatedResponse = await customerAPI.getProfile();
@@ -145,7 +146,7 @@ export default function ProfilePage() {
           CCCD: "Số CCCD hoặc SĐT này đã tồn tại trong hệ thống",
         });
       } else {
-        alert(serverMessage || "Có lỗi xảy ra khi cập nhật");
+        toast.error(serverMessage || "Có lỗi xảy ra khi cập nhật");
       }
     }
   };

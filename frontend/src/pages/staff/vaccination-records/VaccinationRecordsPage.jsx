@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import api from "../../../api/axios";
 import { employeeAPI } from "../../../api/services";
+import { toast } from "../../../lib/toast";
 import StaffHeader from "../../../components/staff/StaffHeader";
 import StaffSidebar from "../../../components/staff/StaffSidebar";
 import { Button } from "../../../components/ui/button";
@@ -185,7 +186,7 @@ export default function VaccinationRecordsPage() {
     e.preventDefault();
 
     if (!selectedVaccine) {
-      alert("Vui lòng chọn vaccine");
+      toast.warning("Vui lòng chọn vaccine");
       return;
     }
 
@@ -206,22 +207,19 @@ export default function VaccinationRecordsPage() {
       );
 
       if (response.data.success) {
-        alert("✅ Cập nhật hồ sơ tiêm phòng thành công!");
+        toast.success("Cập nhật hồ sơ tiêm phòng thành công!");
         setShowForm(false);
         setSelectedRecord(null);
         setSelectedVaccine(null);
         setSelectedPackage(null);
         fetchPendingRecords(); // Refresh list
       } else {
-        alert(
-          "❌ Lỗi: " + (response.data.message || "Không thể cập nhật hồ sơ")
-        );
+        toast.error(response.data.message || "Không thể cập nhật hồ sơ");
       }
     } catch (err) {
       console.error("Error updating record:", err);
-      alert(
-        "❌ Lỗi: " +
-          (err.response?.data?.message || "Không thể cập nhật hồ sơ tiêm phòng")
+      toast.error(
+        err.response?.data?.message || "Không thể cập nhật hồ sơ tiêm phòng"
       );
     } finally {
       setSubmitting(false);

@@ -31,6 +31,7 @@ import {
 } from "lucide-react";
 import { productAPI } from "../../api/services";
 import { useCartStore } from "../../store/cartStore";
+import { toast } from "../../lib/toast";
 
 export default function ProductDetailPage() {
   const [searchParams] = useSearchParams();
@@ -88,7 +89,7 @@ export default function ProductDetailPage() {
     if (!product) return;
 
     if (quantity > product.soLuongTonKho) {
-      alert(
+      toast.warning(
         `Số lượng vượt quá tồn kho. Tồn kho hiện tại: ${product.soLuongTonKho}`
       );
       return;
@@ -106,11 +107,11 @@ export default function ProductDetailPage() {
         maChiNhanh: product.chiNhanh?.maChiNhanh || maChiNhanh,
       });
 
-      alert("Đã thêm sản phẩm vào giỏ hàng!");
+      toast.success("Đã thêm sản phẩm vào giỏ hàng!");
       navigate(`/products-list?branch=${maChiNhanh}`);
     } catch (error) {
       console.error("Lỗi khi thêm vào giỏ hàng:", error);
-      alert("Có lỗi xảy ra khi thêm vào giỏ hàng");
+      toast.error("Có lỗi xảy ra khi thêm vào giỏ hàng");
     } finally {
       setAddingToCart(false);
     }

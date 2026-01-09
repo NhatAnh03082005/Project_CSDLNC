@@ -4,6 +4,7 @@ import { ArrowLeft } from "lucide-react";
 // Import UI components (giữ nguyên đường dẫn tương đối đã sửa)
 import { Button } from "../../../../components/ui/button";
 import { employeeAPI, branchAPI } from "../../../../api/services";
+import { toast } from "../../../../lib/toast";
 import { Card, CardContent } from "../../../../components/ui/card";
 import { Input } from "../../../../components/ui/input";
 import { Label } from "../../../../components/ui/label";
@@ -115,10 +116,10 @@ export default function BranchManagement() {
         TGMoCua: "",
         TGDongCua: "",
       });
-      alert("Thêm chi nhánh thành công!");
+      toast.success("Thêm chi nhánh thành công!");
     } catch (err) {
       console.error("Error adding branch:", err);
-      alert(err.response?.data?.message || "Không thể thêm chi nhánh");
+      toast.error(err.response?.data?.message || "Không thể thêm chi nhánh");
     }
   };
 
@@ -151,10 +152,10 @@ export default function BranchManagement() {
       await fetchData();
       setIsEditDialogOpen(false);
       setSelectedBranch(null);
-      alert("Cập nhật chi nhánh thành công!");
+      toast.success("Cập nhật chi nhánh thành công!");
     } catch (err) {
       console.error("Error updating branch:", err);
-      alert(err.response?.data?.message || "Không thể cập nhật chi nhánh");
+      toast.error(err.response?.data?.message || "Không thể cập nhật chi nhánh");
     }
   };
 

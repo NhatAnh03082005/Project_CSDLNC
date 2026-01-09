@@ -21,6 +21,16 @@ import {
   DialogFooter,
 } from "../../../components/ui/dialog";
 import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "../../../components/ui/alert-dialog";
+import {
   ArrowLeft,
   Search,
   Receipt,
@@ -39,6 +49,7 @@ import { invoiceAPI, productAPI, employeeAPI } from "../../../api/services";
 import { useAuthStore } from "../../../store/authStore";
 import StaffHeader from "../../../components/staff/StaffHeader";
 import StaffSidebar from "../../../components/staff/StaffSidebar";
+import { toast } from "../../../lib/toast";
 
 export default function InvoicePage() {
   const { user } = useAuthStore();
@@ -66,6 +77,7 @@ export default function InvoicePage() {
 
   // Confirm State
   const [confirming, setConfirming] = useState(false);
+  const [showConfirmDialog, setShowConfirmDialog] = useState(false);
   // paymentMethod state removed
 
   // Fetch pending invoices on mount
@@ -111,11 +123,11 @@ export default function InvoicePage() {
       if (data.success) {
         setInvoiceDetails(data.data);
       } else {
-        alert(data.message);
+        toast.error(data.message || "Không thể lấy chi tiết hóa đơn");
       }
     } catch (err) {
       console.error(err);
-      alert("Lỗi khi lấy chi tiết hóa đơn");
+      toast.error("Lỗi khi lấy chi tiết hóa đơn");
     } finally {
       setLoadingDetails(false);
     }
@@ -157,7 +169,7 @@ export default function InvoicePage() {
     // Kiểm tra số lượng tồn kho
     const stockAvailable = selectedProductToAdd.soLuongTonKho || 0;
     if (parseInt(quantityToAdd) > stockAvailable) {
-      alert(
+      toast.warning(
         `Số lượng tồn kho không đủ! Chỉ còn ${stockAvailable} sản phẩm trong kho.`
       );
       return;
@@ -182,24 +194,24 @@ export default function InvoicePage() {
         await fetchInvoiceDetails(selectedInvoice.maHoaDon);
         setShowAddProductDialog(false);
         fetchPendingInvoices();
+        toast.success("Thêm sản phẩm vào hóa đơn thành công!");
       } else {
-        alert(res.message || "Lỗi khi thêm sản phẩm");
+        toast.error(res.message || "Lỗi khi thêm sản phẩm");
       }
     } catch (err) {
       console.error(err);
-      alert("Lỗi khi thêm sản phẩm: " + err.message);
+      toast.error("Lỗi khi thêm sản phẩm: " + (err.message || "Lỗi hệ thống"));
     } finally {
       setAddingProduct(false);
     }
   };
 
   const handleConfirmInvoice = async () => {
-    const isOnlineOrder = checkIsOnlineOrder();
-    const confirmMsg = isOnlineOrder
-      ? "Bạn có chắc chắn muốn xác nhận đơn hàng này?"
-      : "Bạn có chắc chắn muốn xuất hóa đơn này?";
+    setShowConfirmDialog(true);
+  };
 
-    if (!confirm(confirmMsg)) return;
+  const handleConfirmInvoiceAction = async () => {
+    const isOnlineOrder = checkIsOnlineOrder();
 
     try {
       setConfirming(true);
@@ -214,21 +226,22 @@ export default function InvoicePage() {
       });
       const res = response.data;
       if (res.success) {
-        alert(
+        toast.success(
           isOnlineOrder
             ? "Xác nhận đơn hàng thành công!"
             : "Xuất hóa đơn thành công!"
         );
+        setShowConfirmDialog(false);
         setShowInvoiceDialog(false);
         setSelectedInvoice(null);
         setInvoiceDetails(null);
         fetchPendingInvoices();
       } else {
-        alert(res.message || "Lỗi khi xác nhận");
+        toast.error(res.message || "Lỗi khi xác nhận");
       }
     } catch (err) {
       console.error(err);
-      alert("Lỗi hệ thống");
+      toast.error("Lỗi hệ thống");
     } finally {
       setConfirming(false);
     }
@@ -690,6 +703,41 @@ export default function InvoicePage() {
                 </DialogFooter>
               </DialogContent>
             </Dialog>
+
+            {/* Confirm Invoice Dialog */}
+            <AlertDialog open={showConfirmDialog} onOpenChange={setShowConfirmDialog}>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>Xác nhận</AlertDialogTitle>
+                  <AlertDialogDescription>
+                    {checkIsOnlineOrder()
+                      ? "Bạn có chắc chắn muốn xác nhận đơn hàng này?"
+                      : "Bạn có chắc chắn muốn xuất hóa đơn này?"}
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel disabled={confirming}>Hủy</AlertDialogCancel>
+                  <AlertDialogAction
+                    onClick={handleConfirmInvoiceAction}
+                    disabled={confirming}
+                    className={
+                      checkIsOnlineOrder()
+                        ? "bg-green-600 hover:bg-green-700"
+                        : "bg-blue-600 hover:bg-blue-700"
+                    }
+                  >
+                    {confirming ? (
+                      <>
+                        <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                        Đang xử lý...
+                      </>
+                    ) : (
+                      "Xác nhận"
+                    )}
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
           </div>
         </main>
       </div>

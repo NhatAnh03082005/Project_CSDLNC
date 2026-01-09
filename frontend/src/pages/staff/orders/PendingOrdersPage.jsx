@@ -2,6 +2,7 @@ import React, { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { orderAPI } from "../../../api/services";
 import { Card, CardContent, CardHeader, CardTitle } from "../../../components/ui/card";
+import { toast } from "../../../lib/toast";
 import { Button } from "../../../components/ui/button";
 import { Badge } from "../../../components/ui/badge";
 import {
@@ -48,7 +49,7 @@ export default function PendingOrdersPage() {
       }
     } catch (error) {
       console.error("Lỗi tải đơn hàng chờ xác nhận:", error);
-      alert("Không thể tải danh sách đơn hàng");
+      toast.error("Không thể tải danh sách đơn hàng");
     } finally {
       setLoading(false);
     }
@@ -65,16 +66,16 @@ export default function PendingOrdersPage() {
     try {
       const response = await orderAPI.confirm(confirmingOrder.maHoaDon);
       if (response.data.success) {
-        alert("Xác nhận đơn hàng thành công!");
+        toast.success("Xác nhận đơn hàng thành công!");
         setShowConfirmDialog(false);
         setConfirmingOrder(null);
         fetchPendingOrders();
       } else {
-        alert(response.data.message || "Xác nhận đơn hàng thất bại");
+        toast.error(response.data.message || "Xác nhận đơn hàng thất bại");
       }
     } catch (error) {
       console.error("Lỗi xác nhận đơn hàng:", error);
-      alert(
+      toast.error(
         error.response?.data?.message ||
           "Xác nhận đơn hàng thất bại. Vui lòng thử lại!"
       );

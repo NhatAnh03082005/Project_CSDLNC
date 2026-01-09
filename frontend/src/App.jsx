@@ -3,6 +3,7 @@ import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 
 // Layout
 import MainLayout from "./components/layout/mainlayout.jsx";
+import ToastContainer from "./components/ui/toast-container.jsx";
 
 // Customer & Public Pages
 import CustomerHome from "./pages/customer/CustomerHome.jsx";
@@ -66,6 +67,7 @@ import PerformanceStats from "./pages/admin/statistics/components/PerformanceSta
 function App() {
   return (
     <Router>
+      <ToastContainer />
       <Routes>
         {/* === PHÂN KHU NGƯỜI DÙNG CÓ LAYOUT CHUNG === */}
         <Route element={<MainLayout />}>
