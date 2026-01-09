@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
-import { Link, useLocation, useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import { useAuthStore } from "../../../store/authStore";
-import { authAPI, employeeAPI, appointmentAPI } from "../../../api/services";
+import { employeeAPI, appointmentAPI } from "../../../api/services";
 import { Button } from "../../../components/ui/button";
 import {
   Card,
@@ -22,31 +22,25 @@ import {
 import {
   Calendar,
   FileText,
-  CheckCircle,
-  XCircle,
-  Menu,
-  LogOut,
-  Home,
-  Receipt,
-  Stethoscope,
   Syringe,
+  Stethoscope,
   Clock,
-  FilePlus,
   Search,
   User,
   Phone,
   Info,
-  History,
-  Pill,
+  X,
 } from "lucide-react";
+import StaffHeader from "../../../components/staff/StaffHeader";
+import StaffSidebar from "../../../components/staff/StaffSidebar";
 export default function StaffDemoPage() {
-  const location = useLocation();
   const navigate = useNavigate();
   const { user } = useAuthStore();
   const [searchTerm, setSearchTerm] = useState("");
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [selectedApp, setSelectedApp] = useState(null);
   const [branchName, setBranchName] = useState("");
+  const [isProfileOpen, setIsProfileOpen] = useState(false);
 
   // Fetch branch info on mount
   useEffect(() => {
@@ -64,17 +58,6 @@ export default function StaffDemoPage() {
     fetchBranch();
   }, []);
 
-  // Get display name and role
-  const displayName = user?.HoTen || user?.TenNguoiDung || "Nhân viên";
-  const displayRole =
-    user?.ViTri === "Bác sĩ thú y" ? "Bác sĩ thú y" : "Nhân viên";
-  const nameInitials = displayName
-    .split(" ")
-    .map((n) => n[0])
-    .join("")
-    .slice(-2)
-    .toUpperCase();
-
   // State cho dữ liệu
   const [appointments, setAppointments] = useState([]);
   const [stats, setStats] = useState({
@@ -85,6 +68,11 @@ export default function StaffDemoPage() {
   });
   const [loading, setLoading] = useState(true);
   const [selectedDate, setSelectedDate] = useState(""); // Default to empty to show all
+
+  // State cho các thống kê mới
+  const [pendingMedicalCount, setPendingMedicalCount] = useState(0);
+  const [pendingVaccinationCount, setPendingVaccinationCount] = useState(0);
+  const [completedInvoicesCount, setCompletedInvoicesCount] = useState(0);
 
   // Fetch branch info on mount
   useEffect(() => {
@@ -130,7 +118,58 @@ export default function StaffDemoPage() {
 
   useEffect(() => {
     fetchAppointments();
+    fetchStatsData();
   }, [selectedDate]); // Refetch when selectedDate changes
+
+  // Fetch các thống kê cho cards
+  const fetchStatsData = async () => {
+    try {
+      // Lấy số hồ sơ khám bệnh chờ
+      const medicalResponse = await fetch("/api/medical/records/pending", {
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem("token")}`,
+        },
+      });
+      if (medicalResponse.ok) {
+        const medicalData = await medicalResponse.json();
+        setPendingMedicalCount(medicalData.data?.length || 0);
+      }
+
+      // Lấy số hồ sơ tiêm phòng chờ
+      const vaccinationResponse = await fetch(
+        "/api/vaccinations/records/pending",
+        {
+          headers: {
+            Authorization: `Bearer ${localStorage.getItem("token")}`,
+          },
+        }
+      );
+      if (vaccinationResponse.ok) {
+        const vaccinationData = await vaccinationResponse.json();
+        setPendingVaccinationCount(vaccinationData.data?.length || 0);
+      }
+
+      // Lấy số hóa đơn đã xác nhận (hôm nay)
+      const invoiceResponse = await fetch("/api/invoices/pending", {
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem("token")}`,
+        },
+      });
+      if (invoiceResponse.ok) {
+        const invoiceData = await invoiceResponse.json();
+        // Lọc các hóa đơn đã có NhanVienLap (đã xác nhận) trong ngày hôm nay
+        const todayYMD = toLocalYMD(new Date());
+        const completedToday = (invoiceData.data || []).filter((invoice) => {
+          if (!invoice.NgayLap) return false;
+          const invoiceYMD = invoice.NgayLap.substring(0, 10);
+          return invoice.NhanVienLap && invoiceYMD === todayYMD;
+        });
+        setCompletedInvoicesCount(completedToday.length);
+      }
+    } catch (error) {
+      console.error("Error fetching stats:", error);
+    }
+  };
 
   // Hàm xử lý đăng xuất
   const handleLogout = async () => {
@@ -159,268 +198,161 @@ export default function StaffDemoPage() {
   };
 
   // Logic tìm kiếm đa năng theo Tên hoặc SĐT
-  const filteredAppointments = appointments.filter(
-    (app) =>
-      (app.tenKhachHang &&
-        app.tenKhachHang.toLowerCase().includes(searchTerm.toLowerCase())) ||
-      (app.sdtKhachHang && app.sdtKhachHang.includes(searchTerm))
-  );
+  const filteredAppointments = appointments
+    .filter(
+      (app) =>
+        (app.tenKhachHang &&
+          app.tenKhachHang.toLowerCase().includes(searchTerm.toLowerCase())) ||
+        (app.sdtKhachHang && app.sdtKhachHang.includes(searchTerm))
+    )
+    .sort((a, b) => {
+      // Sắp xếp theo trạng thái (priority)
+      const statusPriority = {
+        "Đã lên lịch": 1,
+        "Đã xác nhận": 2,
+        "Hoàn thành": 3,
+        "Đã hủy": 4,
+      };
+      const priorityA = statusPriority[a.trangThai] || 999;
+      const priorityB = statusPriority[b.trangThai] || 999;
+
+      if (priorityA !== priorityB) {
+        return priorityA - priorityB;
+      }
+
+      // Nếu cùng trạng thái, sắp xếp theo thời gian
+      const timeA = new Date(a.thoiGianHen || 0).getTime();
+      const timeB = new Date(b.thoiGianHen || 0).getTime();
+      return timeA - timeB;
+    });
+
+  const toLocalYMD = (d) => {
+    const x = d instanceof Date ? d : new Date(d);
+    const y = x.getFullYear();
+    const m = String(x.getMonth() + 1).padStart(2, "0");
+    const day = String(x.getDate()).padStart(2, "0");
+    return `${y}-${m}-${day}`;
+  };
+
+  const todayYMD = toLocalYMD(new Date());
+
+  const todayAppointmentsCount = appointments.filter((app) => {
+    if (!app.thoiGianHen) return false;
+
+    // Ưu tiên dùng thoiGianHen, fallback về ngayHen
+    const dateToCheck = app.thoiGianHen;
+
+    // Nếu backend trả đúng "YYYY-MM-DD" thì dùng luôn
+    // Nếu lỡ trả dạng datetime, normalize về local YMD
+    const appYMD =
+      dateToCheck.length === 10 && dateToCheck[4] === "-"
+        ? dateToCheck
+        : toLocalYMD(dateToCheck);
+
+    return appYMD === todayYMD;
+  }).length;
 
   return (
-    <div className="min-h-screen bg-slate-50 font-sans selection:bg-blue-100">
-      {/* Header*/}
-      <header className="sticky top-0 z-50 w-full bg-white/80 backdrop-blur-xl border-b border-gray-100 shadow-sm supports-[backdrop-filter]:bg-white/60">
-        <div className="flex h-16 items-center gap-4 px-6 max-w-[1920px] mx-auto">
-          <Button
-            variant="ghost"
-            size="icon"
-            className="md:hidden text-gray-500 hover:text-gray-900"
-          >
-            <Menu className="h-5 w-5" />
-          </Button>
-          <div className="flex items-center gap-3">
-            <div className="relative">
-              <div className="absolute inset-0 bg-blue-500 blur-sm rounded-full opacity-20"></div>
-              <img
-                src="/logo.png"
-                alt="PetCare Logo"
-                className="relative h-9 w-9 rounded-full object-cover ring-2 ring-white shadow-sm"
-              />
-            </div>
-            <div>
-              <div className="font-bold text-sm text-gray-900 tracking-tight">
-                PetCareX Staff
-              </div>
-              <div className="text-[11px] font-medium text-gray-500 uppercase tracking-wider">
-                {branchName || "Đang tải..."}
-              </div>
-            </div>
-          </div>
-          <div className="ml-auto flex items-center gap-4">
-            <div className="flex items-center gap-3 pl-4">
-              <div className="text-right hidden md:block">
-                <div className="text-sm font-bold text-gray-900">
-                  {displayName}
-                </div>
-                <div className="text-xs font-medium text-gray-500">
-                  {displayRole}
-                </div>
-              </div>
-              <div className="relative group cursor-pointer">
-                <div className="absolute -inset-0.5 bg-gradient-to-r from-blue-600 to-purple-600 rounded-full opacity-75 group-hover:opacity-100 transition duration-200 blur-[2px]"></div>
-                <div className="relative h-10 w-10 rounded-full bg-white p-0.5">
-                  <div className="h-full w-full rounded-full bg-gradient-to-br from-gray-100 to-gray-200 flex items-center justify-center text-gray-700 font-bold shadow-inner">
-                    {nameInitials}
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </header>
+    <div className="min-h-screen bg-blue-50 font-sans selection:bg-blue-100">
+      <StaffHeader
+        branchName={branchName}
+        isProfileOpen={isProfileOpen}
+        setIsProfileOpen={setIsProfileOpen}
+      />
 
       <div className="flex max-w-[1920px] mx-auto">
-        {/* Sidebar */}
-        <aside className="hidden md:block w-72 border-r border-gray-100 bg-white min-h-[calc(100vh-4rem)] sticky top-16 shadow-[4px_0_24px_rgba(0,0,0,0.01)] z-40">
-          <nav className="p-6 space-y-2">
-            <div className="pb-4 mb-2">
-              <span className="text-xs font-bold text-gray-400 uppercase tracking-wider px-4">
-                Menu chính
-              </span>
-            </div>
-
-            {/* Trang chủ - hiển thị cho tất cả */}
-            <Link to="/staff/demo">
-              <Button
-                variant="ghost"
-                className={`w-full justify-start gap-3 h-11 rounded-xl text-base font-medium transition-all duration-200 ${
-                  location.pathname === "/staff/demo"
-                    ? "bg-blue-50 text-blue-700 shadow-sm border border-blue-100"
-                    : "text-gray-600 hover:bg-gray-50 hover:text-gray-900"
-                }`}
-              >
-                <Home
-                  className={`h-5 w-5 ${
-                    location.pathname === "/staff/demo"
-                      ? "text-blue-600"
-                      : "text-gray-400"
-                  }`}
-                />
-                Trang chủ
-              </Button>
-            </Link>
-
-            {/* Tra cứu hồ sơ - chỉ hiển thị cho nhân viên không phải bác sĩ */}
-            {user?.ViTri !== "Bác sĩ thú y" && (
-              <Link to="/staff/create-record">
-                <Button
-                  variant="ghost"
-                  className="w-full justify-start gap-3 h-11 rounded-xl text-base font-medium text-gray-600 hover:bg-gray-50 hover:text-gray-900 transition-all"
-                >
-                  <FilePlus className="h-5 w-5 text-gray-400" />
-                  Tra cứu hồ sơ
-                </Button>
-              </Link>
-            )}
-
-            {/* Nút Lập hóa đơn - chỉ hiển thị cho nhân viên không phải bác sĩ */}
-            {user?.ViTri !== "Bác sĩ thú y" && (
-              <Link to="/staff/invoice">
-                <Button
-                  variant="ghost"
-                  className="w-full justify-start gap-3 h-11 rounded-xl text-base font-medium text-gray-600 hover:bg-gray-50 hover:text-gray-900 transition-all"
-                >
-                  <Receipt className="h-5 w-5 text-gray-400" />
-                  Lập hóa đơn
-                </Button>
-              </Link>
-            )}
-
-            {/* Mục Quản lý - chỉ hiển thị cho bác sĩ thú y */}
-            {user?.ViTri === "Bác sĩ thú y" && (
-              <>
-                <div className="pt-6 pb-2 mt-2">
-                  <span className="text-xs font-bold text-gray-400 uppercase tracking-wider px-4">
-                    Quản lý
-                  </span>
-                </div>
-
-                <Link to="/staff/work-schedule">
-                  <Button
-                    variant="ghost"
-                    className="w-full justify-start gap-3 h-11 rounded-xl text-base font-medium text-gray-600 hover:bg-gray-50 hover:text-gray-900 transition-all"
-                  >
-                    <Clock className="h-5 w-5 text-gray-400" />
-                    Lịch làm việc
-                  </Button>
-                </Link>
-
-                <Link to="/staff/doctor-appointments">
-                  <Button
-                    variant="ghost"
-                    className="w-full justify-start gap-3 h-11 rounded-xl text-base font-medium text-gray-600 hover:bg-gray-50 hover:text-gray-900 transition-all"
-                  >
-                    <Calendar className="h-5 w-5 text-gray-400" />
-                    Lịch hẹn của tôi
-                  </Button>
-                </Link>
-
-                <Link to="/staff/medical-history">
-                  <Button
-                    variant="ghost"
-                    className="w-full justify-start gap-3 h-11 rounded-xl text-base font-medium text-gray-600 hover:bg-gray-50 hover:text-gray-900 transition-all"
-                  >
-                    <History className="h-5 w-5 text-gray-400" />
-                    Lịch sử khám bệnh
-                  </Button>
-                </Link>
-
-                <Link to="/staff/medicines">
-                  <Button
-                    variant="ghost"
-                    className="w-full justify-start gap-3 h-11 rounded-xl text-base font-medium text-gray-600 hover:bg-gray-50 hover:text-gray-900 transition-all"
-                  >
-                    <Pill className="h-5 w-5 text-gray-400" />
-                    Tra cứu thuốc
-                  </Button>
-                </Link>
-
-                <Link to="/staff/medical-records">
-                  <Button
-                    variant="ghost"
-                    className="w-full justify-start gap-3 h-11 rounded-xl text-base font-medium text-gray-600 hover:bg-gray-50 hover:text-gray-900 transition-all"
-                  >
-                    <Stethoscope className="h-5 w-5 text-gray-400" />
-                    Hồ sơ khám bệnh
-                  </Button>
-                </Link>
-
-                <Link to="/staff/vaccination-records">
-                  <Button
-                    variant="ghost"
-                    className="w-full justify-start gap-3 h-11 rounded-xl text-base font-medium text-gray-600 hover:bg-gray-50 hover:text-gray-900 transition-all"
-                  >
-                    <Syringe className="h-5 w-5 text-gray-400" />
-                    Hồ sơ tiêm phòng
-                  </Button>
-                </Link>
-              </>
-            )}
-
-            <div className="pt-8 mt-auto">
-              <Button
-                variant="ghost"
-                className="w-full justify-start gap-3 h-11 rounded-xl text-base font-medium text-red-600 hover:bg-red-50 hover:text-red-700 transition-all"
-                onClick={handleLogout}
-              >
-                <LogOut className="h-5 w-5" />
-                Đăng xuất
-              </Button>
-            </div>
-          </nav>
-        </aside>
+        <StaffSidebar />
 
         {/* Main Content */}
-        <main className="flex-1 p-8 min-w-0">
-          <div className="max-w-6xl mx-auto space-y-8">
-            <div className="flex items-end justify-between">
-              <div>
-                <h1 className="text-3xl font-bold text-gray-900 tracking-tight">
-                  Lịch hẹn nhân viên
-                </h1>
-                <p className="text-gray-500 mt-2 text-lg font-light">
-                  Quản lý danh sách lịch hẹn và thông tin khách hàng
-                </p>
-              </div>
-              <div className="hidden md:block">
-                <div className="text-right">
-                  <div className="text-sm font-medium text-gray-400 uppercase tracking-widest mb-1">
-                    Thời gian
+        <main className="flex-1 p-8 min-w-0 bg-blue-50">
+          <div className="max-w-6xl mx-auto space-y-4">
+            <div className="space-y-8">
+              {/* Quick Stats Cards */}
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                <div className="bg-white rounded-2xl p-6 border border-blue-200 shadow-lg hover:shadow-xl transition-all">
+                  <div className="flex items-start justify-between">
+                    <div>
+                      <p className="text-xl font-medium text-blue-600">
+                        Lịch hẹn hôm nay
+                      </p>
+                      <p className="text-4xl font-bold text-blue-900 mt-2">
+                        {todayAppointmentsCount || 0}
+                      </p>
+                    </div>
+                    <div className="bg-blue-50 p-3 rounded-xl">
+                      <Calendar className="h-7 w-7 text-blue-600" />
+                    </div>
                   </div>
-                  <div className="text-xl font-bold text-gray-900 font-mono">
-                    {new Date().toLocaleTimeString("vi-VN", {
-                      hour: "2-digit",
-                      minute: "2-digit",
-                    })}
+                </div>
+
+                <div className="bg-white rounded-2xl p-6 border border-sky-200 shadow-lg hover:shadow-xl transition-all">
+                  <div className="flex items-start justify-between">
+                    <div>
+                      <p className="text-xl font-medium text-sky-600">
+                        Chờ khám
+                      </p>
+                      <p className="text-4xl font-bold text-sky-900 mt-2">
+                        {pendingMedicalCount}
+                      </p>
+                    </div>
+                    <div className="bg-sky-50 p-3 rounded-xl">
+                      <Stethoscope className="h-7 w-7 text-sky-600" />
+                    </div>
+                  </div>
+                </div>
+
+                <div className="bg-white rounded-2xl p-6 border border-cyan-200 shadow-lg hover:shadow-xl transition-all">
+                  <div className="flex items-start justify-between">
+                    <div>
+                      <p className="text-xl font-medium text-cyan-600">
+                        Chờ tiêm
+                      </p>
+                      <p className="text-4xl font-bold text-cyan-900 mt-2">
+                        {pendingVaccinationCount}
+                      </p>
+                    </div>
+                    <div className="bg-cyan-50 p-3 rounded-xl">
+                      <Syringe className="h-7 w-7 text-cyan-600" />
+                    </div>
                   </div>
                 </div>
               </div>
             </div>
 
             {/* Danh sách lịch hẹn - tìm kiếm */}
-            <Card className="border-0 shadow-lg shadow-gray-200/50 bg-white rounded-3xl overflow-hidden ring-1 ring-gray-100">
+            <Card className="border-0 shadow-lg shadow-gray-300 bg-white rounded-3xl overflow-hidden ring-1 ring-gray-100">
               <CardHeader className="bg-white px-8 pt-8 pb-6 border-b border-gray-50">
-                <div className="flex flex-col xl:flex-row xl:items-center justify-between gap-6">
+                <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6">
                   <div>
-                    <CardTitle className="text-xl font-bold text-gray-900 flex items-center gap-2">
+                    <CardTitle className="text-2xl font-bold text-blue-600 flex items-center gap-2">
                       <span className="bg-blue-600 w-2 h-6 rounded-full block"></span>
-                      Danh sách lịch hẹn
+                      Lịch hẹn của chi nhánh
                     </CardTitle>
-                    <CardDescription className="pl-4 mt-1 text-base">
-                      Xem và quản lý tất cả các lịch hẹn trong hệ thống
+                    <CardDescription className="pl-4 mt-1 text-base text-gray-500 font-medium">
+                      Danh sách lịch hẹn của chi nhánh {branchName || ""}{" "}
                     </CardDescription>
                   </div>
-                  <div className="flex flex-col sm:flex-row gap-3 w-full xl:w-auto">
+                  <div className="flex flex-col sm:flex-row gap-3 w-full lg:w-auto">
                     {/* Date Picker Custom Style */}
                     <div className="relative group">
                       <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                        <Calendar className="h-4 w-4 text-gray-400 group-focus-within:text-blue-500 transition-colors" />
+                        <Calendar className="h-4 w-4 text-gray-500 group-focus-within:text-blue-500 transition-colors" />
                       </div>
                       <Input
                         type="date"
-                        className="w-full sm:w-[180px] pl-10 bg-gray-50 border-gray-200 focus:bg-white focus:ring-2 focus:ring-blue-100 focus:border-blue-400 rounded-xl transition-all h-11"
+                        className="w-full sm:w-[180px] pl-10 border-gray-300 focus:bg-white focus:ring-2 focus:ring-blue-100 focus:border-blue-400 rounded-xl transition-all h-11 placeholder:text-gray-400"
                         value={selectedDate}
                         onChange={(e) => setSelectedDate(e.target.value)}
                       />
                     </div>
                     {/* Search Input Custom Style */}
-                    <div className="relative w-full xl:w-[400px] group">
+                    <div className="relative w-full lg:w-[300px] group">
                       <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                        <Search className="h-4 w-4 text-gray-400 group-focus-within:text-blue-500 transition-colors" />
+                        <Search className="h-4 w-4 text-gray-500 group-focus-within:text-blue-500 transition-colors" />
                       </div>
                       <Input
-                        placeholder="Tìm kiếm theo tên hoặc SĐT khách hàng..."
-                        className="pl-10 bg-gray-50 border-gray-200 focus:bg-white focus:ring-2 focus:ring-blue-100 focus:border-blue-400 rounded-xl transition-all h-11 text-sm"
+                        placeholder="Tìm theo tên hoặc SĐT..."
+                        className="pl-10 border-gray-300 focus:bg-white focus:ring-2 focus:ring-blue-100 focus:border-blue-400 rounded-xl transition-all h-11 text-sm placeholder:text-gray-500"
                         value={searchTerm}
                         onChange={(e) => setSearchTerm(e.target.value)}
                       />
@@ -428,8 +360,8 @@ export default function StaffDemoPage() {
                   </div>
                 </div>
               </CardHeader>
-              <CardContent className="p-0 bg-gray-50/50 min-h-[400px]">
-                <div className="p-6 space-y-4">
+              <CardContent className="p-0 bg-gray-50/50">
+                <div className="space-y-3">
                   {filteredAppointments.length === 0 ? (
                     <div className="flex flex-col items-center justify-center py-20 text-center">
                       <div className="bg-white p-4 rounded-full shadow-sm mb-4">
@@ -439,8 +371,7 @@ export default function StaffDemoPage() {
                         Chưa có lịch hẹn nào
                       </h3>
                       <p className="text-gray-500 max-w-sm mt-1">
-                        Không tìm thấy lịch hẹn phù hợp với bộ lọc hiện tại. Vui
-                        lòng thử lại với ngày hoặc từ khóa khác.
+                        Không tìm thấy lịch hẹn phù hợp với bộ lọc hiện tại.
                       </p>
                       <Button
                         variant="outline"
@@ -454,113 +385,109 @@ export default function StaffDemoPage() {
                       </Button>
                     </div>
                   ) : (
-                    filteredAppointments.map((app) => (
-                      <div
-                        key={app.maLichHen}
-                        className="group relative bg-white rounded-2xl p-5 border border-gray-200/60 shadow-sm hover:shadow-xl hover:shadow-blue-500/5 hover:border-blue-300 transition-all duration-300 ease-out"
-                      >
-                        {/* Status Indicator Bar */}
+                    <div className="space-y-2">
+                      {/* Header Row */}
+                      <div className="hidden md:grid grid-cols-12 gap-4 px-4 py-2 text-xs font-bold text-gray-500 uppercase tracking-wider">
+                        <div className="col-span-3 text-center">Thời gian</div>
+                        <div className="col-span-3 text-center">Khách hàng</div>
+                        <div className="col-span-3 text-center">Dịch vụ</div>
+                        <div className="col-span-3 text-center">Trạng thái</div>
+                      </div>
+
+                      {/* Appointment Rows */}
+                      {filteredAppointments.map((app) => (
                         <div
-                          className={`absolute left-0 top-6 bottom-6 w-1 rounded-r-full
-                            ${
-                              app.trangThai === "Đã lên lịch"
-                                ? "bg-orange-500"
-                                : app.trangThai === "Đã xác nhận"
-                                ? "bg-green-500"
-                                : app.trangThai === "Đã hủy"
-                                ? "bg-red-500"
-                                : "bg-gray-400"
-                            }
-                         `}
-                        ></div>
+                          key={app.maLichHen}
+                          onClick={() => handleShowDetail(app)}
+                          className="bg-white rounded-xl p-4 border border-blue-200 shadow-sm hover:shadow-xl hover:shadow-blue-500/10 hover:border-blue-400 hover:bg-gradient-to-r hover:from-blue-50/50 hover:to-transparent transition-all duration-300 group hover:-translate-y-0.5 relative overflow-hidden cursor-pointer"
+                        >
+                          {/* Hover Effect Background */}
+                          <div className="absolute left-0 top-0 bottom-0 w-1 bg-blue-500 opacity-0 group-hover:opacity-100 transition-opacity duration-300 rounded-l-xl"></div>
 
-                        <div className="pl-4 flex flex-col lg:flex-row lg:items-center justify-between gap-6">
-                          {/* Time & Date */}
-                          <div className="flex items-center gap-6 min-w-[140px]">
-                            <div className="text-center">
-                              <div
-                                className={`text-2xl font-black tracking-tight ${
-                                  app.trangThai === "Hoàn thành"
-                                    ? "text-gray-400"
-                                    : "text-gray-900 group-hover:text-blue-600 transition-colors"
-                                }`}
+                          <div className="grid grid-cols-1 md:grid-cols-12 gap-4 items-center">
+                            {/* Thời gian */}
+                            <div className="md:col-span-3">
+                              <div className="text-center">
+                                <div className="text-2xl font-black text-blue-600 group-hover:text-blue-700">
+                                  {app.thoiGianHen
+                                    ? app.thoiGianHen
+                                        .split("-")
+                                        .reverse()
+                                        .join("/")
+                                    : ""}
+                                </div>
+                                {app.thoiGianHen && (
+                                  <div className="text-xs font-medium text-gray-500 mt-1">
+                                    {new Date(
+                                      app.thoiGianHen
+                                    ).toLocaleDateString("vi-VN", {
+                                      weekday: "long",
+                                    })}
+                                  </div>
+                                )}
+                              </div>
+                            </div>
+
+                            {/* Khách hàng */}
+                            <div className="md:col-span-3 text-center">
+                              <p className="text-sm font-bold text-gray-800">
+                                {app.tenKhachHang}
+                              </p>
+                              <p className="text-xs text-gray-500 mt-1">
+                                {app.sdtKhachHang}
+                              </p>
+                            </div>
+
+                            {/* Dịch vụ */}
+                            <div className="md:col-span-3">
+                              <div className="flex items-center justify-center gap-2">
+                                {app.loaiDichVu
+                                  ?.toLowerCase()
+                                  .includes("tiêm") ? (
+                                  <>
+                                    <div className="h-6 w-6 rounded-full bg-green-50 flex items-center justify-center flex-shrink-0">
+                                      <Syringe className="h-3 w-3 text-green-600" />
+                                    </div>
+                                    <span className="text-sm font-semibold text-green-600">
+                                      {app.loaiDichVu}
+                                    </span>
+                                  </>
+                                ) : (
+                                  <>
+                                    <div className="h-6 w-6 rounded-full bg-blue-50 flex items-center justify-center flex-shrink-0">
+                                      <Stethoscope className="h-3 w-3 text-blue-600" />
+                                    </div>
+                                    <span className="text-sm font-semibold text-blue-600">
+                                      {app.loaiDichVu}
+                                    </span>
+                                  </>
+                                )}
+                              </div>
+                            </div>
+
+                            {/* Trạng thái */}
+                            <div className="md:col-span-3 flex justify-center">
+                              <Badge
+                                variant="secondary"
+                                className={`text-[10px] uppercase font-bold tracking-wider border-0
+                                  ${
+                                    app.trangThai === "Đã lên lịch"
+                                      ? "bg-blue-50 text-blue-600"
+                                      : app.trangThai === "Hoàn thành"
+                                      ? "bg-green-50 text-green-600"
+                                      : app.trangThai === "Đã hủy"
+                                      ? "bg-red-50 text-red-600"
+                                      : "bg-gray-100 text-gray-600"
+                                  }
+                                `}
                               >
-                                {app.thoiGianHen}
-                              </div>
-                              <div className="text-[11px] font-bold text-gray-400 uppercase tracking-wider mt-1 bg-gray-50 px-2 py-0.5 rounded-md inline-block">
-                                {app.ngayLap}
-                              </div>
+                                {app.trangThai}
+                              </Badge>
                             </div>
-                            <div className="h-10 w-px bg-gray-100 hidden lg:block"></div>
-                          </div>
-
-                          {/* Info */}
-                          <div className="flex-1 grid md:grid-cols-2 gap-6">
-                            <div className="space-y-1.5">
-                              <div className="flex items-center gap-2 mb-1">
-                                <h4 className="font-bold text-lg text-gray-900 group-hover:text-blue-700 transition-colors">
-                                  {app.tenKhachHang}
-                                </h4>
-                                <Badge
-                                  variant="secondary"
-                                  className={`text-[10px] uppercase font-bold tracking-wider px-2 py-0 border-0
-                                    ${
-                                      app.trangThai === "Đã lên lịch"
-                                        ? "bg-orange-50 text-orange-600"
-                                        : app.trangThai === "Đã xác nhận"
-                                        ? "bg-green-50 text-green-600"
-                                        : app.trangThai === "Đã hủy"
-                                        ? "bg-red-50 text-red-600"
-                                        : "bg-gray-100 text-gray-500"
-                                    }
-                                  `}
-                                >
-                                  {app.trangThai}
-                                </Badge>
-                              </div>
-                              <div className="flex items-center gap-2 text-sm text-gray-500 font-medium">
-                                <Phone className="h-3.5 w-3.5 text-gray-400" />
-                                <span>{app.sdtKhachHang}</span>
-                              </div>
-                            </div>
-
-                            <div className="space-y-1.5 pl-0 md:pl-6 md:border-l border-gray-100">
-                              <div className="flex items-center gap-2 text-sm text-gray-700">
-                                <div className="h-6 w-6 rounded-full bg-blue-50 flex items-center justify-center">
-                                  <Stethoscope className="h-3.5 w-3.5 text-blue-500" />
-                                </div>
-                                <span className="font-medium">
-                                  {app.loaiDichVu}
-                                </span>
-                              </div>
-                              <div className="flex items-center gap-2 text-sm text-gray-600">
-                                <div className="h-6 w-6 rounded-full bg-purple-50 flex items-center justify-center">
-                                  <User className="h-3.5 w-3.5 text-purple-500" />
-                                </div>
-                                <span>
-                                  BS:{" "}
-                                  <span className="font-semibold text-gray-800">
-                                    {app.tenBacSiPhuTrach || "Chưa phân công"}
-                                  </span>
-                                </span>
-                              </div>
-                            </div>
-                          </div>
-
-                          {/* Action */}
-                          <div className="flex items-center pt-4 lg:pt-0">
-                            <Button
-                              size="sm"
-                              className="h-10 px-5 rounded-xl bg-white text-gray-700 border border-gray-200 shadow-sm hover:bg-gray-50 hover:text-blue-600 hover:border-blue-200 transition-all font-medium gap-2 group/btn"
-                              onClick={() => handleShowDetail(app)}
-                            >
-                              <FileText className="h-4 w-4 text-gray-400 group-hover/btn:text-blue-500 transition-colors" />
-                              Chi tiết
-                            </Button>
                           </div>
                         </div>
-                      </div>
-                    ))
+                      ))}
+                    </div>
                   )}
                 </div>
               </CardContent>
@@ -570,11 +497,17 @@ export default function StaffDemoPage() {
 
         {/* DIALOG HIỂN THỊ CHI TIẾT LỊCH HẸN*/}
         <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-          <DialogContent className="max-w-2xl w-full max-h-[90vh] rounded-3xl bg-white shadow-2xl border-0 p-0 overflow-hidden flex flex-col">
-            <div className="bg-gradient-to-r from-blue-600 to-blue-700 p-5 text-white relative overflow-hidden flex-shrink-0">
-              <div className="absolute top-0 right-0 p-4 opacity-10">
-                <FileText className="h-24 w-24 transform rotate-12" />
+          <DialogContent className="max-w-xl w-full max-h-[85vh] rounded-3xl bg-white shadow-2xl border-0 p-0 overflow-hidden flex flex-col [&>button]:hidden">
+            <div className="bg-gradient-to-r from-blue-500 to-sky-500 p-4 text-white relative overflow-hidden flex-shrink-0">
+              <div className="absolute right-3 top-3 opacity-[0.06]">
+                <FileText className="h-20 w-20 transform rotate-12" />
               </div>
+              <button
+                onClick={() => setIsDialogOpen(false)}
+                className="absolute right-3 top-3 h-9 w-9 rounded-full flex items-center justify-center text-white/90 hover:bg-white/15 hover:text-white transition z-20"
+              >
+                <X className="h-5 w-5" />
+              </button>
               <DialogTitle className="text-lg font-bold flex items-center gap-2 relative z-10">
                 <div className="bg-white/20 p-1.5 rounded-lg backdrop-blur-sm">
                   <FileText className="h-4 w-4 text-white" />
@@ -587,7 +520,7 @@ export default function StaffDemoPage() {
             </div>
 
             {selectedApp && (
-              <div className="flex-1 overflow-y-auto p-5 space-y-4">
+              <div className="flex-1 overflow-y-auto px-5 pt-3 pb-5 space-y-4 custom-scrollbar">
                 {/* Customer Info */}
                 <div className="space-y-2">
                   <div className="flex items-center gap-2">
@@ -597,8 +530,8 @@ export default function StaffDemoPage() {
                     </span>
                     <span className="h-px flex-1 bg-gray-100"></span>
                   </div>
-                  <div className="bg-gray-50 rounded-xl p-3 flex items-center gap-3">
-                    <div className="h-10 w-10 rounded-full bg-white flex items-center justify-center shadow-sm text-base font-bold text-gray-700 border border-gray-100 flex-shrink-0">
+                  <div className="bg-white rounded-xl p-3 flex items-center gap-3 border border-blue-200">
+                    <div className="h-10 w-10 rounded-full bg-blue-50 flex items-center justify-center shadow-sm text-base font-bold text-blue-700 border border-blue-200 flex-shrink-0">
                       {selectedApp.khachHang?.hoTen?.charAt(0) || "U"}
                     </div>
                     <div className="min-w-0 flex-1">
@@ -623,110 +556,80 @@ export default function StaffDemoPage() {
                     <span className="h-px flex-1 bg-gray-100"></span>
                   </div>
                   <div className="grid grid-cols-2 gap-2">
-                    <div className="bg-blue-50 rounded-xl p-2.5 border border-blue-100">
-                      <span className="text-[9px] uppercase font-bold text-blue-400 tracking-wider block">
-                        Thời gian
+                    <div className="bg-white rounded-xl p-3 border border-blue-200">
+                      <span className="text-[9px] uppercase font-bold text-blue-500 tracking-wider block">
+                        Thời gian hẹn
                       </span>
-                      <p className="text-blue-900 font-bold text-sm mt-0.5 break-words">
-                        {selectedApp.thoiGianHen}
+                      <p className="text-gray-900 font-bold text-sm mt-0.5 break-words">
+                        {selectedApp.thoiGianHen
+                          ? selectedApp.thoiGianHen
+                              .split("-")
+                              .reverse()
+                              .join("/")
+                          : ""}
                       </p>
                     </div>
-                    <div className="bg-purple-50 rounded-xl p-2.5 border border-purple-100">
-                      <span className="text-[9px] uppercase font-bold text-purple-400 tracking-wider block">
+                    <div className="bg-white rounded-xl p-3 border border-blue-200">
+                      <span className="text-[9px] uppercase font-bold text-blue-500 tracking-wider block">
                         Dịch vụ
                       </span>
-                      <p className="text-purple-900 font-bold text-sm mt-0.5 break-words">
+                      <p className="text-gray-900 font-bold text-sm mt-0.5 break-words">
                         {selectedApp.loaiDichVu}
                       </p>
                     </div>
                   </div>
-                  <div className="bg-white border border-gray-100 rounded-xl p-2.5 flex justify-between items-center shadow-sm">
-                    <span className="text-xs text-gray-500 font-medium">
+                  <div className="bg-white border border-blue-200 rounded-xl p-3 flex justify-between items-center">
+                    <span className="text-sm text-slate-600 font-medium">
                       Bác sĩ phụ trách
                     </span>
-                    <span className="text-xs font-bold text-gray-800 truncate ml-2">
+                    <span className="text-sm font-bold text-gray-900 truncate ml-2">
                       {selectedApp.bacSi?.hoTen || "Chưa phân công"}
                     </span>
                   </div>
-                  <div className="flex justify-center">
+                  <div className="bg-white border border-blue-200 rounded-xl p-3 flex justify-between items-center">
+                    <span className="text-sm text-slate-600 font-medium">
+                      Trạng thái
+                    </span>
                     <Badge
                       variant="outline"
                       className={`
-                        px-3 py-1 text-xs font-bold border-2
+                        px-3 py-1 text-xs font-bold border
                         ${
                           selectedApp.trangThai === "Đã lên lịch"
-                            ? "bg-orange-50 text-orange-600 border-orange-100"
+                            ? "bg-orange-50 text-orange-700 border-orange-100"
                             : selectedApp.trangThai === "Đã xác nhận"
-                            ? "bg-green-50 text-green-600 border-green-100"
+                            ? "bg-green-50 text-green-700 border-green-100"
                             : selectedApp.trangThai === "Đã hủy"
-                            ? "bg-red-50 text-red-600 border-red-100"
-                            : "bg-gray-50 text-gray-600 border-gray-100"
+                            ? "bg-red-50 text-red-700 border-red-100"
+                            : "bg-gray-50 text-gray-700 border-gray-100"
                         }
                       `}
                     >
                       {selectedApp.trangThai}
                     </Badge>
                   </div>
-                </div>
-
-                {/* Pets List */}
-                <div className="space-y-2">
-                  <div className="flex items-center gap-2">
-                    <span className="h-px flex-1 bg-gray-100"></span>
-                    <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest px-2">
-                      Thú cưng ({selectedApp.thuCung?.length || 0})
-                    </span>
-                    <span className="h-px flex-1 bg-gray-100"></span>
-                  </div>
-                  <div className="space-y-1.5 max-h-[200px] overflow-y-auto pr-1 custom-scrollbar">
-                    {selectedApp.thuCung?.map((pet) => (
-                      <div
-                        key={pet.maThuCung}
-                        className="flex items-center justify-between p-2.5 border border-gray-100 rounded-xl hover:bg-gray-50 transition-colors group"
-                      >
-                        <div className="flex items-center gap-2.5 min-w-0 flex-1">
-                          <div className="h-8 w-8 rounded-full bg-gradient-to-br from-gray-100 to-gray-200 flex items-center justify-center text-gray-600 font-bold text-xs shadow-inner group-hover:from-blue-100 group-hover:to-blue-200 group-hover:text-blue-600 transition-all flex-shrink-0">
-                            {pet.tenThuCung.charAt(0)}
-                          </div>
-                          <div className="min-w-0 flex-1">
-                            <p className="font-bold text-xs text-gray-800 truncate">
-                              {pet.tenThuCung}
-                            </p>
-                            <p className="text-[10px] text-gray-500 font-medium uppercase tracking-wide truncate">
-                              {pet.giong} • {pet.loai}
-                            </p>
-                          </div>
-                        </div>
-                        <Badge
-                          variant="secondary"
-                          className="text-[10px] font-bold bg-white border border-gray-100 shadow-sm flex-shrink-0 ml-2"
-                        >
-                          {pet.gioiTinh}
-                        </Badge>
-                      </div>
-                    ))}
-                    {(!selectedApp.thuCung ||
-                      selectedApp.thuCung.length === 0) && (
-                      <div className="text-center py-3 bg-gray-50 rounded-xl border border-dashed border-gray-200">
-                        <p className="text-gray-400 text-[10px] italic">
-                          Chưa có thông tin thú cưng
-                        </p>
-                      </div>
-                    )}
-                  </div>
+                  {selectedApp.ngayLap && (
+                    <div className="bg-white rounded-xl p-3 border border-blue-200">
+                      <span className="text-[9px] uppercase font-bold text-blue-500 tracking-wider block">
+                        Thời gian lập
+                      </span>
+                      <p className="text-gray-900 font-semibold text-sm mt-0.5">
+                        {new Date(selectedApp.ngayLap).toLocaleDateString(
+                          "vi-VN",
+                          {
+                            day: "2-digit",
+                            month: "2-digit",
+                            year: "numeric",
+                            hour: "2-digit",
+                            minute: "2-digit",
+                          }
+                        )}
+                      </p>
+                    </div>
+                  )}
                 </div>
               </div>
             )}
-
-            <div className="p-4 bg-gray-50 border-t border-gray-100 flex justify-end gap-3 flex-shrink-0">
-              <Button
-                onClick={() => setIsDialogOpen(false)}
-                variant="outline"
-                className="rounded-xl border-gray-200 font-bold text-gray-600 hover:text-gray-900 hover:border-gray-300 text-sm px-4 h-9"
-              >
-                Đóng
-              </Button>
-            </div>
           </DialogContent>
         </Dialog>
       </div>

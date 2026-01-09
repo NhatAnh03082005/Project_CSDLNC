@@ -1,5 +1,6 @@
 const sql = require("mssql");
 const { poolPromise } = require("../../config/database");
+const employeesService = require("../employees/employees.service");
 
 class ReportsService {
   /**
@@ -108,11 +109,63 @@ class ReportsService {
     try {
       const pool = await poolPromise;
 
-      const result = await pool
+      // Lấy thống kê theo chi nhánh từ stored procedure
+      const branchResult = await pool
         .request()
         .execute("dbo.sp_ThongKeKhachHang_TheoChiNhanh");
 
-      return result.recordset;
+      const branches = branchResult.recordset;
+
+      // Lấy tất cả khách hàng từ employeesService.getAllCustomers
+      // Sử dụng limit lớn để lấy tất cả
+      const allCustomersResponse = await employeesService.getAllCustomers({
+        page: 1,
+        limit: 999999,
+      });
+
+      // Đếm tổng số khách hàng unique bằng length
+      const totalCustomers = allCustomersResponse.success
+        ? allCustomersResponse.data.customers.length
+        : 0;
+
+      // Đếm khách hàng mới (có hóa đơn trong 30 ngày gần đây và không có hóa đơn trước đó)
+      const newCustomersResult = await pool.request().query(`
+          SELECT COUNT(DISTINCT hd.MaKhachHang) AS NewCustomers
+          FROM dbo.HoaDon hd
+          WHERE hd.NgayLap >= DATEADD(DAY, -30, GETDATE())
+          AND hd.MaKhachHang NOT IN (
+            SELECT DISTINCT MaKhachHang 
+            FROM dbo.HoaDon 
+            WHERE NgayLap < DATEADD(DAY, -30, GETDATE())
+          )
+        `);
+
+      const totalNewCustomers = newCustomersResult.recordset[0].NewCustomers;
+
+      // Đếm khách hàng lâu chưa quay lại (không có hóa đơn trong 90 ngày)
+      const inactiveCustomersResult = await pool.request().query(`
+          SELECT COUNT(DISTINCT kh.MaKhachHang) AS InactiveCustomers
+          FROM dbo.KhachHang kh
+          WHERE EXISTS (
+            SELECT 1 FROM dbo.HoaDon hd 
+            WHERE hd.MaKhachHang = kh.MaKhachHang
+          )
+          AND NOT EXISTS (
+            SELECT 1 FROM dbo.HoaDon hd 
+            WHERE hd.MaKhachHang = kh.MaKhachHang
+            AND hd.NgayLap >= DATEADD(DAY, -90, GETDATE())
+          )
+        `);
+
+      const totalInactiveCustomers =
+        inactiveCustomersResult.recordset[0].InactiveCustomers;
+
+      return {
+        branches: branches,
+        totalCustomers: totalCustomers,
+        totalNewCustomers: totalNewCustomers,
+        totalInactiveCustomers: totalInactiveCustomers,
+      };
     } catch (error) {
       console.error("Error in getCustomerStats:", error);
       throw error;

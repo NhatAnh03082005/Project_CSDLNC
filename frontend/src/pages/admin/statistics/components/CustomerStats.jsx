@@ -28,6 +28,7 @@ export default function CustomerStats() {
         const response = await reportAPI.getCustomers();
 
         if (response?.data?.success) {
+          // Backend should return: { branches: [...], totalCustomers, totalNewCustomers, totalInactiveCustomers }
           setData(response.data.data);
         }
       } catch (error) {
@@ -50,7 +51,11 @@ export default function CustomerStats() {
     );
   }
 
-  if (!data || data.length === 0) {
+  if (
+    !data ||
+    (Array.isArray(data) && data.length === 0) ||
+    (data.branches && data.branches.length === 0)
+  ) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-blue-50 via-sky-50 to-cyan-50">
         <AdminHeader />
@@ -90,21 +95,28 @@ export default function CustomerStats() {
     );
   }
 
-  const branches = data;
+  // Support both old format (array) and new format (object with branches + totals)
+  const branches = Array.isArray(data) ? data : data.branches || [];
 
-  // Tính tổng số liệu toàn hệ thống
-  const totalCustomers = branches.reduce(
-    (sum, b) => sum + (b.TongSoKhachHang || 0),
-    0
-  );
-  const totalNewCustomers = branches.reduce(
-    (sum, b) => sum + (b.TongKhachHangMoi || 0),
-    0
-  );
-  const totalInactiveCustomers = branches.reduce(
-    (sum, b) => sum + (b.TongKhachHangLauChuaQuayLai || 0),
-    0
-  );
+  // Use totals from backend if available (unique customer count), otherwise fallback to sum
+  // NOTE: Summing branch totals is incorrect as customers can have invoices at multiple branches
+  const totalCustomers =
+    data.totalCustomers !== undefined
+      ? data.totalCustomers
+      : branches.reduce((sum, b) => sum + (b.TongSoKhachHang || 0), 0);
+
+  const totalNewCustomers =
+    data.totalNewCustomers !== undefined
+      ? data.totalNewCustomers
+      : branches.reduce((sum, b) => sum + (b.TongKhachHangMoi || 0), 0);
+
+  const totalInactiveCustomers =
+    data.totalInactiveCustomers !== undefined
+      ? data.totalInactiveCustomers
+      : branches.reduce(
+          (sum, b) => sum + (b.TongKhachHangLauChuaQuayLai || 0),
+          0
+        );
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-sky-50 to-cyan-50">

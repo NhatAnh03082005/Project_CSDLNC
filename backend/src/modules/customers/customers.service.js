@@ -8,7 +8,7 @@ class CustomersService {
   async getProfile(customerId) {
     try {
       const pool = await poolPromise;
-      
+
       const result = await pool
         .request()
         .input("CustomerId", sql.Char(7), customerId)
@@ -54,7 +54,7 @@ class CustomersService {
 
       let capHoiVien = "Cơ bản";
       let chiTieuGiuHang = 0;
-      
+
       if (tongChiTieu >= 15000000) {
         capHoiVien = "VIP";
         chiTieuGiuHang = 15000000;
@@ -115,7 +115,8 @@ class CustomersService {
       return {
         success: false,
         status: 400,
-        message: "Không được phép thay đổi email. Vui lòng liên hệ hỗ trợ nếu cần cập nhật email.",
+        message:
+          "Không được phép thay đổi email. Vui lòng liên hệ hỗ trợ nếu cần cập nhật email.",
       };
     }
 
@@ -131,17 +132,26 @@ class CustomersService {
       const pool = await poolPromise;
 
       if (CCCD !== undefined) {
-        const dupCheck = await pool.request()
+        const dupCheck = await pool
+          .request()
           .input("CCCD", sql.Char(12), CCCD)
           .input("MaKH", sql.Char(7), customerId)
-          .query("SELECT 1 FROM dbo.KhachHang WHERE CCCD = @CCCD AND MaKhachHang <> @MaKH");
+          .query(
+            "SELECT 1 FROM dbo.KhachHang WHERE CCCD = @CCCD AND MaKhachHang <> @MaKH"
+          );
 
         if (dupCheck.recordset.length > 0) {
-          return { success: false, status: 409, message: "Số CCCD đã tồn tại trong hệ thống" };
+          return {
+            success: false,
+            status: 409,
+            message: "Số CCCD đã tồn tại trong hệ thống",
+          };
         }
       }
 
-      const request = pool.request().input("MaKhachHang", sql.Char(7), customerId);
+      const request = pool
+        .request()
+        .input("MaKhachHang", sql.Char(7), customerId);
       const setClauses = [];
 
       if (HoTen !== undefined) {
@@ -262,12 +272,12 @@ class CustomersService {
   async getInvoices(customerId) {
     try {
       const pool = await poolPromise;
-      
+
       // GỌI STORED PROCEDURE sp_TV4_GetInvoices
       const result = await pool
         .request()
-        .input('MaKhachHang', sql.Char(7), customerId)
-        .execute('sp_TV4_GetInvoices');
+        .input("MaKhachHang", sql.Char(7), customerId)
+        .execute("sp_TV4_GetInvoices");
 
       return {
         success: true,
@@ -298,11 +308,11 @@ class CustomersService {
       // GỌI STORED PROCEDURE sp_TV4_GetInvoiceDetails
       const result = await pool
         .request()
-        .input('MaKhachHang', sql.Char(7), customerId)
-        .input('MaHoaDon', sql.Char(8), maHoaDon)
-        .output('ErrorMessage', sql.NVarChar(500))
-        .output('StatusCode', sql.Int)
-        .execute('sp_TV4_GetInvoiceDetails');
+        .input("MaKhachHang", sql.Char(7), customerId)
+        .input("MaHoaDon", sql.Char(8), maHoaDon)
+        .output("ErrorMessage", sql.NVarChar(500))
+        .output("StatusCode", sql.Int)
+        .execute("sp_TV4_GetInvoiceDetails");
 
       const { ErrorMessage, StatusCode } = result.output;
 
@@ -418,7 +428,10 @@ class CustomersService {
     let hinhThucThanhToan;
     if (paymentMethod === "TienMat" || paymentMethod === "Tiền mặt") {
       hinhThucThanhToan = "Tiền mặt";
-    } else if (paymentMethod === "ChuyenKhoan" || paymentMethod === "Chuyển khoản") {
+    } else if (
+      paymentMethod === "ChuyenKhoan" ||
+      paymentMethod === "Chuyển khoản"
+    ) {
       hinhThucThanhToan = "Chuyển khoản";
     } else {
       return {
@@ -437,18 +450,19 @@ class CustomersService {
       // GỌI STORED PROCEDURE sp_TV3_CreateOrder
       const result = await pool
         .request()
-        .input('MaKhachHang', sql.Char(7), customerId)
-        .input('MaChiNhanh', sql.Char(4), maChiNhanh)
-        .input('HinhThucThanhToan', sql.NVarChar(20), hinhThucThanhToan)
-        .input('ItemsJSON', sql.NVarChar(sql.MAX), itemsJSON)
-        .output('MaHoaDon', sql.Char(8))
-        .output('TongTien', sql.Int)
-        .output('DiemLoyalty', sql.Int)
-        .output('ErrorMessage', sql.NVarChar(500))
-        .output('StatusCode', sql.Int)
-        .execute('sp_TV3_CreateOrder');
+        .input("MaKhachHang", sql.Char(7), customerId)
+        .input("MaChiNhanh", sql.Char(4), maChiNhanh)
+        .input("HinhThucThanhToan", sql.NVarChar(20), hinhThucThanhToan)
+        .input("ItemsJSON", sql.NVarChar(sql.MAX), itemsJSON)
+        .output("MaHoaDon", sql.Char(8))
+        .output("TongTien", sql.Int)
+        .output("DiemLoyalty", sql.Int)
+        .output("ErrorMessage", sql.NVarChar(500))
+        .output("StatusCode", sql.Int)
+        .execute("sp_TV3_CreateOrder");
 
-      const { MaHoaDon, TongTien, DiemLoyalty, ErrorMessage, StatusCode } = result.output;
+      const { MaHoaDon, TongTien, DiemLoyalty, ErrorMessage, StatusCode } =
+        result.output;
 
       if (StatusCode !== 201) {
         return {
@@ -460,8 +474,8 @@ class CustomersService {
 
       const today = new Date();
       const year = today.getFullYear();
-      const month = String(today.getMonth() + 1).padStart(2, '0');
-      const day = String(today.getDate()).padStart(2, '0');
+      const month = String(today.getMonth() + 1).padStart(2, "0");
+      const day = String(today.getDate()).padStart(2, "0");
       const ngayLapStr = `${year}-${month}-${day}`;
 
       return {
@@ -526,7 +540,9 @@ class CustomersService {
 
       const orders = result.recordset.map((order) => ({
         maHoaDon: order.MaHoaDon,
-        ngayDat: order.NgayLap ? order.NgayLap.toISOString().split("T")[0] : null,
+        ngayDat: order.NgayLap
+          ? order.NgayLap.toISOString().split("T")[0]
+          : null,
         trangThai: order.TrangThai,
         phuongThucThanhToan: order.PhuongThucThanhToan,
         tongTien: order.TongTien,
@@ -635,7 +651,9 @@ class CustomersService {
         status: 200,
         data: {
           maHoaDon: order.MaHoaDon,
-          ngayDat: order.NgayLap ? order.NgayLap.toISOString().split("T")[0] : null,
+          ngayDat: order.NgayLap
+            ? order.NgayLap.toISOString().split("T")[0]
+            : null,
           trangThai: order.TrangThai,
           phuongThucThanhToan: order.PhuongThucThanhToan,
           tongTien: order.TongTien,
@@ -705,7 +723,9 @@ class CustomersService {
         sdt: order.SDT,
         maChiNhanh: order.MaChiNhanh,
         tenChiNhanh: order.TenChiNhanh,
-        ngayDat: order.NgayLap ? order.NgayLap.toISOString().split("T")[0] : null,
+        ngayDat: order.NgayLap
+          ? order.NgayLap.toISOString().split("T")[0]
+          : null,
         phuongThucThanhToan: order.PhuongThucThanhToan,
         tongTien: order.TongTien,
       }));
@@ -725,9 +745,6 @@ class CustomersService {
       };
     }
   }
-
-  
 }
 
 module.exports = new CustomersService();
-
