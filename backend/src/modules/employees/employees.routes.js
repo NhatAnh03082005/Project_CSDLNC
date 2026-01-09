@@ -19,15 +19,6 @@ router.get("/", employeesController.getAllEmployees);
 router.post("/", employeesController.createEmployee);
 
 /**
- * @route   GET /api/employees/doctors
- * @desc    Danh sách bác sĩ (để đặt lịch)
- * @access  Public (tạm thời)
- */
-router.get("/doctors", (req, res) => {
-  res.json({ message: "Get doctors list" });
-});
-
-/**
  * @route   GET /api/employees/customers
  * @desc    Lấy danh sách toàn bộ khách hàng hệ thống (có phân trang)
  * @access  Private - NHAN_VIEN, QUAN_TRI

@@ -94,15 +94,6 @@ router.get(
   vaccinationsController.getPackageVaccines
 );
 
-/**
- * @route   GET /api/vaccinations/records/:petId
- * @desc    Lịch sử tiêm phòng của thú cưng
- * @access  Private
- */
-router.get("/records/:petId", authenticate, (req, res) => {
-  res.json({ message: "Get pet vaccination history" });
-});
-
 // =====================================================================
 // LOGIC GÓI TIÊM PHÒNG (PACKAGES)
 // =====================================================================

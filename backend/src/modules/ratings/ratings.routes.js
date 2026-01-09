@@ -17,24 +17,6 @@ router.post(
 );
 
 /**
- * @route   GET /api/ratings/branch/:branchId
- * @desc    Đánh giá của chi nhánh
- * @access  Public
- */
-router.get('/branch/:branchId', (req, res) => {
-  res.json({ message: 'Get branch ratings' });
-});
-
-/**
- * @route   GET /api/ratings/service/:serviceId
- * @desc    Đánh giá của dịch vụ
- * @access  Public
- */
-router.get('/service/:serviceId', (req, res) => {
-  res.json({ message: 'Get service ratings' });
-});
-
-/**
  * @route   GET /api/ratings/my-ratings
  * @desc    Danh sách dịch vụ sức khỏe đã sử dụng để đánh giá (sắp xếp theo thời gian)
  * @access  Private - KHACH_HANG

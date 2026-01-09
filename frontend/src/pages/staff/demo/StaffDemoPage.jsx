@@ -229,6 +229,7 @@ export default function StaffDemoPage() {
               </span>
             </div>
 
+            {/* Trang chủ - hiển thị cho tất cả */}
             <Link to="/staff/demo">
               <Button
                 variant="ghost"
@@ -249,165 +250,102 @@ export default function StaffDemoPage() {
               </Button>
             </Link>
 
-            <Link to="/staff/create-record">
-              <Button
-                variant="ghost"
-                className="w-full justify-start gap-3 h-11 rounded-xl text-base font-medium text-gray-600 hover:bg-gray-50 hover:text-gray-900 transition-all"
-              >
-                <FilePlus className="h-5 w-5 text-gray-400" />
-                Tra cứu hồ sơ
-              </Button>
-            </Link>
-
-            {/* Nút Lập hóa đơn - vô hiệu hóa nếu là Bác sĩ thú y */}
-            <Link
-              to="/staff/invoice"
-              onClick={(e) => {
-                if (user?.ViTri === "Bác sĩ thú y") {
-                  e.preventDefault();
-                }
-              }}
-              className={
-                user?.ViTri === "Bác sĩ thú y" ? "pointer-events-none" : ""
-              }
-            >
-              <Button
-                variant="ghost"
-                disabled={user?.ViTri === "Bác sĩ thú y"}
-                className={`w-full justify-start gap-3 h-11 rounded-xl text-base font-medium transition-all ${
-                  user?.ViTri === "Bác sĩ thú y"
-                    ? "text-gray-400 cursor-not-allowed opacity-50"
-                    : "text-gray-600 hover:bg-gray-50 hover:text-gray-900"
-                }`}
-              >
-                <Receipt
-                  className={`h-5 w-5 ${
-                    user?.ViTri === "Bác sĩ thú y"
-                      ? "text-gray-300"
-                      : "text-gray-400"
-                  }`}
-                />
-                Lập hóa đơn
-              </Button>
-            </Link>
-
-            <div className="pt-6 pb-2 mt-2">
-              <span className="text-xs font-bold text-gray-400 uppercase tracking-wider px-4">
-                Quản lý
-              </span>
-            </div>
-
-            <Link to="/staff/work-schedule">
-              <Button
-                variant="ghost"
-                className="w-full justify-start gap-3 h-11 rounded-xl text-base font-medium text-gray-600 hover:bg-gray-50 hover:text-gray-900 transition-all"
-              >
-                <Clock className="h-5 w-5 text-gray-400" />
-                Lịch làm việc
-              </Button>
-            </Link>
-
-            {/* Xem lịch hẹn của bác sĩ - chỉ cho bác sĩ thú y */}
-            {user?.ViTri === "Bác sĩ thú y" && (
-              <Link to="/staff/doctor-appointments">
+            {/* Tra cứu hồ sơ - chỉ hiển thị cho nhân viên không phải bác sĩ */}
+            {user?.ViTri !== "Bác sĩ thú y" && (
+              <Link to="/staff/create-record">
                 <Button
                   variant="ghost"
                   className="w-full justify-start gap-3 h-11 rounded-xl text-base font-medium text-gray-600 hover:bg-gray-50 hover:text-gray-900 transition-all"
                 >
-                  <Calendar className="h-5 w-5 text-gray-400" />
-                  Lịch hẹn của tôi
+                  <FilePlus className="h-5 w-5 text-gray-400" />
+                  Tra cứu hồ sơ
                 </Button>
               </Link>
             )}
 
-            {/* Xem lịch sử khám bệnh - chỉ cho bác sĩ thú y */}
-            {user?.ViTri === "Bác sĩ thú y" && (
-              <Link to="/staff/medical-history">
+            {/* Nút Lập hóa đơn - chỉ hiển thị cho nhân viên không phải bác sĩ */}
+            {user?.ViTri !== "Bác sĩ thú y" && (
+              <Link to="/staff/invoice">
                 <Button
                   variant="ghost"
                   className="w-full justify-start gap-3 h-11 rounded-xl text-base font-medium text-gray-600 hover:bg-gray-50 hover:text-gray-900 transition-all"
                 >
-                  <History className="h-5 w-5 text-gray-400" />
-                  Lịch sử khám bệnh
+                  <Receipt className="h-5 w-5 text-gray-400" />
+                  Lập hóa đơn
                 </Button>
               </Link>
             )}
 
-            {/* Tra cứu thuốc - chỉ cho bác sĩ thú y */}
+            {/* Mục Quản lý - chỉ hiển thị cho bác sĩ thú y */}
             {user?.ViTri === "Bác sĩ thú y" && (
-              <Link to="/staff/medicines">
-                <Button
-                  variant="ghost"
-                  className="w-full justify-start gap-3 h-11 rounded-xl text-base font-medium text-gray-600 hover:bg-gray-50 hover:text-gray-900 transition-all"
-                >
-                  <Pill className="h-5 w-5 text-gray-400" />
-                  Tra cứu thuốc
-                </Button>
-              </Link>
-            )}
+              <>
+                <div className="pt-6 pb-2 mt-2">
+                  <span className="text-xs font-bold text-gray-400 uppercase tracking-wider px-4">
+                    Quản lý
+                  </span>
+                </div>
 
-            {/* Nút Hồ sơ khám bệnh - vô hiệu hóa nếu không phải Bác sĩ thú y */}
-            <Link
-              to="/staff/medical-records"
-              onClick={(e) => {
-                if (user?.ViTri !== "Bác sĩ thú y") {
-                  e.preventDefault();
-                }
-              }}
-              className={
-                user?.ViTri !== "Bác sĩ thú y" ? "pointer-events-none" : ""
-              }
-            >
-              <Button
-                variant="ghost"
-                disabled={user?.ViTri !== "Bác sĩ thú y"}
-                className={`w-full justify-start gap-3 h-11 rounded-xl text-base font-medium transition-all ${
-                  user?.ViTri !== "Bác sĩ thú y"
-                    ? "text-gray-400 cursor-not-allowed opacity-50"
-                    : "text-gray-600 hover:bg-gray-50 hover:text-gray-900"
-                }`}
-              >
-                <Stethoscope
-                  className={`h-5 w-5 ${
-                    user?.ViTri !== "Bác sĩ thú y"
-                      ? "text-gray-300"
-                      : "text-gray-400"
-                  }`}
-                />
-                Hồ sơ khám bệnh
-              </Button>
-            </Link>
-            {/* Nút Hồ sơ tiêm phòng - vô hiệu hóa nếu không phải Bác sĩ thú y */}
-            <Link
-              to="/staff/vaccination-records"
-              onClick={(e) => {
-                if (user?.ViTri !== "Bác sĩ thú y") {
-                  e.preventDefault();
-                }
-              }}
-              className={
-                user?.ViTri !== "Bác sĩ thú y" ? "pointer-events-none" : ""
-              }
-            >
-              <Button
-                variant="ghost"
-                disabled={user?.ViTri !== "Bác sĩ thú y"}
-                className={`w-full justify-start gap-3 h-11 rounded-xl text-base font-medium transition-all ${
-                  user?.ViTri !== "Bác sĩ thú y"
-                    ? "text-gray-400 cursor-not-allowed opacity-50"
-                    : "text-gray-600 hover:bg-gray-50 hover:text-gray-900"
-                }`}
-              >
-                <Syringe
-                  className={`h-5 w-5 ${
-                    user?.ViTri !== "Bác sĩ thú y"
-                      ? "text-gray-300"
-                      : "text-gray-400"
-                  }`}
-                />
-                Hồ sơ tiêm phòng
-              </Button>
-            </Link>
+                <Link to="/staff/work-schedule">
+                  <Button
+                    variant="ghost"
+                    className="w-full justify-start gap-3 h-11 rounded-xl text-base font-medium text-gray-600 hover:bg-gray-50 hover:text-gray-900 transition-all"
+                  >
+                    <Clock className="h-5 w-5 text-gray-400" />
+                    Lịch làm việc
+                  </Button>
+                </Link>
+
+                <Link to="/staff/doctor-appointments">
+                  <Button
+                    variant="ghost"
+                    className="w-full justify-start gap-3 h-11 rounded-xl text-base font-medium text-gray-600 hover:bg-gray-50 hover:text-gray-900 transition-all"
+                  >
+                    <Calendar className="h-5 w-5 text-gray-400" />
+                    Lịch hẹn của tôi
+                  </Button>
+                </Link>
+
+                <Link to="/staff/medical-history">
+                  <Button
+                    variant="ghost"
+                    className="w-full justify-start gap-3 h-11 rounded-xl text-base font-medium text-gray-600 hover:bg-gray-50 hover:text-gray-900 transition-all"
+                  >
+                    <History className="h-5 w-5 text-gray-400" />
+                    Lịch sử khám bệnh
+                  </Button>
+                </Link>
+
+                <Link to="/staff/medicines">
+                  <Button
+                    variant="ghost"
+                    className="w-full justify-start gap-3 h-11 rounded-xl text-base font-medium text-gray-600 hover:bg-gray-50 hover:text-gray-900 transition-all"
+                  >
+                    <Pill className="h-5 w-5 text-gray-400" />
+                    Tra cứu thuốc
+                  </Button>
+                </Link>
+
+                <Link to="/staff/medical-records">
+                  <Button
+                    variant="ghost"
+                    className="w-full justify-start gap-3 h-11 rounded-xl text-base font-medium text-gray-600 hover:bg-gray-50 hover:text-gray-900 transition-all"
+                  >
+                    <Stethoscope className="h-5 w-5 text-gray-400" />
+                    Hồ sơ khám bệnh
+                  </Button>
+                </Link>
+
+                <Link to="/staff/vaccination-records">
+                  <Button
+                    variant="ghost"
+                    className="w-full justify-start gap-3 h-11 rounded-xl text-base font-medium text-gray-600 hover:bg-gray-50 hover:text-gray-900 transition-all"
+                  >
+                    <Syringe className="h-5 w-5 text-gray-400" />
+                    Hồ sơ tiêm phòng
+                  </Button>
+                </Link>
+              </>
+            )}
 
             <div className="pt-8 mt-auto">
               <Button

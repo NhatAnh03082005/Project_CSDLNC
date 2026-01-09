@@ -973,43 +973,59 @@ class EmployeesService {
   async createMultiServiceRecord(recordData) {
     console.log('[createMultiServiceRecord] recordData:', recordData);
     
-    const { MaKhachHang, MaChiNhanh, MaThuCung, services } = recordData;
+    const { MaKhachHang, MaChiNhanh, pets } = recordData;
 
-    if (!MaKhachHang || !MaChiNhanh || MaThuCung === undefined || MaThuCung === null) {
+    if (!MaKhachHang || !MaChiNhanh) {
       return {
         success: false,
         status: 400,
-        message: "Thiếu thông tin bắt buộc: MaKhachHang, MaChiNhanh, MaThuCung",
+        message: "Thiếu thông tin bắt buộc: MaKhachHang, MaChiNhanh",
       };
     }
 
-    if (!services || !Array.isArray(services) || services.length === 0) {
+    if (!pets || !Array.isArray(pets) || pets.length === 0) {
       return {
         success: false,
         status: 400,
-        message: "Vui lòng chọn ít nhất 1 loại dịch vụ",
+        message: "Vui lòng chọn ít nhất 1 thú cưng với dịch vụ",
       };
     }
 
-    // Validate services
+    // Validate pets data
     const validServices = ['Khám bệnh', 'Tiêm phòng'];
-    for (const service of services) {
-      if (!validServices.includes(service)) {
+    for (const pet of pets) {
+      if (pet.MaThuCung === undefined || pet.MaThuCung === null) {
         return {
           success: false,
           status: 400,
-          message: `Loại dịch vụ không hợp lệ: ${service}`,
+          message: "Mỗi thú cưng phải có MaThuCung",
         };
+      }
+      if (!pet.services || !Array.isArray(pet.services) || pet.services.length === 0) {
+        return {
+          success: false,
+          status: 400,
+          message: `Thú cưng ${pet.MaThuCung} phải có ít nhất 1 dịch vụ`,
+        };
+      }
+      for (const service of pet.services) {
+        if (!validServices.includes(service)) {
+          return {
+            success: false,
+            status: 400,
+            message: `Loại dịch vụ không hợp lệ: ${service}`,
+          };
+        }
       }
     }
 
     const maKhachHangStr = String(MaKhachHang).trim();
     const maChiNhanhStr = String(MaChiNhanh).trim();
-    const maThuCungInt = parseInt(MaThuCung, 10);
 
     try {
       const pool = await poolPromise;
       const transaction = new sql.Transaction(pool);
+      let transactionCommitted = false;
 
       await transaction.begin();
 
@@ -1031,26 +1047,35 @@ class EmployeesService {
           };
         }
 
-        // Kiểm tra thú cưng
-        const petCheck = await transaction
-          .request()
-          .input("MaThuCung", sql.Int, maThuCungInt)
-          .input("MaKhachHang", sql.Char(7), maKhachHangStr)
-          .query(
+        // Kiểm tra tất cả thú cưng (chạy tuần tự để tránh xung đột transaction)
+        const petMap = new Map();
+        
+        for (const pet of pets) {
+          const maThuCungInt = parseInt(pet.MaThuCung, 10);
+          
+          const petCheck = await transaction
+            .request()
+            .input("MaThuCung", sql.Int, maThuCungInt)
+            .input("MaKhachHang", sql.Char(7), maKhachHangStr)
+            .query(
+              `
+              SELECT MaThuCung, TenThuCung
+              FROM dbo.ThuCung
+              WHERE MaThuCung = @MaThuCung AND MaKhachHang = @MaKhachHang
             `
-            SELECT TOP 1 MaThuCung, TenThuCung
-            FROM dbo.ThuCung
-            WHERE MaThuCung = @MaThuCung AND MaKhachHang = @MaKhachHang
-          `
-          );
-
-        if (petCheck.recordset.length === 0) {
-          await transaction.rollback();
-          return {
-            success: false,
-            status: 404,
-            message: "Không tìm thấy thú cưng hoặc thú cưng không thuộc khách hàng này",
-          };
+            );
+          
+          if (petCheck.recordset.length === 0) {
+            await transaction.rollback();
+            return {
+              success: false,
+              status: 404,
+              message: `Không tìm thấy thú cưng ${maThuCungInt} hoặc thú cưng không thuộc khách hàng này`,
+            };
+          }
+          
+          const petInfo = petCheck.recordset[0];
+          petMap.set(petInfo.MaThuCung, petInfo);
         }
 
         // Tạo HoaDon
@@ -1073,84 +1098,112 @@ class EmployeesService {
 
         const maHoaDon = createInvoice.recordset[0].MaHoaDon;
 
-        // Tạo CTHD và các bảng con cho mỗi dịch vụ
+        // Tạo CTHD và các bảng con cho tất cả dịch vụ của tất cả thú cưng
         const createdServices = [];
+        let stt = 1; // STT tăng dần cho tất cả dịch vụ
         
-        for (let i = 0; i < services.length; i++) {
-          const loaiDichVu = services[i];
-          const stt = i + 1;
-
-          // Tạo CTHD
-          await transaction
-            .request()
-            .input("MaHoaDon", sql.Char(8), maHoaDon)
-            .input("STT", sql.Int, stt)
-            .input("LoaiDichVu", sql.NVarChar(20), loaiDichVu)
-            .query(
-              `
-              INSERT INTO dbo.CTHD (MaHoaDon, STT, LoaiDichVu, ThanhTien)
-              VALUES (@MaHoaDon, @STT, @LoaiDichVu, 0)
-            `
-            );
-
-          // Tạo CTHD_DVSucKhoe (chung cho cả 2 loại dịch vụ)
-          await transaction
-            .request()
-            .input("MaHoaDon", sql.Char(8), maHoaDon)
-            .input("STT", sql.Int, stt)
-            .input("MaKhachHang", sql.Char(7), maKhachHangStr)
-            .input("MaThuCung", sql.Int, maThuCungInt)
-            .input("LoaiDichVuSK", sql.NVarChar(20), loaiDichVu)
-            .query(
-              `
-              INSERT INTO dbo.CTHD_DVSucKhoe (MaHoaDon, STT, MaKhachHang, MaThuCung, BacSi, LoaiDichVuSK)
-              VALUES (@MaHoaDon, @STT, @MaKhachHang, @MaThuCung, NULL, @LoaiDichVuSK)
-            `
-            );
-
-          // Tạo bảng chi tiết cụ thể tùy loại dịch vụ
-          if (loaiDichVu === 'Khám bệnh') {
+        // Duyệt qua từng thú cưng
+        for (const pet of pets) {
+          const maThuCungInt = parseInt(pet.MaThuCung, 10);
+          const petInfo = petMap.get(maThuCungInt);
+          
+          // Duyệt qua từng dịch vụ của thú cưng
+          for (const loaiDichVu of pet.services) {
+            // Tạo CTHD
             await transaction
               .request()
               .input("MaHoaDon", sql.Char(8), maHoaDon)
               .input("STT", sql.Int, stt)
+              .input("LoaiDichVu", sql.NVarChar(20), loaiDichVu)
               .query(
                 `
-                INSERT INTO dbo.CTHD_KhamBenh (MaHoaDon, STT, TrieuChung, ChanDoan, ToaThuoc, NgayTaiKham)
-                VALUES (@MaHoaDon, @STT, NULL, NULL, NULL, NULL)
+                INSERT INTO dbo.CTHD (MaHoaDon, STT, LoaiDichVu, ThanhTien)
+                VALUES (@MaHoaDon, @STT, @LoaiDichVu, 0)
               `
               );
-          } else if (loaiDichVu === 'Tiêm phòng') {
+
+            // Tạo CTHD_DVSucKhoe (chung cho cả 2 loại dịch vụ)
             await transaction
               .request()
               .input("MaHoaDon", sql.Char(8), maHoaDon)
               .input("STT", sql.Int, stt)
+              .input("MaKhachHang", sql.Char(7), maKhachHangStr)
+              .input("MaThuCung", sql.Int, maThuCungInt)
+              .input("LoaiDichVuSK", sql.NVarChar(20), loaiDichVu)
               .query(
                 `
-                INSERT INTO dbo.CTHD_TiemPhong (MaHoaDon, STT, MaVacXin, MaGoiDK)
-                VALUES (@MaHoaDon, @STT, NULL, NULL)
+                INSERT INTO dbo.CTHD_DVSucKhoe (MaHoaDon, STT, MaKhachHang, MaThuCung, BacSi, LoaiDichVuSK)
+                VALUES (@MaHoaDon, @STT, @MaKhachHang, @MaThuCung, NULL, @LoaiDichVuSK)
               `
               );
+
+            // Tạo bảng chi tiết cụ thể tùy loại dịch vụ
+            if (loaiDichVu === 'Khám bệnh') {
+              await transaction
+                .request()
+                .input("MaHoaDon", sql.Char(8), maHoaDon)
+                .input("STT", sql.Int, stt)
+                .query(
+                  `
+                  INSERT INTO dbo.CTHD_KhamBenh (MaHoaDon, STT, TrieuChung, ChanDoan, ToaThuoc, NgayTaiKham)
+                  VALUES (@MaHoaDon, @STT, NULL, NULL, NULL, NULL)
+                `
+                );
+            } else if (loaiDichVu === 'Tiêm phòng') {
+              await transaction
+                .request()
+                .input("MaHoaDon", sql.Char(8), maHoaDon)
+                .input("STT", sql.Int, stt)
+                .query(
+                  `
+                  INSERT INTO dbo.CTHD_TiemPhong (MaHoaDon, STT, MaVacXin, MaGoiDK)
+                  VALUES (@MaHoaDon, @STT, NULL, NULL)
+                `
+                );
+            }
+
+            createdServices.push({ 
+              stt, 
+              loaiDichVu, 
+              maThuCung: maThuCungInt,
+              tenThuCung: petInfo?.TenThuCung 
+            });
+            
+            stt++; // Tăng STT cho dịch vụ tiếp theo
           }
-
-          createdServices.push({ stt, loaiDichVu });
         }
 
         await transaction.commit();
+        transactionCommitted = true;
 
+        // Tính tổng số dịch vụ
+        const totalServices = createdServices.length;
+        const totalPets = pets.length;
+        
         return {
           success: true,
           status: 201,
-          message: `Tạo hồ sơ thành công với ${services.length} dịch vụ`,
+          message: `Tạo hồ sơ thành công với ${totalPets} thú cưng và ${totalServices} dịch vụ`,
           data: {
             maHoaDon,
-            maThuCung: maThuCungInt,
-            tenThuCung: petCheck.recordset[0].TenThuCung,
+            totalPets,
+            totalServices,
+            pets: pets.map(pet => ({
+              maThuCung: parseInt(pet.MaThuCung, 10),
+              tenThuCung: petMap.get(parseInt(pet.MaThuCung, 10))?.TenThuCung,
+              services: pet.services
+            })),
             services: createdServices,
           },
         };
       } catch (innerError) {
-        await transaction.rollback();
+        if (!transactionCommitted) {
+          try {
+            await transaction.rollback();
+          } catch (rollbackError) {
+            console.error('Error rolling back transaction:', rollbackError);
+          }
+        }
         throw innerError;
       }
     } catch (error) {
