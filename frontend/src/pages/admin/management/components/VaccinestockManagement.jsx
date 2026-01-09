@@ -5,6 +5,7 @@ import { ArrowLeft, Plus, MapPin, Syringe, Wallet, Search } from "lucide-react";
 import AdminHeader from "../../components/AdminHeader";
 import { Button } from "../../../../components/ui/button";
 import { branchAPI, vaccinationAPI } from "../../../../api/services";
+import { toast } from "../../../../lib/toast";
 import { Card, CardContent } from "../../../../components/ui/card";
 import { Input } from "../../../../components/ui/input";
 import { Label } from "../../../../components/ui/label";
@@ -128,11 +129,15 @@ export default function VaccinestockManagement() {
 
   const handleAddVaccineToStock = async () => {
     if (!selectedBranch?.MaChiNhanh) return;
-    if (!selectedVaccine) return alert("Vui lòng chọn vắc-xin");
+    if (!selectedVaccine) {
+      toast.warning("Vui lòng chọn vắc-xin");
+      return;
+    }
 
     const qty = Number(initialQuantity);
     if (!Number.isInteger(qty) || qty < 0) {
-      return alert("Vui lòng nhập số lượng hợp lệ (số nguyên >= 0)");
+      toast.warning("Vui lòng nhập số lượng hợp lệ (số nguyên >= 0)");
+      return;
     }
 
     try {
@@ -147,10 +152,10 @@ export default function VaccinestockManagement() {
       setInitialQuantity("0");
       setIsAddVaccineDialogOpen(false);
 
-      alert("Thêm vắc-xin vào kho thành công");
+      toast.success("Thêm vắc-xin vào kho thành công");
     } catch (err) {
       console.error("Lỗi khi thêm vắc-xin:", err);
-      alert(err.response?.data?.message || "Không thể thêm vắc-xin vào kho");
+      toast.error(err.response?.data?.message || "Không thể thêm vắc-xin vào kho");
     }
   };
 
@@ -159,7 +164,8 @@ export default function VaccinestockManagement() {
 
     const qty = Number(localQty[maVacXin]);
     if (!Number.isInteger(qty) || qty < 0) {
-      return alert("Số lượng phải là số nguyên >= 0");
+      toast.warning("Số lượng phải là số nguyên >= 0");
+      return;
     }
 
     try {
@@ -170,10 +176,10 @@ export default function VaccinestockManagement() {
       });
 
       await fetchVaccinesStock(selectedBranch.MaChiNhanh);
-      alert("Cập nhật số lượng thành công");
+      toast.success("Cập nhật số lượng thành công");
     } catch (err) {
       console.error("Lỗi khi cập nhật số lượng:", err);
-      alert(err.response?.data?.message || "Không thể cập nhật số lượng");
+      toast.error(err.response?.data?.message || "Không thể cập nhật số lượng");
     } finally {
       setUpdatingQuantities((prev) => ({ ...prev, [maVacXin]: false }));
     }

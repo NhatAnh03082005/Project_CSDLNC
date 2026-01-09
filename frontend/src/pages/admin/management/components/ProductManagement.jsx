@@ -5,6 +5,7 @@ import { ArrowLeft, Plus, Edit2, Tag, Wallet, Search } from "lucide-react";
 import { Button } from "../../../../components/ui/button";
 import AdminHeader from "../../components/AdminHeader";
 import { productAPI } from "../../../../api/services";
+import { toast } from "../../../../lib/toast";
 import { Card, CardContent } from "../../../../components/ui/card";
 import { Input } from "../../../../components/ui/input";
 import { Label } from "../../../../components/ui/label";
@@ -85,10 +86,10 @@ export default function ProductManagement() {
         DonGia: "",
       });
 
-      alert("Thêm sản phẩm thành công!");
+      toast.success("Thêm sản phẩm thành công!");
     } catch (err) {
       console.error("Error adding product:", err);
-      alert(err.response?.data?.message || "Không thể thêm sản phẩm");
+      toast.error(err.response?.data?.message || "Không thể thêm sản phẩm");
     }
   };
 
@@ -116,10 +117,10 @@ export default function ProductManagement() {
       setIsEditDialogOpen(false);
       setSelectedProduct(null);
 
-      alert("Cập nhật sản phẩm thành công!");
+      toast.success("Cập nhật sản phẩm thành công!");
     } catch (err) {
       console.error("Error updating product:", err);
-      alert(err.response?.data?.message || "Không thể cập nhật sản phẩm");
+      toast.error(err.response?.data?.message || "Không thể cập nhật sản phẩm");
     }
   };
 

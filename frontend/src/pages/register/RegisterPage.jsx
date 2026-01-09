@@ -13,6 +13,7 @@ import { Button } from "../../components/ui/button";
 import { Heart, CheckCircle2, ShieldCheck } from "lucide-react";
 import { authAPI } from "../../api/services";
 import { useCartStore } from "../../store/cartStore";
+import { toast } from "../../lib/toast";
 
 export default function RegisterPage() {
   const navigate = useNavigate();
@@ -56,12 +57,12 @@ export default function RegisterPage() {
       if (response.status === 201 || response.status === 200) {
         // Xóa giỏ hàng khi đăng ký thành công (để tránh giữ giỏ hàng từ session trước)
         clearCart();
-        alert("Đăng ký thành công!");
+        toast.success("Đăng ký thành công!");
         navigate("/login");
       }
     } catch (error) {
       // Hiển thị lỗi từ backend (ví dụ: Email đã tồn tại)
-      alert(error.response?.data?.message || "Đăng ký thất bại");
+      toast.error(error.response?.data?.message || "Đăng ký thất bại");
     }
   };
 

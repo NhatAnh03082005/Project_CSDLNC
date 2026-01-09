@@ -14,6 +14,7 @@ import {
 import AdminHeader from "../../components/AdminHeader";
 import { Button } from "../../../../components/ui/button";
 import { branchAPI, serviceAPI, employeeAPI } from "../../../../api/services";
+import { toast } from "../../../../lib/toast";
 import { Card, CardContent } from "../../../../components/ui/card";
 import { Label } from "../../../../components/ui/label";
 import {
@@ -183,7 +184,10 @@ export default function ServiceManagement() {
 
   const handleAddServiceToBranch = async () => {
     if (!selectedBranch?.MaChiNhanh) return;
-    if (!selectedService) return alert("Vui lòng chọn dịch vụ để thêm");
+    if (!selectedService) {
+      toast.warning("Vui lòng chọn dịch vụ để thêm");
+      return;
+    }
 
     try {
       await branchAPI.addServiceToBranch(selectedBranch.MaChiNhanh, {
@@ -193,10 +197,10 @@ export default function ServiceManagement() {
       await fetchServicesOfBranch(selectedBranch.MaChiNhanh);
       setSelectedService("");
       setIsAddServiceDialogOpen(false);
-      alert("Thêm dịch vụ thành công");
+      toast.success("Thêm dịch vụ thành công");
     } catch (err) {
       console.error("Lỗi khi thêm dịch vụ:", err);
-      alert(err.response?.data?.message || "Không thể thêm dịch vụ");
+      toast.error(err.response?.data?.message || "Không thể thêm dịch vụ");
     }
   };
 
@@ -217,10 +221,10 @@ export default function ServiceManagement() {
       await fetchServicesOfBranch(selectedBranch.MaChiNhanh);
       setIsDeleteServiceDialogOpen(false);
       setServiceToDelete(null);
-      alert("Xóa dịch vụ thành công");
+      toast.success("Xóa dịch vụ thành công");
     } catch (err) {
       console.error("Lỗi khi xóa dịch vụ:", err);
-      alert(err.response?.data?.message || "Không thể xóa dịch vụ");
+      toast.error(err.response?.data?.message || "Không thể xóa dịch vụ");
     }
   };
 

@@ -16,6 +16,7 @@ import {
 
 import AdminHeader from "../../components/AdminHeader";
 import { employeeAPI, branchAPI } from "../../../../api/services";
+import { toast } from "../../../../lib/toast";
 
 import { Button } from "../../../../components/ui/button";
 import { Card, CardContent } from "../../../../components/ui/card";
@@ -125,10 +126,10 @@ export default function EmployeeManagement() {
       await fetchData();
       setIsAddDialogOpen(false);
       resetAddForm();
-      alert("Thêm nhân viên thành công!");
+      toast.success("Thêm nhân viên thành công!");
     } catch (err) {
       console.error("Error adding employee:", err);
-      alert(err.response?.data?.message || "Không thể thêm nhân viên");
+      toast.error(err.response?.data?.message || "Không thể thêm nhân viên");
     }
   };
 
@@ -152,10 +153,10 @@ export default function EmployeeManagement() {
       await fetchData();
       setIsEditDialogOpen(false);
       setSelectedEmployee(null);
-      alert("Cập nhật nhân viên thành công!");
+      toast.success("Cập nhật nhân viên thành công!");
     } catch (err) {
       console.error("Error updating employee:", err);
-      alert(err.response?.data?.message || "Không thể cập nhật nhân viên");
+      toast.error(err.response?.data?.message || "Không thể cập nhật nhân viên");
     }
   };
 
@@ -170,10 +171,10 @@ export default function EmployeeManagement() {
       await fetchData();
       setIsDeleteDialogOpen(false);
       setSelectedEmployee(null);
-      alert("Xóa nhân viên thành công!");
+      toast.success("Xóa nhân viên thành công!");
     } catch (err) {
       console.error("Error deleting employee:", err);
-      alert(err.response?.data?.message || "Không thể xóa nhân viên");
+      toast.error(err.response?.data?.message || "Không thể xóa nhân viên");
     }
   };
 

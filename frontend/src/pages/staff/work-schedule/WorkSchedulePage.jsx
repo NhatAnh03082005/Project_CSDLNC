@@ -24,6 +24,17 @@ import { employeeAPI } from "../../../api/services";
 import { useAuthStore } from "../../../store/authStore";
 import StaffHeader from "../../../components/staff/StaffHeader";
 import StaffSidebar from "../../../components/staff/StaffSidebar";
+import { toast } from "../../../lib/toast";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "../../../components/ui/alert-dialog";
 
 export default function WorkSchedulePage() {
   const navigate = useNavigate();
@@ -42,6 +53,8 @@ export default function WorkSchedulePage() {
     GioKetThuc: "17:00",
   });
   const [selectedShift, setSelectedShift] = useState(null);
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [shiftToDelete, setShiftToDelete] = useState(null);
 
   const shiftPresets = [
     { label: "Ca Sáng", start: "08:00", end: "12:00", id: "morning" },
@@ -92,7 +105,7 @@ export default function WorkSchedulePage() {
   const handleAddShift = async (e) => {
     e.preventDefault();
     if (!newShift.NgayLam) {
-      alert("Vui lòng chọn ngày làm việc");
+      toast.warning("Vui lòng chọn ngày làm việc");
       return;
     }
 
@@ -102,46 +115,48 @@ export default function WorkSchedulePage() {
       const data = response.data;
 
       if (data.success) {
-        alert("Đăng ký lịch làm việc thành công!");
+        toast.success("Đăng ký lịch làm việc thành công!");
         setNewShift({ NgayLam: "", GioBatDau: "08:00", GioKetThuc: "17:00" });
         setSelectedShift(null);
         fetchSchedules();
       } else {
-        alert(data.message || "Lỗi khi đăng ký lịch làm việc");
+        toast.error(data.message || "Lỗi khi đăng ký lịch làm việc");
       }
     } catch (err) {
       console.error(err);
-      alert(err.response?.data?.message || "Lỗi khi đăng ký lịch làm việc");
+      toast.error(err.response?.data?.message || "Lỗi khi đăng ký lịch làm việc");
     } finally {
       setSubmitting(false);
     }
   };
 
-  const handleDeleteShift = async (schedule) => {
-    if (
-      !confirm(
-        `Bạn có chắc chắn muốn xóa lịch làm việc ngày ${schedule.ngayLam}?`
-      )
-    )
-      return;
+  const handleDeleteShift = (schedule) => {
+    setShiftToDelete(schedule);
+    setShowDeleteDialog(true);
+  };
+
+  const handleConfirmDelete = async () => {
+    if (!shiftToDelete) return;
 
     try {
-      setDeleting(`${schedule.ngayLam}-${schedule.gioBatDau}`);
+      setDeleting(`${shiftToDelete.ngayLam}-${shiftToDelete.gioBatDau}`);
       const response = await employeeAPI.deleteWorkSchedule({
-        ngayLam: schedule.ngayLam,
-        gioBatDau: schedule.gioBatDau,
+        ngayLam: shiftToDelete.ngayLam,
+        gioBatDau: shiftToDelete.gioBatDau,
       });
       const data = response.data;
 
       if (data.success) {
-        alert("Xóa lịch làm việc thành công!");
+        toast.success("Xóa lịch làm việc thành công!");
+        setShowDeleteDialog(false);
+        setShiftToDelete(null);
         fetchSchedules();
       } else {
-        alert(data.message || "Lỗi khi xóa lịch làm việc");
+        toast.error(data.message || "Lỗi khi xóa lịch làm việc");
       }
     } catch (err) {
       console.error(err);
-      alert(err.response?.data?.message || "Lỗi khi xóa lịch làm việc");
+      toast.error(err.response?.data?.message || "Lỗi khi xóa lịch làm việc");
     } finally {
       setDeleting(null);
     }
@@ -442,6 +457,37 @@ export default function WorkSchedulePage() {
           </div>
         </main>
       </div>
+
+      {/* Delete Confirmation Dialog */}
+      <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Xác nhận xóa</AlertDialogTitle>
+            <AlertDialogDescription>
+              {shiftToDelete
+                ? `Bạn có chắc chắn muốn xóa lịch làm việc ngày ${shiftToDelete.ngayLam}?`
+                : "Bạn có chắc chắn muốn xóa lịch làm việc này?"}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={deleting}>Hủy</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleConfirmDelete}
+              disabled={deleting}
+              className="bg-red-600 hover:bg-red-700"
+            >
+              {deleting ? (
+                <>
+                  <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                  Đang xóa...
+                </>
+              ) : (
+                "Xóa"
+              )}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

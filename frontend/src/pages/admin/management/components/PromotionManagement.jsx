@@ -13,6 +13,7 @@ import {
 import { Button } from "../../../../components/ui/button";
 import AdminHeader from "../../components/AdminHeader";
 import { promotionAPI } from "../../../../api/services";
+import { toast } from "../../../../lib/toast";
 import { Card, CardContent } from "../../../../components/ui/card";
 import { Input } from "../../../../components/ui/input";
 import { Label } from "../../../../components/ui/label";
@@ -102,10 +103,10 @@ export default function PromotionManagement() {
 
       setIsAddDialogOpen(false);
       setAddFormData({ NgayBatDau: "", NgayKetThuc: "", TiLeGiamGia: "" });
-      alert("Thêm khuyến mãi thành công!");
+      toast.success("Thêm khuyến mãi thành công!");
     } catch (err) {
       console.error("Error adding promotion:", err);
-      alert(err.response?.data?.message || "Không thể thêm khuyến mãi");
+      toast.error(err.response?.data?.message || "Không thể thêm khuyến mãi");
     }
   };
 
@@ -134,10 +135,10 @@ export default function PromotionManagement() {
 
       setIsEditDialogOpen(false);
       setSelectedPromotion(null);
-      alert("Cập nhật khuyến mãi thành công!");
+      toast.success("Cập nhật khuyến mãi thành công!");
     } catch (err) {
       console.error("Error updating promotion:", err);
-      alert(err.response?.data?.message || "Không thể cập nhật khuyến mãi");
+      toast.error(err.response?.data?.message || "Không thể cập nhật khuyến mãi");
     }
   };
 

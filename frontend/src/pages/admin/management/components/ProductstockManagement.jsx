@@ -5,6 +5,7 @@ import { ArrowLeft, Plus, Tag, Wallet, MapPin, Search } from "lucide-react";
 import AdminHeader from "../../components/AdminHeader";
 import { Button } from "../../../../components/ui/button";
 import { branchAPI, productAPI } from "../../../../api/services";
+import { toast } from "../../../../lib/toast";
 import {
   Card,
   CardContent,
@@ -138,11 +139,15 @@ export default function ProductstockManagement() {
   const handleAddProductToStock = async () => {
     if (!selectedBranch?.MaChiNhanh) return;
 
-    if (!selectedProduct) return alert("Vui lòng chọn sản phẩm");
+    if (!selectedProduct) {
+      toast.warning("Vui lòng chọn sản phẩm");
+      return;
+    }
 
     const qty = Number(initialQuantity);
     if (!Number.isInteger(qty) || qty < 0) {
-      return alert("Vui lòng nhập số lượng hợp lệ (số nguyên >= 0)");
+      toast.warning("Vui lòng nhập số lượng hợp lệ (số nguyên >= 0)");
+      return;
     }
 
     try {
@@ -157,10 +162,10 @@ export default function ProductstockManagement() {
       setInitialQuantity("0");
       setIsAddProductDialogOpen(false);
 
-      alert("Thêm sản phẩm vào kho thành công");
+      toast.success("Thêm sản phẩm vào kho thành công");
     } catch (err) {
       console.error("Lỗi khi thêm sản phẩm:", err);
-      alert(err.response?.data?.message || "Không thể thêm sản phẩm vào kho");
+      toast.error(err.response?.data?.message || "Không thể thêm sản phẩm vào kho");
     }
   };
 
@@ -168,8 +173,10 @@ export default function ProductstockManagement() {
     if (!selectedBranch?.MaChiNhanh) return;
 
     const qty = Number(localQty[maSanPham]);
-    if (!Number.isInteger(qty) || qty < 0)
-      return alert("Số lượng phải là số nguyên >= 0");
+    if (!Number.isInteger(qty) || qty < 0) {
+      toast.warning("Số lượng phải là số nguyên >= 0");
+      return;
+    }
 
     try {
       setUpdatingQuantities((prev) => ({ ...prev, [maSanPham]: true }));
@@ -179,10 +186,10 @@ export default function ProductstockManagement() {
       });
 
       await fetchProductsStock(selectedBranch.MaChiNhanh);
-      alert("Cập nhật số lượng thành công");
+      toast.success("Cập nhật số lượng thành công");
     } catch (err) {
       console.error("Lỗi khi cập nhật số lượng:", err);
-      alert(err.response?.data?.message || "Không thể cập nhật số lượng");
+      toast.error(err.response?.data?.message || "Không thể cập nhật số lượng");
     } finally {
       setUpdatingQuantities((prev) => ({ ...prev, [maSanPham]: false }));
     }

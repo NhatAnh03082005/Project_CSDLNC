@@ -30,6 +30,7 @@ import {
 import StaffHeader from "../../../components/staff/StaffHeader";
 import StaffSidebar from "../../../components/staff/StaffSidebar";
 import { employeeAPI } from "../../../api/services";
+import { toast } from "../../../lib/toast";
 
 export default function CreateRecordPage() {
   const [step, setStep] = useState("customer-list");
@@ -299,14 +300,11 @@ export default function CreateRecordPage() {
       if (response.data.success) {
         const petsText = selectedPetsWithServices
           .map((item) => `${item.tenThuCung} (${item.services.join(" + ")})`)
-          .join("\n");
+          .join(", ");
 
-        alert(
-          `✅ Hồ sơ đã được tạo thành công!\n\n` +
-            `Khách hàng: ${selectedCustomer.hoTen}\n` +
-            `Số thú cưng: ${selectedPetsWithServices.length}\n` +
-            `Chi tiết:\n${petsText}\n` +
-            `Mã hóa đơn: ${response.data.data?.maHoaDon || "N/A"}`
+        toast.success(
+          `Hồ sơ đã được tạo thành công! Khách hàng: ${selectedCustomer.hoTen}, ${selectedPetsWithServices.length} thú cưng. Mã hóa đơn: ${response.data.data?.maHoaDon || "N/A"}`,
+          "Tạo hồ sơ thành công"
         );
 
         // Reset về trạng thái ban đầu

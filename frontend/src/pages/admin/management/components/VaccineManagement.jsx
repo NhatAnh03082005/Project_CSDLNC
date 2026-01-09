@@ -5,6 +5,7 @@ import { ArrowLeft, Plus, Edit2, Syringe, Wallet, Search } from "lucide-react";
 import { Button } from "../../../../components/ui/button";
 import AdminHeader from "../../components/AdminHeader";
 import { vaccinationAPI } from "../../../../api/services";
+import { toast } from "../../../../lib/toast";
 import { Card, CardContent } from "../../../../components/ui/card";
 import { Input } from "../../../../components/ui/input";
 import { Label } from "../../../../components/ui/label";
@@ -78,10 +79,10 @@ export default function VaccineManagement() {
       setIsAddDialogOpen(false);
       setAddFormData({ TenVacXin: "", GiaTien: "" });
 
-      alert("Thêm vắc-xin thành công!");
+      toast.success("Thêm vắc-xin thành công!");
     } catch (err) {
       console.error("Error adding vaccine:", err);
-      alert(err.response?.data?.message || "Không thể thêm vắc-xin");
+      toast.error(err.response?.data?.message || "Không thể thêm vắc-xin");
     }
   };
 
@@ -108,10 +109,10 @@ export default function VaccineManagement() {
       setIsEditDialogOpen(false);
       setSelectedVaccine(null);
 
-      alert("Cập nhật vắc-xin thành công!");
+      toast.success("Cập nhật vắc-xin thành công!");
     } catch (err) {
       console.error("Error updating vaccine:", err);
-      alert(err.response?.data?.message || "Không thể cập nhật vắc-xin");
+      toast.error(err.response?.data?.message || "Không thể cập nhật vắc-xin");
     }
   };
 
