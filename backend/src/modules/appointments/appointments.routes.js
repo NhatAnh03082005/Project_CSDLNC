@@ -1,8 +1,8 @@
-const express = require('express');
+const express = require("express");
 const router = express.Router();
-const { authenticate, authorize } = require('../../middlewares/auth');
-const { ROLES } = require('../../config/constants');
-const appointmentsController = require('./appointments.controller');
+const { authenticate, authorize } = require("../../middlewares/auth");
+const { ROLES } = require("../../config/constants");
+const appointmentsController = require("./appointments.controller");
 
 /**
  * @route   GET /api/appointments
@@ -11,7 +11,7 @@ const appointmentsController = require('./appointments.controller');
  * @query   page, limit, status?
  */
 router.get(
-  '/',
+  "/",
   authenticate,
   authorize(ROLES.CUSTOMER),
   appointmentsController.getCustomerAppointments
@@ -23,7 +23,7 @@ router.get(
  * @access  Private - KHACH_HANG
  */
 router.post(
-  '/',
+  "/",
   authenticate,
   authorize(ROLES.CUSTOMER),
   appointmentsController.createAppointment
@@ -36,7 +36,7 @@ router.post(
  * @query   MaChiNhanh, LoaiDichVu, ThoiGianHen, BacSiPhuTrach? (optional)
  */
 router.get(
-  '/available-slots',
+  "/available-slots",
   authenticate,
   authorize(ROLES.CUSTOMER),
   appointmentsController.getAvailableSlots
@@ -49,7 +49,7 @@ router.get(
  * @query   MaChiNhanh, ThoiGianHen, LoaiDichVu? (optional)
  */
 router.get(
-  '/available-doctors',
+  "/available-doctors",
   authenticate,
   authorize(ROLES.CUSTOMER),
   appointmentsController.getAvailableDoctors
@@ -62,7 +62,7 @@ router.get(
  * @query   MaChiNhanh?, NgayHen?, TrangThai?, page?, limit?
  */
 router.get(
-  '/schedule',
+  "/schedule",
   authenticate,
   authorize(ROLES.EMPLOYEE, ROLES.ADMIN),
   appointmentsController.getAppointmentsSchedule
@@ -75,10 +75,23 @@ router.get(
  * @query   MaChiNhanh?
  */
 router.get(
-  '/today',
+  "/today",
   authenticate,
   authorize(ROLES.EMPLOYEE, ROLES.ADMIN),
   appointmentsController.getTodayAppointments
+);
+
+/**
+ * @route   GET /api/appointments/doctor
+ * @desc    Lịch hẹn của bác sĩ theo ngày
+ * @access  Private - NHAN_VIEN (Bác sĩ)
+ * @query   date?
+ */
+router.get(
+  "/doctor",
+  authenticate,
+  authorize(ROLES.EMPLOYEE, ROLES.ADMIN),
+  appointmentsController.getDoctorAppointments
 );
 
 /**
@@ -87,7 +100,7 @@ router.get(
  * @access  Private - KHACH_HANG
  */
 router.put(
-  '/:id/cancel',
+  "/:id/cancel",
   authenticate,
   authorize(ROLES.CUSTOMER),
   appointmentsController.cancelAppointment
@@ -99,11 +112,10 @@ router.put(
  * @access  Private - NHAN_VIEN, QUAN_TRI, KHACH_HANG
  */
 router.get(
-  '/:id',
+  "/:id",
   authenticate,
   authorize(ROLES.EMPLOYEE, ROLES.ADMIN, ROLES.CUSTOMER),
   appointmentsController.getAppointmentDetails
 );
 
 module.exports = router;
-

@@ -35,6 +35,9 @@ import InvoicePage from "./pages/staff/invoice/InvoicePage.jsx";
 import WorkSchedulePage from "./pages/staff/work-schedule/WorkSchedulePage.jsx";
 import MedicalRecordsPage from "./pages/staff/medical-records/MedicalRecordsPage.jsx";
 import VaccinationRecordsPage from "./pages/staff/vaccination-records/VaccinationRecordsPage.jsx";
+import DoctorAppointmentsPage from "./pages/staff/doctor-appointments/DoctorAppointmentsPage.jsx";
+import MedicalHistoryPage from "./pages/staff/medical-history/MedicalHistoryPage.jsx";
+import MedicinesPage from "./pages/staff/medicines/MedicinesPage.jsx";
 
 // Admin Base Pages
 import AdminDemo from "./pages/admin/AdminDemo.jsx";
@@ -108,6 +111,12 @@ function App() {
           path="/staff/vaccination-records"
           element={<VaccinationRecordsPage />}
         />
+        <Route
+          path="/staff/doctor-appointments"
+          element={<DoctorAppointmentsPage />}
+        />
+        <Route path="/staff/medical-history" element={<MedicalHistoryPage />} />
+        <Route path="/staff/medicines" element={<MedicinesPage />} />
 
         {/* === PHÂN KHU QUẢN TRỊ (ADMIN) === */}
         <Route path="/admin" element={<AdminDemo />} />

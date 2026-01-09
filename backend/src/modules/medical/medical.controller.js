@@ -65,16 +65,32 @@ class MedicalController {
         .query(
           `SELECT TOP 1 MaChiNhanh FROM dbo.NhanVien WHERE MaNhanVien = @MaNhanVien`
         );
-      
+
       if (result.recordset.length === 0) {
         return res.status(404).json({
           success: false,
           message: "Không tìm thấy nhân viên",
         });
       }
-      
+
       const maChiNhanh = result.recordset[0].MaChiNhanh;
-      const response = await medicalService.getPendingMedicalRecords(maChiNhanh);
+      const response = await medicalService.getPendingMedicalRecords(
+        maChiNhanh
+      );
+      return res.status(response.status || 200).json(response);
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  /**
+   * Lấy lịch sử khám bệnh của thú cưng
+   * GET /api/medical/pet/:maThucung/history
+   */
+  async getPetMedicalHistory(req, res, next) {
+    try {
+      const { maThucung } = req.params;
+      const response = await medicalService.getPetMedicalHistory(maThucung);
       return res.status(response.status || 200).json(response);
     } catch (error) {
       next(error);
@@ -83,4 +99,3 @@ class MedicalController {
 }
 
 module.exports = new MedicalController();
-

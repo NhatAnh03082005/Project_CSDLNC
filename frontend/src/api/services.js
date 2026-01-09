@@ -34,7 +34,10 @@ export const appointmentAPI = {
     api.get("/appointments/available-slots", { params }),
   getAvailableDoctors: (params) =>
     api.get("/appointments/available-doctors", { params }),
-  getToday: (maChiNhanh, date) => api.get("/appointments/today", { params: { MaChiNhanh: maChiNhanh, date } }),
+  getToday: (maChiNhanh, date) =>
+    api.get("/appointments/today", {
+      params: { MaChiNhanh: maChiNhanh, date },
+    }),
   getSchedule: (params) => api.get("/appointments/schedule", { params }),
 };
 
@@ -58,6 +61,7 @@ export const branchAPI = {
     api.delete(`/branches/${id}/services/${loaiDichVu}`),
   getEmployeeTransferHistory: (id) =>
     api.get(`/branches/${id}/transferHistory`),
+  getMedicinesInventory: (id) => api.get(`/branches/${id}/inventory/medicines`),
 };
 
 export const productAPI = {
@@ -76,7 +80,8 @@ export const invoiceAPI = {
   getById: (id) => api.get(`/invoices/${id}`),
   getAll: (params) => api.get("/invoices", { params }),
   getPending: () => api.get("/invoices/pending"),
-  addProducts: (id, products) => api.post(`/invoices/${id}/products`, { products }),
+  addProducts: (id, products) =>
+    api.post(`/invoices/${id}/products`, { products }),
   confirm: (id, data) => api.put(`/invoices/${id}/confirm`, data),
 };
 
@@ -91,7 +96,8 @@ export const employeeAPI = {
   // Work Schedule APIs
   getWorkSchedule: () => api.get("/employees/work-schedule"),
   createWorkSchedule: (data) => api.post("/employees/work-schedule", data),
-  deleteWorkSchedule: (data) => api.delete("/employees/work-schedule", { data }),
+  deleteWorkSchedule: (data) =>
+    api.delete("/employees/work-schedule", { data }),
 };
 
 export const reportAPI = {
@@ -142,8 +148,7 @@ export const orderAPI = {
   create: (data) => api.post("/customers/orders", data),
   getAll: () => api.get("/customers/orders"),
   getById: (maHoaDon) => api.get(`/customers/orders/${maHoaDon}`),
-  getPending: (maChiNhanh) => api.get("/customers/orders/pending", { params: { maChiNhanh } }),
+  getPending: (maChiNhanh) =>
+    api.get("/customers/orders/pending", { params: { maChiNhanh } }),
   confirm: (maHoaDon) => api.put(`/customers/orders/${maHoaDon}/confirm`),
 };
-
-

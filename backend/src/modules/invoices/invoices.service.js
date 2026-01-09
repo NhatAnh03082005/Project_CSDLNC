@@ -579,6 +579,69 @@ class InvoicesService {
         const invoice = invoiceCheck.recordset[0];
         const maChiNhanh = invoice.MaChiNhanh;
 
+        // Kiểm tra số dịch vụ ban đầu vs số dịch vụ đã cập nhật đầy đủ
+        // Đếm tổng số dịch vụ sức khỏe ban đầu (Khám bệnh + Tiêm phòng)
+        const totalServicesResult = await transaction
+          .request()
+          .input("MaHoaDon", sql.Char(8), maHoaDon)
+          .query(
+            `
+            SELECT COUNT(*) AS TotalServices
+            FROM dbo.CTHD
+            WHERE MaHoaDon = @MaHoaDon
+              AND LoaiDichVu IN (N'Khám bệnh', N'Tiêm phòng')
+          `
+          );
+        
+        const totalServices = totalServicesResult.recordset[0].TotalServices || 0;
+
+        // Đếm số dịch vụ đã được cập nhật đầy đủ
+        // Khám bệnh: phải có TrieuChung, ChanDoan, ToaThuoc
+        const completedKhamBenhResult = await transaction
+          .request()
+          .input("MaHoaDon", sql.Char(8), maHoaDon)
+          .query(
+            `
+            SELECT COUNT(*) AS CompletedKhamBenh
+            FROM dbo.CTHD_KhamBenh kb
+            INNER JOIN dbo.CTHD cthd ON kb.MaHoaDon = cthd.MaHoaDon AND kb.STT = cthd.STT
+            WHERE kb.MaHoaDon = @MaHoaDon
+              AND cthd.LoaiDichVu = N'Khám bệnh'
+              AND kb.TrieuChung IS NOT NULL
+              AND kb.ChanDoan IS NOT NULL
+              AND kb.ToaThuoc IS NOT NULL
+          `
+          );
+        
+        // Tiêm phòng: phải có MaVacXin
+        const completedTiemPhongResult = await transaction
+          .request()
+          .input("MaHoaDon", sql.Char(8), maHoaDon)
+          .query(
+            `
+            SELECT COUNT(*) AS CompletedTiemPhong
+            FROM dbo.CTHD_TiemPhong tp
+            INNER JOIN dbo.CTHD cthd ON tp.MaHoaDon = cthd.MaHoaDon AND tp.STT = cthd.STT
+            WHERE tp.MaHoaDon = @MaHoaDon
+              AND cthd.LoaiDichVu = N'Tiêm phòng'
+              AND tp.MaVacXin IS NOT NULL
+          `
+          );
+        
+        const completedServices = 
+          (completedKhamBenhResult.recordset[0].CompletedKhamBenh || 0) +
+          (completedTiemPhongResult.recordset[0].CompletedTiemPhong || 0);
+
+        // Nếu số dịch vụ đã cập nhật < số dịch vụ ban đầu thì không cho phép xuất hóa đơn
+        if (completedServices < totalServices) {
+          await transaction.rollback();
+          return {
+            success: false,
+            status: 400,
+            message: `Không thể xuất hóa đơn. Còn ${totalServices - completedServices} dịch vụ chưa được cập nhật đầy đủ thông tin (${totalServices} dịch vụ ban đầu, ${completedServices} dịch vụ đã cập nhật).`,
+          };
+        }
+
         // Lấy chi tiết sản phẩm để trừ tồn kho
         const productDetails = await transaction
           .request()
@@ -774,7 +837,23 @@ class InvoicesService {
         `
         );
 
+      // Đếm tổng số dịch vụ ban đầu (Khám bệnh + Tiêm phòng)
+      const totalServicesResult = await pool
+        .request()
+        .input("MaHoaDon", sql.Char(8), maHoaDon)
+        .query(
+          `
+          SELECT COUNT(*) AS TotalServices
+          FROM dbo.CTHD
+          WHERE MaHoaDon = @MaHoaDon
+            AND LoaiDichVu IN (N'Khám bệnh', N'Tiêm phòng')
+        `
+        );
+      
+      const totalServices = totalServicesResult.recordset[0].TotalServices || 0;
+
       const details = [];
+      let completedServicesCount = 0;
 
       for (const detail of detailsResult.recordset) {
         const { STT, LoaiDichVu, ThanhTien } = detail;
@@ -815,9 +894,10 @@ class InvoicesService {
               soLuong: product.SoLuong,
               donGia: product.DonGia,
             };
+            details.push(chiTiet);
           }
-        } else if (LoaiDichVu === "Dịch vụ sức khỏe") {
-          // Kiểm tra xem là khám bệnh hay tiêm phòng
+        } else if (LoaiDichVu === "Khám bệnh") {
+          // Kiểm tra khám bệnh - chỉ hiển thị nếu đã được cập nhật đầy đủ
           const medicalCheck = await pool
             .request()
             .input("MaHoaDon", sql.Char(8), maHoaDon)
@@ -825,15 +905,16 @@ class InvoicesService {
             .query(
               `
               SELECT TOP 1 
-                kb.MaThuCung,
+                dvsk.MaThuCung,
                 kb.TrieuChung,
                 kb.ChanDoan,
                 kb.ToaThuoc,
                 kb.NgayTaiKham,
-                kb.BacSi AS MaBacSi,
+                dvsk.BacSi AS MaBacSi,
                 nv.HoTen AS TenBacSi
               FROM dbo.CTHD_KhamBenh kb
-              LEFT JOIN dbo.NhanVien nv ON kb.BacSi = nv.MaNhanVien
+              INNER JOIN dbo.CTHD_DVSucKhoe dvsk ON kb.MaHoaDon = dvsk.MaHoaDon AND kb.STT = dvsk.STT
+              LEFT JOIN dbo.NhanVien nv ON dvsk.BacSi = nv.MaNhanVien
               WHERE kb.MaHoaDon = @MaHoaDon
                 AND kb.STT = @STT
             `
@@ -841,43 +922,53 @@ class InvoicesService {
 
           if (medicalCheck.recordset.length > 0) {
             const medical = medicalCheck.recordset[0];
-            chiTiet.LoaiChiTiet = "KhamBenh";
-            chiTiet.ChiTiet = {
-              maThuCung: medical.MaThuCung,
-              maBacSi: medical.MaBacSi,
-              tenBacSi: medical.TenBacSi,
-              trieuChung: medical.TrieuChung,
-              chuanDoan: medical.ChanDoan,
-              toaThuoc: medical.ToaThuoc,
-              ngayTaiKham: medical.NgayTaiKham
-                ? medical.NgayTaiKham.toISOString().split("T")[0]
-                : null,
-            };
-          } else {
-            // Kiểm tra tiêm phòng
-            const vaccinationCheck = await pool
-              .request()
-              .input("MaHoaDon", sql.Char(8), maHoaDon)
-              .input("STT", sql.Int, STT)
-              .query(
-                `
-                SELECT TOP 1 
-                  tp.MaThuCung,
-                  tp.MaVacXin,
-                  vx.TenVacXin,
-                  tp.BacSi AS MaBacSi,
-                  nv.HoTen AS TenBacSi,
-                  tp.MaGoiDK
-                FROM dbo.CTHD_TiemPhong tp
-                INNER JOIN dbo.VacXin vx ON tp.MaVacXin = vx.MaVacXin
-                LEFT JOIN dbo.NhanVien nv ON tp.BacSi = nv.MaNhanVien
-                WHERE tp.MaHoaDon = @MaHoaDon
-                  AND tp.STT = @STT
+            // Chỉ hiển thị nếu đã có đầy đủ thông tin (TrieuChung, ChanDoan, ToaThuoc không NULL)
+            if (medical.TrieuChung && medical.ChanDoan && medical.ToaThuoc) {
+              chiTiet.LoaiChiTiet = "KhamBenh";
+              chiTiet.ChiTiet = {
+                maThuCung: medical.MaThuCung,
+                maBacSi: medical.MaBacSi,
+                tenBacSi: medical.TenBacSi,
+                trieuChung: medical.TrieuChung,
+                chuanDoan: medical.ChanDoan,
+                toaThuoc: medical.ToaThuoc,
+                ngayTaiKham: medical.NgayTaiKham
+                  ? medical.NgayTaiKham.toISOString().split("T")[0]
+                  : null,
+              };
+              details.push(chiTiet);
+              completedServicesCount++;
+            }
+            // Nếu chưa đầy đủ thông tin thì không thêm vào details (ẩn dịch vụ)
+          }
+        } else if (LoaiDichVu === "Tiêm phòng") {
+          // Kiểm tra tiêm phòng - chỉ hiển thị nếu đã có MaVacXin
+          const vaccinationCheck = await pool
+            .request()
+            .input("MaHoaDon", sql.Char(8), maHoaDon)
+            .input("STT", sql.Int, STT)
+            .query(
               `
-              );
+              SELECT TOP 1 
+                dvsk.MaThuCung,
+                tp.MaVacXin,
+                vx.TenVacXin,
+                dvsk.BacSi AS MaBacSi,
+                nv.HoTen AS TenBacSi,
+                tp.MaGoiDK
+              FROM dbo.CTHD_TiemPhong tp
+              INNER JOIN dbo.CTHD_DVSucKhoe dvsk ON tp.MaHoaDon = dvsk.MaHoaDon AND tp.STT = dvsk.STT
+              LEFT JOIN dbo.VacXin vx ON tp.MaVacXin = vx.MaVacXin
+              LEFT JOIN dbo.NhanVien nv ON dvsk.BacSi = nv.MaNhanVien
+              WHERE tp.MaHoaDon = @MaHoaDon
+                AND tp.STT = @STT
+              `
+            );
 
-            if (vaccinationCheck.recordset.length > 0) {
-              const vaccination = vaccinationCheck.recordset[0];
+          if (vaccinationCheck.recordset.length > 0) {
+            const vaccination = vaccinationCheck.recordset[0];
+            // Chỉ hiển thị nếu đã có MaVacXin
+            if (vaccination.MaVacXin) {
               chiTiet.LoaiChiTiet = "TiemPhong";
               chiTiet.ChiTiet = {
                 maThuCung: vaccination.MaThuCung,
@@ -887,11 +978,12 @@ class InvoicesService {
                 tenBacSi: vaccination.TenBacSi,
                 maGoiDK: vaccination.MaGoiDK,
               };
+              details.push(chiTiet);
+              completedServicesCount++;
             }
+            // Nếu chưa có MaVacXin thì không thêm vào details (ẩn dịch vụ)
           }
         }
-
-        details.push(chiTiet);
       }
 
       return {
@@ -921,6 +1013,10 @@ class InvoicesService {
           tiLeGiamGia: invoice.TiLeGiamGia || 0,
           trangThai: invoice.NhanVienLap ? "Đã xác nhận" : "Chờ xác nhận",
           chiTiet: details,
+          // Thông tin về số dịch vụ để frontend kiểm tra
+          totalServices: totalServices, // Tổng số dịch vụ ban đầu
+          completedServices: completedServicesCount, // Số dịch vụ đã cập nhật đầy đủ
+          canConfirm: completedServicesCount >= totalServices, // Có thể xuất hóa đơn không
         },
       };
     } catch (error) {

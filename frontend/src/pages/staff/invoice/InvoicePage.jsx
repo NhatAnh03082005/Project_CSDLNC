@@ -14,7 +14,7 @@ import {
   DialogTrigger,
   DialogFooter,
 } from "../../../components/ui/dialog";
-import { ArrowLeft, Search, Receipt, Plus, Trash2, FileText, Printer, PackageCheck, Loader2, ShoppingCart, Stethoscope, Syringe } from "lucide-react";
+import { ArrowLeft, Search, Receipt, Plus, Trash2, FileText, Printer, PackageCheck, Loader2, ShoppingCart, Stethoscope, Syringe, AlertCircle } from "lucide-react";
 import { invoiceAPI, productAPI } from "../../../api/services";
 import { useAuthStore } from "../../../store/authStore";
 
@@ -408,13 +408,32 @@ export default function InvoicePage() {
                 {/* Payment Method Selection Removed as per requirement */}
 
 
+                {/* Warning message if services are incomplete */}
+                {invoiceDetails.totalServices > 0 && invoiceDetails.completedServices < invoiceDetails.totalServices && (
+                  <div className="bg-amber-50 border border-amber-200 rounded-lg p-4">
+                    <div className="flex items-start gap-2">
+                      <AlertCircle className="h-5 w-5 text-amber-600 mt-0.5" />
+                      <div className="flex-1">
+                        <p className="text-sm font-semibold text-amber-800">
+                          Chưa thể xuất hóa đơn
+                        </p>
+                        <p className="text-xs text-amber-700 mt-1">
+                          Còn {invoiceDetails.totalServices - invoiceDetails.completedServices} dịch vụ chưa được cập nhật đầy đủ thông tin 
+                          ({invoiceDetails.completedServices}/{invoiceDetails.totalServices} dịch vụ đã hoàn thành).
+                          Vui lòng cập nhật thông tin cho tất cả dịch vụ trước khi xuất hóa đơn.
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
                 <DialogFooter className="gap-2">
                   <Button variant="outline" onClick={() => setShowInvoiceDialog(false)}>
                     Đóng
                   </Button>
                   <Button 
                     onClick={handleConfirmInvoice} 
-                    disabled={confirming}
+                    disabled={confirming || (invoiceDetails.totalServices > 0 && !invoiceDetails.canConfirm)}
                     className={checkIsOnlineOrder() 
                       ? "bg-green-600 hover:bg-green-700" 
                       : "bg-blue-600 hover:bg-blue-700"}

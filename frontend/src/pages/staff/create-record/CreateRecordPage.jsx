@@ -6,13 +6,15 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../..
 import { Input } from "../../../components/ui/input";
 import { Label } from "../../../components/ui/label";
 import { Badge } from "../../../components/ui/badge";
-import { ArrowLeft, Save, Search, FilePlus, PawPrint, User, Phone, CreditCard, X, AlertCircle, Loader2 } from "lucide-react";
+import { ArrowLeft, Save, Search, FilePlus, PawPrint, User, Phone, CreditCard, X, AlertCircle, Loader2, Check, Plus } from "lucide-react";
 
 export default function CreateRecordPage() {
   const [step, setStep] = useState("customer-list");
   const [selectedCustomer, setSelectedCustomer] = useState(null);
-  const [selectedPet, setSelectedPet] = useState(null);
-  const [selectedServices, setSelectedServices] = useState(["Khám bệnh"]); // Array để chọn nhiều dịch vụ
+  const [selectedPet, setSelectedPet] = useState(null); // Thú cưng đang chọn để thêm dịch vụ
+  const [selectedServices, setSelectedServices] = useState(["Khám bệnh"]); // Dịch vụ cho thú cưng đang chọn
+  // Mảng lưu các thú cưng đã chọn với dịch vụ của từng thú cưng
+  const [selectedPetsWithServices, setSelectedPetsWithServices] = useState([]);
   
   // State cho tìm kiếm và loading
   const [searchQuery, setSearchQuery] = useState({
@@ -129,6 +131,8 @@ export default function CreateRecordPage() {
 
   const handleSelectPet = (petId) => {
     setSelectedPet(petId);
+    // Reset dịch vụ khi chọn thú cưng mới
+    setSelectedServices(["Khám bệnh"]);
   };
 
   const handleClearSearch = () => {
@@ -150,32 +154,101 @@ export default function CreateRecordPage() {
     });
   };
 
+  // Thêm thú cưng và dịch vụ vào danh sách đã chọn
+  const handleAddPetWithServices = () => {
+    if (!selectedPet || selectedServices.length === 0) {
+      setError("Vui lòng chọn thú cưng và ít nhất 1 dịch vụ");
+      return;
+    }
+
+    const petData = pets.find(p => p.maThuCung === selectedPet);
+    if (!petData) {
+      setError("Không tìm thấy thông tin thú cưng");
+      return;
+    }
+
+    // Kiểm tra thú cưng đã được thêm chưa
+    const existingIndex = selectedPetsWithServices.findIndex(
+      item => item.maThuCung === selectedPet
+    );
+
+    if (existingIndex >= 0) {
+      // Cập nhật dịch vụ cho thú cưng đã có
+      const updated = [...selectedPetsWithServices];
+      updated[existingIndex] = {
+        ...updated[existingIndex],
+        services: [...selectedServices]
+      };
+      setSelectedPetsWithServices(updated);
+    } else {
+      // Thêm thú cưng mới
+      setSelectedPetsWithServices(prev => [...prev, {
+        maThuCung: selectedPet,
+        tenThuCung: petData.tenThuCung,
+        loai: petData.loai,
+        giong: petData.giong,
+        services: [...selectedServices]
+      }]);
+    }
+
+    // Reset để chọn thú cưng tiếp theo
+    setSelectedPet(null);
+    setSelectedServices(["Khám bệnh"]);
+    setError(null);
+  };
+
+  // Xóa thú cưng khỏi danh sách đã chọn
+  const handleRemovePet = (maThuCung) => {
+    setSelectedPetsWithServices(prev => 
+      prev.filter(item => item.maThuCung !== maThuCung)
+    );
+  };
+
+  // Chỉnh sửa dịch vụ của thú cưng đã chọn
+  const handleEditPetServices = (maThuCung) => {
+    const petData = selectedPetsWithServices.find(item => item.maThuCung === maThuCung);
+    if (petData) {
+      setSelectedPet(maThuCung);
+      setSelectedServices([...petData.services]);
+    }
+  };
+
   const [submitting, setSubmitting] = useState(false);
 
   const handleSubmit = async () => {
-    if (!selectedCustomer || !selectedPet || selectedServices.length === 0) return;
+    if (!selectedCustomer || selectedPetsWithServices.length === 0) {
+      setError("Vui lòng chọn ít nhất 1 thú cưng với dịch vụ");
+      return;
+    }
     
     try {
       setSubmitting(true);
       setError(null);
       
+      // Chuẩn bị dữ liệu: mảng các thú cưng với dịch vụ của từng thú cưng
+      const petsData = selectedPetsWithServices.map(item => ({
+        MaThuCung: item.maThuCung,
+        services: item.services
+      }));
+      
       // Gọi API tạo hồ sơ đa dịch vụ - backend tự lấy chi nhánh từ token
       const recordData = {
         MaKhachHang: selectedCustomer.maKhachHang,
-        MaThuCung: selectedPet,
-        services: selectedServices
+        pets: petsData
       };
       
       const response = await api.post('/employees/records', recordData);
       
       if (response.data.success) {
-        const selectedPetData = pets.find((p) => p.maThuCung === selectedPet);
-        const servicesText = selectedServices.join(' + ');
+        const petsText = selectedPetsWithServices.map(item => 
+          `${item.tenThuCung} (${item.services.join(' + ')})`
+        ).join('\n');
+        
         alert(
           `✅ Hồ sơ đã được tạo thành công!\n\n` +
           `Khách hàng: ${selectedCustomer.hoTen}\n` +
-          `Thú cưng: ${selectedPetData?.tenThuCung}\n` +
-          `Dịch vụ: ${servicesText}\n` +
+          `Số thú cưng: ${selectedPetsWithServices.length}\n` +
+          `Chi tiết:\n${petsText}\n` +
           `Mã hóa đơn: ${response.data.data?.maHoaDon || 'N/A'}`
         );
         
@@ -184,6 +257,7 @@ export default function CreateRecordPage() {
         setSelectedCustomer(null);
         setSelectedPet(null);
         setSelectedServices(["Khám bệnh"]);
+        setSelectedPetsWithServices([]);
         setSearchQuery({ name: "", phone: "", cccd: "" });
         setPets([]);
         loadAllCustomers();
@@ -455,9 +529,66 @@ export default function CreateRecordPage() {
                 </CardContent>
               </Card>
 
+              {/* Danh sách thú cưng đã chọn */}
+              {selectedPetsWithServices.length > 0 && (
+                <div className="space-y-3">
+                  <Label className="text-green-700 font-semibold">
+                    Thú cưng đã chọn ({selectedPetsWithServices.length})
+                  </Label>
+                  <div className="grid gap-3">
+                    {selectedPetsWithServices.map((item) => (
+                      <Card key={item.maThuCung} className="border-green-300 bg-green-50/50">
+                        <CardContent className="p-4">
+                          <div className="flex items-start justify-between">
+                            <div className="flex-1">
+                              <div className="flex items-center gap-2 mb-2">
+                                <Check className="h-5 w-5 text-green-600" />
+                                <h4 className="font-semibold text-green-800">{item.tenThuCung}</h4>
+                                <Badge variant="outline" className="bg-green-100 text-green-700 border-green-300">
+                                  {item.loai} - {item.giong}
+                                </Badge>
+                              </div>
+                              <div className="flex gap-2 flex-wrap">
+                                {item.services.map((service, idx) => (
+                                  <Badge key={idx} className="bg-blue-600 text-white">
+                                    {service}
+                                  </Badge>
+                                ))}
+                              </div>
+                            </div>
+                            <div className="flex gap-2">
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => handleEditPetServices(item.maThuCung)}
+                                className="text-blue-600 hover:text-blue-700 hover:bg-blue-50"
+                              >
+                                Sửa
+                              </Button>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => handleRemovePet(item.maThuCung)}
+                                className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                              >
+                                <X className="h-4 w-4" />
+                              </Button>
+                            </div>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    ))}
+                  </div>
+                </div>
+              )}
+
               {/* Pet Selection */}
               <div className="space-y-3">
-                <Label>Chọn thú cưng *</Label>
+                <Label>
+                  {selectedPetsWithServices.length > 0 
+                    ? "Chọn thú cưng tiếp theo (nếu có)" 
+                    : "Chọn thú cưng *"}
+                </Label>
                 
                 {petsLoading ? (
                   <div className="text-center py-8">
@@ -476,77 +607,113 @@ export default function CreateRecordPage() {
                   </div>
                 ) : (
                   <div className="grid gap-3">
-                    {pets.map((pet) => (
-                      <Card
-                        key={`${pet.maKhachHang}-${pet.maThuCung}`}
-                        className={`cursor-pointer transition-all ${
-                          selectedPet === pet.maThuCung ? "border-blue-500 bg-blue-50" : "hover:border-gray-300"
-                        }`}
-                        onClick={() => handleSelectPet(pet.maThuCung)}
-                      >
-                        <CardContent className="flex items-center gap-4 p-4">
-                          <div
-                            className={`h-12 w-12 rounded-full flex items-center justify-center ${
-                              selectedPet === pet.maThuCung ? "bg-blue-600" : "bg-gray-200"
-                            }`}
-                          >
-                            <PawPrint className={`h-6 w-6 ${selectedPet === pet.maThuCung ? "text-white" : "text-gray-500"}`} />
-                          </div>
-                          <div className="flex-1">
-                            <h4 className="font-semibold">{pet.tenThuCung}</h4>
-                            <div className="text-sm text-gray-600">
-                              {pet.loai || 'N/A'} - {pet.giong || 'N/A'} - {pet.gioiTinh || 'N/A'}
-                              {pet.ngaySinh && ` - Sinh: ${new Date(pet.ngaySinh).toLocaleDateString('vi-VN')}`}
+                    {pets.map((pet) => {
+                      const isAlreadySelected = selectedPetsWithServices.some(
+                        item => item.maThuCung === pet.maThuCung
+                      );
+                      const isCurrentlySelected = selectedPet === pet.maThuCung;
+                      
+                      return (
+                        <Card
+                          key={`${pet.maKhachHang}-${pet.maThuCung}`}
+                          className={`cursor-pointer transition-all ${
+                            isCurrentlySelected 
+                              ? "border-blue-500 bg-blue-50" 
+                              : isAlreadySelected
+                              ? "border-green-300 bg-green-50/30 opacity-60"
+                              : "hover:border-gray-300"
+                          }`}
+                          onClick={() => !isAlreadySelected && handleSelectPet(pet.maThuCung)}
+                        >
+                          <CardContent className="flex items-center gap-4 p-4">
+                            <div
+                              className={`h-12 w-12 rounded-full flex items-center justify-center ${
+                                isCurrentlySelected ? "bg-blue-600" : isAlreadySelected ? "bg-green-500" : "bg-gray-200"
+                              }`}
+                            >
+                              {isAlreadySelected ? (
+                                <Check className="h-6 w-6 text-white" />
+                              ) : (
+                                <PawPrint className={`h-6 w-6 ${isCurrentlySelected ? "text-white" : "text-gray-500"}`} />
+                              )}
                             </div>
-                            {pet.tinhTrangSucKhoe && (
-                              <div className="text-xs text-gray-400 mt-1">
-                                Tình trạng: {pet.tinhTrangSucKhoe}
+                            <div className="flex-1">
+                              <h4 className="font-semibold">{pet.tenThuCung}</h4>
+                              <div className="text-sm text-gray-600">
+                                {pet.loai || 'N/A'} - {pet.giong || 'N/A'} - {pet.gioiTinh || 'N/A'}
+                                {pet.ngaySinh && ` - Sinh: ${new Date(pet.ngaySinh).toLocaleDateString('vi-VN')}`}
                               </div>
-                            )}
-                          </div>
-                        </CardContent>
-                      </Card>
-                    ))}
+                              {pet.tinhTrangSucKhoe && (
+                                <div className="text-xs text-gray-400 mt-1">
+                                  Tình trạng: {pet.tinhTrangSucKhoe}
+                                </div>
+                              )}
+                              {isAlreadySelected && (
+                                <div className="text-xs text-green-600 mt-1 font-medium">
+                                  ✓ Đã thêm vào danh sách
+                                </div>
+                              )}
+                            </div>
+                          </CardContent>
+                        </Card>
+                      );
+                    })}
                   </div>
                 )}
               </div>
 
-              {/* Service Selection - Checkboxes */}
-              <div className="space-y-3 mb-6">
-                <Label className="text-blue-900 font-semibold">Chọn dịch vụ thực hiện * (có thể chọn nhiều)</Label>
-                <div className="flex gap-4">
-                  <div 
-                    onClick={() => toggleService("Khám bệnh")}
-                    className={`flex-1 p-3 rounded-lg border-2 cursor-pointer transition-all flex items-center justify-center gap-2 ${
-                      selectedServices.includes("Khám bệnh") 
-                      ? "border-blue-600 bg-blue-50 text-blue-700" 
-                      : "border-gray-100 bg-white text-gray-400 hover:border-gray-200"
-                    }`}
-                  >
-                    <div className={`h-4 w-4 rounded border-2 flex items-center justify-center ${selectedServices.includes("Khám bệnh") ? "border-blue-600 bg-blue-600" : "border-gray-300"}`}>
-                      {selectedServices.includes("Khám bệnh") && <span className="text-white text-xs">✓</span>}
+              {/* Service Selection - Chỉ hiển thị khi đã chọn thú cưng */}
+              {selectedPet && (
+                <div className="space-y-3 mb-6">
+                  <Label className="text-blue-900 font-semibold">
+                    Chọn dịch vụ cho {pets.find(p => p.maThuCung === selectedPet)?.tenThuCung} * (có thể chọn nhiều)
+                  </Label>
+                  <div className="flex gap-4">
+                    <div 
+                      onClick={() => toggleService("Khám bệnh")}
+                      className={`flex-1 p-3 rounded-lg border-2 cursor-pointer transition-all flex items-center justify-center gap-2 ${
+                        selectedServices.includes("Khám bệnh") 
+                        ? "border-blue-600 bg-blue-50 text-blue-700" 
+                        : "border-gray-100 bg-white text-gray-400 hover:border-gray-200"
+                      }`}
+                    >
+                      <div className={`h-4 w-4 rounded border-2 flex items-center justify-center ${selectedServices.includes("Khám bệnh") ? "border-blue-600 bg-blue-600" : "border-gray-300"}`}>
+                        {selectedServices.includes("Khám bệnh") && <span className="text-white text-xs">✓</span>}
+                      </div>
+                      <span className="text-sm font-medium">Khám bệnh</span>
                     </div>
-                    <span className="text-sm font-medium">Khám bệnh</span>
-                  </div>
 
-                  <div 
-                    onClick={() => toggleService("Tiêm phòng")}
-                    className={`flex-1 p-3 rounded-lg border-2 cursor-pointer transition-all flex items-center justify-center gap-2 ${
-                      selectedServices.includes("Tiêm phòng") 
-                      ? "border-blue-600 bg-blue-50 text-blue-700" 
-                      : "border-gray-100 bg-white text-gray-400 hover:border-gray-200"
-                    }`}
-                  >
-                    <div className={`h-4 w-4 rounded border-2 flex items-center justify-center ${selectedServices.includes("Tiêm phòng") ? "border-blue-600 bg-blue-600" : "border-gray-300"}`}>
-                      {selectedServices.includes("Tiêm phòng") && <span className="text-white text-xs">✓</span>}
+                    <div 
+                      onClick={() => toggleService("Tiêm phòng")}
+                      className={`flex-1 p-3 rounded-lg border-2 cursor-pointer transition-all flex items-center justify-center gap-2 ${
+                        selectedServices.includes("Tiêm phòng") 
+                        ? "border-blue-600 bg-blue-50 text-blue-700" 
+                        : "border-gray-100 bg-white text-gray-400 hover:border-gray-200"
+                      }`}
+                    >
+                      <div className={`h-4 w-4 rounded border-2 flex items-center justify-center ${selectedServices.includes("Tiêm phòng") ? "border-blue-600 bg-blue-600" : "border-gray-300"}`}>
+                        {selectedServices.includes("Tiêm phòng") && <span className="text-white text-xs">✓</span>}
+                      </div>
+                      <span className="text-sm font-medium">Tiêm phòng</span>
                     </div>
-                    <span className="text-sm font-medium">Tiêm phòng</span>
                   </div>
+                  {selectedServices.length === 2 && (
+                    <p className="text-xs text-green-600 mt-1">✓ Đã chọn cả 2 dịch vụ</p>
+                  )}
+                  
+                  {/* Nút thêm thú cưng vào danh sách */}
+                  <Button
+                    onClick={handleAddPetWithServices}
+                    disabled={selectedServices.length === 0}
+                    className="w-full bg-green-600 hover:bg-green-700 text-white gap-2"
+                  >
+                    <Plus className="h-4 w-4" />
+                    {selectedPetsWithServices.some(item => item.maThuCung === selectedPet)
+                      ? "Cập nhật dịch vụ cho thú cưng này"
+                      : "Thêm thú cưng này vào danh sách"}
+                  </Button>
                 </div>
-                {selectedServices.length === 2 && (
-                  <p className="text-xs text-green-600 mt-1">✓ Đã chọn cả 2 dịch vụ - sẽ tạo 1 hóa đơn với 2 chi tiết</p>
-                )}
-              </div>
+              )}
 
               <div className="flex items-center justify-between pt-5 border-t border-gray-100 mt-6">
                 <Button
@@ -557,6 +724,7 @@ export default function CreateRecordPage() {
                     setSelectedCustomer(null);
                     setSelectedPet(null);
                     setSelectedServices(["Khám bệnh"]);
+                    setSelectedPetsWithServices([]);
                     setPets([]);
                     setError(null);
                   }}
@@ -567,9 +735,9 @@ export default function CreateRecordPage() {
 
                 <Button 
                   onClick={handleSubmit} 
-                  disabled={!selectedPet || submitting} 
+                  disabled={selectedPetsWithServices.length === 0 || submitting} 
                   className={`gap-2 px-4 py-2 text-xs font-semibold transition-all ${
-                    !selectedPet || submitting
+                    selectedPetsWithServices.length === 0 || submitting
                       ? "bg-gray-200 text-gray-400" 
                       : "bg-blue-700 hover:bg-blue-700 text-white hover:shadow-blue-200"
                   }`}
@@ -582,7 +750,7 @@ export default function CreateRecordPage() {
                   ) : (
                     <>
                       <Save className="h-3 w-3" />
-                      TẠO HỒ SƠ
+                      TẠO HỒ SƠ ({selectedPetsWithServices.length} thú cưng)
                     </>
                   )}
                 </Button>
