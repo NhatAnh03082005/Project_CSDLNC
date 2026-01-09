@@ -14,6 +14,18 @@ const branchesController = require("./branches.controller");
 router.get("/", branchesController.getBranches);
 
 /**
+ * @route   GET /api/branches/inventory/medicines
+ * @desc    Lấy danh sách thuốc tồn kho tại chi nhánh của nhân viên
+ * @access  Private - NHAN_VIEN
+ */
+router.get(
+  "/inventory/medicines",
+  authenticate,
+  authorize(ROLES.EMPLOYEE, ROLES.ADMIN),
+  branchesController.getMedicinesInventory
+);
+
+/**
  * @route   GET /api/branches/:id
  * @desc    Chi tiết chi nhánh
  * @access  Public

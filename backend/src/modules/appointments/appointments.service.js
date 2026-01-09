@@ -4,13 +4,13 @@ const formatDateForResponse = (dateValue) => {
   if (!dateValue) return null;
   if (dateValue instanceof Date) {
     const year = dateValue.getUTCFullYear();
-    const month = String(dateValue.getUTCMonth() + 1).padStart(2, '0');
-    const day = String(dateValue.getUTCDate()).padStart(2, '0');
+    const month = String(dateValue.getUTCMonth() + 1).padStart(2, "0");
+    const day = String(dateValue.getUTCDate()).padStart(2, "0");
     return `${year}-${month}-${day}`;
   }
-  if (typeof dateValue === 'string') {
-    if (dateValue.includes('T')) {
-      return dateValue.split('T')[0];
+  if (typeof dateValue === "string") {
+    if (dateValue.includes("T")) {
+      return dateValue.split("T")[0];
     }
     if (dateValue.match(/^\d{4}-\d{2}-\d{2}$/)) {
       return dateValue;
@@ -18,8 +18,8 @@ const formatDateForResponse = (dateValue) => {
     const date = new Date(dateValue);
     if (!isNaN(date.getTime())) {
       const year = date.getUTCFullYear();
-      const month = String(date.getUTCMonth() + 1).padStart(2, '0');
-      const day = String(date.getUTCDate()).padStart(2, '0');
+      const month = String(date.getUTCMonth() + 1).padStart(2, "0");
+      const day = String(date.getUTCDate()).padStart(2, "0");
       return `${year}-${month}-${day}`;
     }
   }
@@ -55,10 +55,14 @@ async function createAppointment(customerId, appointmentData) {
 
   // Parse date
   let appointmentDate;
-  if (typeof ThoiGianHen === 'string') {
-    const dateParts = ThoiGianHen.split('-');
+  if (typeof ThoiGianHen === "string") {
+    const dateParts = ThoiGianHen.split("-");
     if (dateParts.length === 3) {
-      appointmentDate = new Date(parseInt(dateParts[0]), parseInt(dateParts[1]) - 1, parseInt(dateParts[2]));
+      appointmentDate = new Date(
+        parseInt(dateParts[0]),
+        parseInt(dateParts[1]) - 1,
+        parseInt(dateParts[2])
+      );
     } else {
       appointmentDate = new Date(ThoiGianHen);
     }
@@ -85,15 +89,15 @@ async function createAppointment(customerId, appointmentData) {
     // GỌI STORED PROCEDURE sp_TV2_CreateAppointment
     const result = await pool
       .request()
-      .input('MaKhachHang', sql.Char(7), customerId)
-      .input('MaChiNhanh', sql.Char(4), MaChiNhanh)
-      .input('LoaiDichVu', sql.NVarChar(20), LoaiDichVu)
-      .input('ThoiGianHen', sql.Date, appointmentDate)
-      .input('BacSiPhuTrach', sql.Char(5), BacSiPhuTrach || null)
-      .output('MaLichHen', sql.Char(8))
-      .output('ErrorMessage', sql.NVarChar(500))
-      .output('StatusCode', sql.Int)
-      .execute('sp_TV2_CreateAppointment');
+      .input("MaKhachHang", sql.Char(7), customerId)
+      .input("MaChiNhanh", sql.Char(4), MaChiNhanh)
+      .input("LoaiDichVu", sql.NVarChar(20), LoaiDichVu)
+      .input("ThoiGianHen", sql.Date, appointmentDate)
+      .input("BacSiPhuTrach", sql.Char(5), BacSiPhuTrach || null)
+      .output("MaLichHen", sql.Char(8))
+      .output("ErrorMessage", sql.NVarChar(500))
+      .output("StatusCode", sql.Int)
+      .execute("sp_TV2_CreateAppointment");
 
     const { MaLichHen, ErrorMessage, StatusCode } = result.output;
 
@@ -108,8 +112,7 @@ async function createAppointment(customerId, appointmentData) {
     // Query để lấy thông tin chi tiết lịch hẹn vừa tạo
     const appointmentInfo = await pool
       .request()
-      .input('MaLichHen', sql.Char(8), MaLichHen)
-      .query(`
+      .input("MaLichHen", sql.Char(8), MaLichHen).query(`
         SELECT 
           lh.MaLichHen,
           lh.MaKhachHang,
@@ -141,7 +144,9 @@ async function createAppointment(customerId, appointmentData) {
       message: ErrorMessage,
       data: {
         ...appointmentInfo.recordset[0],
-        ThoiGianHen: formatDateForResponse(appointmentInfo.recordset[0].ThoiGianHen),
+        ThoiGianHen: formatDateForResponse(
+          appointmentInfo.recordset[0].ThoiGianHen
+        ),
         NgayLap: formatDateForResponse(appointmentInfo.recordset[0].NgayLap),
       },
     };
@@ -169,11 +174,11 @@ async function cancelAppointment(customerId, maLichHen) {
     // GỌI STORED PROCEDURE sp_CancelAppointment
     const result = await pool
       .request()
-      .input('MaKhachHang', sql.Char(7), customerId)
-      .input('MaLichHen', sql.Char(8), maLichHen)
-      .output('ErrorMessage', sql.NVarChar(500))
-      .output('StatusCode', sql.Int)
-      .execute('sp_TV9_CancelAppointment');
+      .input("MaKhachHang", sql.Char(7), customerId)
+      .input("MaLichHen", sql.Char(8), maLichHen)
+      .output("ErrorMessage", sql.NVarChar(500))
+      .output("StatusCode", sql.Int)
+      .execute("sp_TV9_CancelAppointment");
 
     const { ErrorMessage, StatusCode } = result.output;
 
@@ -231,20 +236,24 @@ async function getAvailableSlots(queryParams) {
 
     let appointmentDateStr;
     let appointmentDate;
-    if (typeof ThoiGianHen === 'string') {
-      const dateParts = ThoiGianHen.split('-');
+    if (typeof ThoiGianHen === "string") {
+      const dateParts = ThoiGianHen.split("-");
       if (dateParts.length === 3) {
         appointmentDateStr = ThoiGianHen;
-        appointmentDate = new Date(parseInt(dateParts[0]), parseInt(dateParts[1]) - 1, parseInt(dateParts[2]));
+        appointmentDate = new Date(
+          parseInt(dateParts[0]),
+          parseInt(dateParts[1]) - 1,
+          parseInt(dateParts[2])
+        );
       } else {
-        appointmentDateStr = ThoiGianHen.split('T')[0];
+        appointmentDateStr = ThoiGianHen.split("T")[0];
         appointmentDate = new Date(ThoiGianHen);
       }
     } else {
       appointmentDate = new Date(ThoiGianHen);
       const year = appointmentDate.getFullYear();
-      const month = String(appointmentDate.getMonth() + 1).padStart(2, '0');
-      const day = String(appointmentDate.getDate()).padStart(2, '0');
+      const month = String(appointmentDate.getMonth() + 1).padStart(2, "0");
+      const day = String(appointmentDate.getDate()).padStart(2, "0");
       appointmentDateStr = `${year}-${month}-${day}`;
     }
     appointmentDate.setHours(0, 0, 0, 0);
@@ -346,7 +355,9 @@ async function getAvailableSlots(queryParams) {
 
     const doctorIds = doctors.map((d) => d.MaNhanVien);
 
-    const request = pool.request().input("NgayLam", sql.NVarChar(10), appointmentDateStr);
+    const request = pool
+      .request()
+      .input("NgayLam", sql.NVarChar(10), appointmentDateStr);
     doctorIds.forEach((id, i) => {
       request.input(`BacSi${i}`, sql.Char(5), id);
     });
@@ -447,12 +458,11 @@ async function getCustomerAppointments(customerId, options = {}) {
 
     // Tự động cập nhật trạng thái lịch hẹn đã quá hạn
     const today = new Date();
-    const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
+    const todayStr = `${today.getFullYear()}-${String(
+      today.getMonth() + 1
+    ).padStart(2, "0")}-${String(today.getDate()).padStart(2, "0")}`;
 
-    await pool
-      .request()
-      .input("TodayDate", sql.NVarChar(10), todayStr)
-      .query(`
+    await pool.request().input("TodayDate", sql.NVarChar(10), todayStr).query(`
         UPDATE dbo.LichHen
         SET TrangThai = N'Hoàn thành'
         WHERE TrangThai = N'Đã lên lịch'
@@ -568,8 +578,8 @@ async function getAvailableDoctors(params) {
 
     let dateString;
     if (typeof ThoiGianHen === "string") {
-      if (ThoiGianHen.includes('T')) {
-        dateString = ThoiGianHen.split('T')[0];
+      if (ThoiGianHen.includes("T")) {
+        dateString = ThoiGianHen.split("T")[0];
       } else {
         dateString = ThoiGianHen;
       }
@@ -659,8 +669,8 @@ async function getAvailableDoctors(params) {
         AND CAST(ThoiGianHen AS DATE) = CAST(@ThoiGianHen AS DATE)
           AND TrangThai = N'Đã lên lịch'
         AND BacSiPhuTrach IN (${doctorIds
-        .map((_, i) => `@BacSi${i}`)
-        .join(", ")})
+          .map((_, i) => `@BacSi${i}`)
+          .join(", ")})
       GROUP BY BacSiPhuTrach
     `);
 
@@ -681,10 +691,15 @@ async function getAvailableDoctors(params) {
         if (timeValue instanceof Date) {
           const hours = timeValue.getUTCHours();
           const minutes = timeValue.getUTCMinutes();
-          return `${String(hours).padStart(2, "0")}:${String(minutes).padStart(2, "0")}`;
+          return `${String(hours).padStart(2, "0")}:${String(minutes).padStart(
+            2,
+            "0"
+          )}`;
         }
         if (timeValue.hours !== undefined) {
-          return `${String(timeValue.hours).padStart(2, "0")}:${String(timeValue.minutes || 0).padStart(2, "0")}`;
+          return `${String(timeValue.hours).padStart(2, "0")}:${String(
+            timeValue.minutes || 0
+          ).padStart(2, "0")}`;
         }
         if (typeof timeValue === "string") {
           return timeValue.substring(0, 5);
@@ -701,17 +716,17 @@ async function getAvailableDoctors(params) {
         CoLichLamViec: hasSchedule,
         GioLamViec: hasSchedule
           ? {
-            BatDau: formattedBatDau,
-            KetThuc: formattedKetThuc,
-          }
+              BatDau: formattedBatDau,
+              KetThuc: formattedKetThuc,
+            }
           : null,
         SoLuongConLai: availableSlots,
         TrangThai:
           hasSchedule && availableSlots > 0
             ? "Rảnh"
             : hasSchedule
-              ? "Đã đầy"
-              : "Không có lịch",
+            ? "Đã đầy"
+            : "Không có lịch",
       };
 
       return doctorInfo;
@@ -760,8 +775,10 @@ async function getAppointmentsSchedule(queryParams = {}, maNhanVien = null) {
       const nvResult = await pool
         .request()
         .input("MaNhanVien", sql.Char(5), maNhanVien)
-        .query(`SELECT TOP 1 MaChiNhanh FROM dbo.NhanVien WHERE MaNhanVien = @MaNhanVien`);
-      
+        .query(
+          `SELECT TOP 1 MaChiNhanh FROM dbo.NhanVien WHERE MaNhanVien = @MaNhanVien`
+        );
+
       if (nvResult.recordset.length > 0) {
         finalMaChiNhanh = nvResult.recordset[0].MaChiNhanh;
       }
@@ -780,7 +797,8 @@ async function getAppointmentsSchedule(queryParams = {}, maNhanVien = null) {
     request.input("MaChiNhanh", sql.Char(4), finalMaChiNhanh);
 
     if (NgayHen) {
-      whereClause += " AND CAST(lh.ThoiGianHen AS DATE) = CAST(@NgayHen AS DATE)";
+      whereClause +=
+        " AND CAST(lh.ThoiGianHen AS DATE) = CAST(@NgayHen AS DATE)";
       request.input("NgayHen", sql.NVarChar(10), NgayHen);
     }
 
@@ -878,7 +896,11 @@ async function getAppointmentsSchedule(queryParams = {}, maNhanVien = null) {
  * @param {string} maNhanVien - Mã nhân viên (optional)
  * @returns {Promise<{success: boolean, status?: number, message?: string, data?: object, error?: string}>}
  */
-async function getTodayAppointments(maChiNhanh = null, maNhanVien = null, date = null) {
+async function getTodayAppointments(
+  maChiNhanh = null,
+  maNhanVien = null,
+  date = null
+) {
   try {
     const pool = await poolPromise;
 
@@ -888,8 +910,10 @@ async function getTodayAppointments(maChiNhanh = null, maNhanVien = null, date =
       const nvResult = await pool
         .request()
         .input("MaNhanVien", sql.Char(5), maNhanVien)
-        .query(`SELECT TOP 1 MaChiNhanh FROM dbo.NhanVien WHERE MaNhanVien = @MaNhanVien`);
-      
+        .query(
+          `SELECT TOP 1 MaChiNhanh FROM dbo.NhanVien WHERE MaNhanVien = @MaNhanVien`
+        );
+
       if (nvResult.recordset.length > 0) {
         finalMaChiNhanh = nvResult.recordset[0].MaChiNhanh;
       }
@@ -905,11 +929,11 @@ async function getTodayAppointments(maChiNhanh = null, maNhanVien = null, date =
 
     let targetDateStr = null;
     if (date) {
-        targetDateStr = date; // Expecting YYYY-MM-DD
+      targetDateStr = date; // Expecting YYYY-MM-DD
     } else {
-        // If no date provided, we want ALL appointments, so keep targetDateStr as null
-        // const today = new Date();
-        // targetDateStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
+      // If no date provided, we want ALL appointments, so keep targetDateStr as null
+      // const today = new Date();
+      // targetDateStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
     }
 
     // Lấy thống kê
@@ -1128,6 +1152,80 @@ async function getAppointmentDetails(maLichHen) {
   }
 }
 
+/**
+ * Lấy danh sách lịch hẹn của bác sĩ theo ngày
+ * @param {string} maNhanVien - Mã nhân viên (bác sĩ)
+ * @param {string} date - Ngày cần xem (YYYY-MM-DD), mặc định hôm nay
+ * @returns {Promise<{success: boolean, status?: number, message?: string, data?: array}>}
+ */
+async function getDoctorAppointments(maNhanVien, date = null) {
+  try {
+    const pool = await poolPromise;
+
+    // Nếu không có date, lấy ngày hôm nay
+    const targetDate = date || new Date().toISOString().split("T")[0];
+
+    const result = await pool
+      .request()
+      .input("MaNhanVien", sql.Char(5), maNhanVien)
+      .input("NgayHen", sql.Date, targetDate).query(`
+        SELECT 
+          lh.MaLichHen,
+          lh.ThoiGianHen,
+          lh.LoaiDichVu,
+          lh.TrangThai,
+          lh.GhiChu,
+          kh.TenKhachHang,
+          kh.SDT as SDTKhachHang,
+          cn.TenChiNhanh,
+          STUFF((
+            SELECT ', ' + tc.TenThuCung
+            FROM THUCUNG tc
+            WHERE tc.MaKhachHang = lh.MaKhachHang
+            FOR XML PATH(''), TYPE
+          ).value('.', 'NVARCHAR(MAX)'), 1, 2, '') AS TenThucung
+        FROM LICHHENDICHVU lh
+        INNER JOIN KHACHHANG kh ON lh.MaKhachHang = kh.MaKhachHang
+        INNER JOIN CHINHANH cn ON lh.MaChiNhanh = cn.MaChiNhanh
+        WHERE lh.BacSiPhuTrach = @MaNhanVien
+          AND CAST(lh.ThoiGianHen AS DATE) = @NgayHen
+        ORDER BY lh.ThoiGianHen
+      `);
+
+    const appointments = result.recordset.map((apt) => ({
+      maLichHen: apt.MaLichHen ? apt.MaLichHen.trim() : null,
+      thoiGianHen: formatDateForResponse(apt.ThoiGianHen),
+      gioHen: apt.ThoiGianHen
+        ? new Date(apt.ThoiGianHen).toLocaleTimeString("vi-VN", {
+            hour: "2-digit",
+            minute: "2-digit",
+          })
+        : null,
+      loaiDichVu: apt.LoaiDichVu ? apt.LoaiDichVu.trim() : null,
+      trangThai: apt.TrangThai ? apt.TrangThai.trim() : null,
+      ghiChu: apt.GhiChu ? apt.GhiChu.trim() : null,
+      tenKhachHang: apt.TenKhachHang ? apt.TenKhachHang.trim() : null,
+      sdtKhachHang: apt.SDTKhachHang ? apt.SDTKhachHang.trim() : null,
+      tenChiNhanh: apt.TenChiNhanh ? apt.TenChiNhanh.trim() : null,
+      tenThucung: apt.TenThucung ? apt.TenThucung.trim() : null,
+    }));
+
+    return {
+      success: true,
+      status: 200,
+      data: appointments,
+    };
+  } catch (error) {
+    console.error("Error fetching doctor appointments:", error);
+    return {
+      success: false,
+      status: 500,
+      message: "Lỗi khi lấy danh sách lịch hẹn của bác sĩ",
+      error: error.message,
+    };
+  }
+}
+
 module.exports = {
   createAppointment,
   cancelAppointment,
@@ -1137,4 +1235,5 @@ module.exports = {
   getAppointmentsSchedule,
   getTodayAppointments,
   getAppointmentDetails,
+  getDoctorAppointments,
 };

@@ -51,7 +51,8 @@ async function getCustomerPets(customerId) {
  * @returns {Promise<{success: boolean, status?: number, message?: string, data?: object, error?: string}>}
  */
 async function createPet(customerId, petData) {
-  const { TenThuCung, GioiTinh, Loai, Giong, NgaySinh, TinhTrangSucKhoe } = petData;
+  const { TenThuCung, GioiTinh, Loai, Giong, NgaySinh, TinhTrangSucKhoe } =
+    petData;
 
   // Validation cơ bản: TenThuCung là bắt buộc
   if (!TenThuCung || TenThuCung.trim() === "") {
@@ -68,17 +69,17 @@ async function createPet(customerId, petData) {
     // GỌI STORED PROCEDURE sp_TV5_AddPet
     const result = await pool
       .request()
-      .input('MaKhachHang', sql.Char(7), customerId)
-      .input('TenThuCung', sql.NVarChar(50), TenThuCung.trim())
-      .input('GioiTinh', sql.NVarChar(3), GioiTinh || null)
-      .input('Loai', sql.NVarChar(20), Loai || null)
-      .input('Giong', sql.NVarChar(20), Giong || null)
-      .input('NgaySinh', sql.Date, NgaySinh || null)
-      .input('TinhTrangSucKhoe', sql.NVarChar(50), TinhTrangSucKhoe || null)
-      .output('MaThuCung', sql.Int)
-      .output('ErrorMessage', sql.NVarChar(500))
-      .output('StatusCode', sql.Int)
-      .execute('sp_TV5_AddPet');
+      .input("MaKhachHang", sql.Char(7), customerId)
+      .input("TenThuCung", sql.NVarChar(50), TenThuCung.trim())
+      .input("GioiTinh", sql.NVarChar(3), GioiTinh || null)
+      .input("Loai", sql.NVarChar(20), Loai || null)
+      .input("Giong", sql.NVarChar(20), Giong || null)
+      .input("NgaySinh", sql.Date, NgaySinh || null)
+      .input("TinhTrangSucKhoe", sql.NVarChar(50), TinhTrangSucKhoe || null)
+      .output("MaThuCung", sql.Int)
+      .output("ErrorMessage", sql.NVarChar(500))
+      .output("StatusCode", sql.Int)
+      .execute("sp_TV5_AddPet");
 
     const { MaThuCung, ErrorMessage, StatusCode } = result.output;
 
@@ -93,9 +94,8 @@ async function createPet(customerId, petData) {
     // Query để lấy thông tin thú cưng vừa tạo
     const petInfo = await pool
       .request()
-      .input('MaKhachHang', sql.Char(7), customerId)
-      .input('MaThuCung', sql.Int, MaThuCung)
-      .query(`
+      .input("MaKhachHang", sql.Char(7), customerId)
+      .input("MaThuCung", sql.Int, MaThuCung).query(`
         SELECT * FROM dbo.ThuCung
         WHERE MaKhachHang = @MaKhachHang AND MaThuCung = @MaThuCung
       `);
@@ -125,7 +125,8 @@ async function createPet(customerId, petData) {
  * @returns {Promise<{success: boolean, status?: number, message?: string, data?: object, error?: string}>}
  */
 async function updatePet(customerId, petId, petData) {
-  const { TenThuCung, GioiTinh, Loai, Giong, NgaySinh, TinhTrangSucKhoe } = petData;
+  const { TenThuCung, GioiTinh, Loai, Giong, NgaySinh, TinhTrangSucKhoe } =
+    petData;
 
   // Validation cơ bản: Nếu có TenThuCung thì không được rỗng
   if (TenThuCung !== undefined && (!TenThuCung || TenThuCung.trim() === "")) {
@@ -158,17 +159,29 @@ async function updatePet(customerId, petId, petData) {
     // GỌI STORED PROCEDURE sp_TV5_UpdatePet
     const result = await pool
       .request()
-      .input('MaKhachHang', sql.Char(7), customerId)
-      .input('MaThuCung', sql.Int, parseInt(petId))
-      .input('TenThuCung', sql.NVarChar(50), TenThuCung !== undefined ? TenThuCung?.trim() : null)
-      .input('GioiTinh', sql.NVarChar(3), GioiTinh !== undefined ? GioiTinh : null)
-      .input('Loai', sql.NVarChar(20), Loai !== undefined ? Loai : null)
-      .input('Giong', sql.NVarChar(20), Giong !== undefined ? Giong : null)
-      .input('NgaySinh', sql.Date, NgaySinh !== undefined ? NgaySinh : null)
-      .input('TinhTrangSucKhoe', sql.NVarChar(50), TinhTrangSucKhoe !== undefined ? TinhTrangSucKhoe : null)
-      .output('ErrorMessage', sql.NVarChar(500))
-      .output('StatusCode', sql.Int)
-      .execute('sp_TV5_UpdatePet');
+      .input("MaKhachHang", sql.Char(7), customerId)
+      .input("MaThuCung", sql.Int, parseInt(petId))
+      .input(
+        "TenThuCung",
+        sql.NVarChar(50),
+        TenThuCung !== undefined ? TenThuCung?.trim() : null
+      )
+      .input(
+        "GioiTinh",
+        sql.NVarChar(3),
+        GioiTinh !== undefined ? GioiTinh : null
+      )
+      .input("Loai", sql.NVarChar(20), Loai !== undefined ? Loai : null)
+      .input("Giong", sql.NVarChar(20), Giong !== undefined ? Giong : null)
+      .input("NgaySinh", sql.Date, NgaySinh !== undefined ? NgaySinh : null)
+      .input(
+        "TinhTrangSucKhoe",
+        sql.NVarChar(50),
+        TinhTrangSucKhoe !== undefined ? TinhTrangSucKhoe : null
+      )
+      .output("ErrorMessage", sql.NVarChar(500))
+      .output("StatusCode", sql.Int)
+      .execute("sp_TV5_UpdatePet");
 
     const { ErrorMessage, StatusCode } = result.output;
 
@@ -183,9 +196,8 @@ async function updatePet(customerId, petId, petData) {
     // Query để lấy thông tin thú cưng sau khi update
     const petInfo = await pool
       .request()
-      .input('MaKhachHang', sql.Char(7), customerId)
-      .input('MaThuCung', sql.Int, parseInt(petId))
-      .query(`
+      .input("MaKhachHang", sql.Char(7), customerId)
+      .input("MaThuCung", sql.Int, parseInt(petId)).query(`
         SELECT * FROM dbo.ThuCung
         WHERE MaKhachHang = @MaKhachHang AND MaThuCung = @MaThuCung
       `);
@@ -220,11 +232,11 @@ async function deletePet(customerId, petId) {
     // GỌI STORED PROCEDURE sp_TV5_DeletePet
     const result = await pool
       .request()
-      .input('MaKhachHang', sql.Char(7), customerId)
-      .input('MaThuCung', sql.Int, parseInt(petId))
-      .output('ErrorMessage', sql.NVarChar(500))
-      .output('StatusCode', sql.Int)
-      .execute('sp_TV5_DeletePet');
+      .input("MaKhachHang", sql.Char(7), customerId)
+      .input("MaThuCung", sql.Int, parseInt(petId))
+      .output("ErrorMessage", sql.NVarChar(500))
+      .output("StatusCode", sql.Int)
+      .execute("sp_TV5_DeletePet");
 
     const { ErrorMessage, StatusCode } = result.output;
 
@@ -266,12 +278,13 @@ async function getPetDetails(customerId, petId) {
       return {
         success: false,
         status: 404,
-        message: "Không tìm thấy thú cưng hoặc bạn không có quyền xem thông tin thú cưng này",
+        message:
+          "Không tìm thấy thú cưng hoặc bạn không có quyền xem thông tin thú cưng này",
       };
     }
 
     const pool = await poolPromise;
-    
+
     // Lấy thông tin chi tiết đầy đủ của thú cưng
     const result = await pool
       .request()
@@ -352,8 +365,9 @@ async function verifyPetOwnership(customerId, petId) {
 
 /**
  * Lấy lịch sử khám bệnh của thú cưng (chỉ khách hàng sở hữu thú cưng mới xem được)
- * @param {string} customerId
- * @param {string} petId
+ * @param {string} customerId - Mã khách hàng
+ * @param {string} petId - Mã thú cưng
+ * @returns {Promise<{success: boolean, status: number, data: array, message?: string}>}
  */
 async function getPetMedicalHistory(customerId, petId) {
   try {
@@ -367,71 +381,58 @@ async function getPetMedicalHistory(customerId, petId) {
       };
     }
 
-    const petInfo = petCheck.petInfo;
     const pool = await poolPromise;
 
-    const medicalHistory = await pool
+    // Lấy lịch sử khám bệnh của thú cưng
+    const result = await pool
       .request()
       .input("MaThuCung", sql.Int, parseInt(petId))
       .input("MaKhachHang", sql.Char(7), customerId)
       .query(
         `
         SELECT
-          hd.MaHoaDon,
-          hd.NgayLap AS NgayKham,
-          hd.MaChiNhanh,
-          cn.TenChiNhanh,
-          cthd.STT,
-          cthd.ThanhTien,
-          dvsk.BacSi AS MaBacSi,
-          nvBs.HoTen AS TenBacSi,
+          kb.MaHoaDon,
+          kb.STT,
           kb.TrieuChung,
           kb.ChanDoan,
           kb.ToaThuoc,
-          kb.NgayTaiKham
-        FROM dbo.CTHD_DVSucKhoe dvsk
-        INNER JOIN dbo.CTHD cthd
-          ON dvsk.MaHoaDon = cthd.MaHoaDon AND dvsk.STT = cthd.STT
-        INNER JOIN dbo.CTHD_KhamBenh kb
-          ON dvsk.MaHoaDon = kb.MaHoaDon AND dvsk.STT = kb.STT
-        INNER JOIN dbo.HoaDon hd
-          ON cthd.MaHoaDon = hd.MaHoaDon
-        LEFT JOIN dbo.NhanVien nvBs
-          ON dvsk.BacSi = nvBs.MaNhanVien
-        LEFT JOIN dbo.ChiNhanh cn
-          ON hd.MaChiNhanh = cn.MaChiNhanh
+          kb.NgayTaiKham,
+          hd.NgayLap,
+          cn.TenChiNhanh,
+          nv.HoTen AS BacSi
+        FROM dbo.CTHD_KhamBenh kb
+        INNER JOIN dbo.CTHD_DVSucKhoe dvsk ON kb.MaHoaDon = dvsk.MaHoaDon AND kb.STT = dvsk.STT
+        INNER JOIN dbo.HoaDon hd ON kb.MaHoaDon = hd.MaHoaDon
+        INNER JOIN dbo.ChiNhanh cn ON hd.MaChiNhanh = cn.MaChiNhanh
+        LEFT JOIN dbo.NhanVien nv ON dvsk.BacSi = nv.MaNhanVien
         WHERE dvsk.MaThuCung = @MaThuCung
           AND dvsk.MaKhachHang = @MaKhachHang
-          AND dvsk.LoaiDichVuSK = N'Khám bệnh'
-        ORDER BY hd.NgayLap DESC, cthd.STT ASC
+        ORDER BY hd.NgayLap DESC
       `
       );
 
-    if (medicalHistory.recordset.length === 0) {
-      return {
-        success: true,
-        status: 200,
-        message: "Không có lịch sử khám bệnh thú cưng",
-        data: {
-          petInfo: {
-            MaThuCung: petInfo.MaThuCung,
-            TenThuCung: petInfo.TenThuCung,
-          },
-          medicalRecords: [],
-        },
-      };
-    }
+    // Format dữ liệu để trả về
+    const medicalRecords = result.recordset.map((record) => ({
+      maHoaDon: record.MaHoaDon?.toString().trim() || "",
+      stt: record.STT || 0,
+      trieuChung: record.TrieuChung?.trim() || "",
+      chanDoan: record.ChanDoan?.trim() || "",
+      donThuoc: record.DonThuoc?.trim() || "",
+      ngayTaiKham: record.NgayTaiKham
+        ? record.NgayTaiKham.toISOString().split("T")[0]
+        : null,
+      ghiChu: record.GhiChu?.trim() || "",
+      ngayKham: record.NgayLap
+        ? record.NgayLap.toISOString().split("T")[0]
+        : null,
+      chiNhanh: record.TenChiNhanh?.trim() || "",
+      bacSi: record.BacSi?.trim() || "Chưa cập nhật",
+    }));
 
     return {
       success: true,
       status: 200,
-      data: {
-        petInfo: {
-          MaThuCung: petInfo.MaThuCung,
-          TenThuCung: petInfo.TenThuCung,
-        },
-        medicalRecords: medicalHistory.recordset,
-      },
+      data: medicalRecords,
     };
   } catch (error) {
     console.error("Error fetching pet medical history:", error);

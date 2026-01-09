@@ -175,6 +175,26 @@ class BranchesController {
       next(error);
     }
   }
+
+  /**
+   * Lấy danh sách thuốc tồn kho (loại sản phẩm là "Thuốc")
+   * GET /api/branches/inventory/medicines
+   */
+  async getMedicinesInventory(req, res, next) {
+    try {
+      const maNhanVien = req.user.maNhanVien;
+      if (!maNhanVien) {
+        return res.status(401).json({
+          success: false,
+          message: "Không tìm thấy thông tin nhân viên",
+        });
+      }
+      const response = await branchesService.getMedicinesInventory(maNhanVien);
+      return res.status(response.status || 200).json(response);
+    } catch (error) {
+      next(error);
+    }
+  }
 }
 
 module.exports = new BranchesController();

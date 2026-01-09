@@ -39,11 +39,16 @@ class MedicalService {
    * @param {object} recordData - { MaKhachHang, MaChiNhanh, MaThuCung }
    */
   async createMedicalRecord(recordData) {
-    console.log('[createMedicalRecord] recordData:', recordData);
-    
-    const { MaKhachHang, MaChiNhanh, MaThuCung } = recordData;  // MaThuCung là INT
+    console.log("[createMedicalRecord] recordData:", recordData);
 
-    if (!MaKhachHang || !MaChiNhanh || MaThuCung === undefined || MaThuCung === null) {
+    const { MaKhachHang, MaChiNhanh, MaThuCung } = recordData; // MaThuCung là INT
+
+    if (
+      !MaKhachHang ||
+      !MaChiNhanh ||
+      MaThuCung === undefined ||
+      MaThuCung === null
+    ) {
       return {
         success: false,
         status: 400,
@@ -101,7 +106,8 @@ class MedicalService {
           return {
             success: false,
             status: 404,
-            message: "Không tìm thấy thú cưng hoặc thú cưng không thuộc khách hàng này",
+            message:
+              "Không tìm thấy thú cưng hoặc thú cưng không thuộc khách hàng này",
           };
         }
 
@@ -168,8 +174,10 @@ class MedicalService {
         const sttResult = await transaction
           .request()
           .input("MaHoaDon", sql.Char(8), maHoaDon)
-          .query(`SELECT MAX(STT) AS STT FROM dbo.CTHD WHERE MaHoaDon = @MaHoaDon`);
-        
+          .query(
+            `SELECT MAX(STT) AS STT FROM dbo.CTHD WHERE MaHoaDon = @MaHoaDon`
+          );
+
         const stt = sttResult.recordset[0].STT;
 
         // Tạo CTHD_DVSucKhoe (BacSi = NULL ban đầu, sẽ được cập nhật sau)
@@ -420,7 +428,71 @@ class MedicalService {
       };
     }
   }
+
+  /**
+   * Lấy lịch sử khám bệnh của thú cưng
+   * @param {number} maThuCung - Mã thú cưng
+   */
+  async getPetMedicalHistory(maThuCung) {
+    try {
+      const pool = await poolPromise;
+
+      const result = await pool
+        .request()
+        .input("MaThuCung", sql.Int, parseInt(maThuCung)).query(`
+          SELECT 
+            kb.MaHoaDon,
+            kb.STT,
+            kb.TrieuChung,
+            kb.ChanDoan,
+            kb.DonThuoc,
+            kb.NgayTaiKham,
+            kb.GhiChu,
+            hd.NgayLap,
+            cn.TenChiNhanh,
+            nv.HoTen AS BacSi
+          FROM CTHD_KhamBenh kb
+          INNER JOIN CTHD_DVSucKhoe dvsk ON kb.MaHoaDon = dvsk.MaHoaDon AND kb.STT = dvsk.STT
+          INNER JOIN HoaDon hd ON kb.MaHoaDon = hd.MaHoaDon
+          INNER JOIN ChiNhanh cn ON hd.MaChiNhanh = cn.MaChiNhanh
+          LEFT JOIN NhanVien nv ON kb.BacSiPhuTrach = nv.MaNhanVien
+          WHERE dvsk.MaThuCung = @MaThuCung
+            AND kb.TrieuChung IS NOT NULL
+          ORDER BY hd.NgayLap DESC
+        `);
+
+      const history = result.recordset.map((record) => ({
+        maHoaDon: record.MaHoaDon?.trim(),
+        stt: record.STT,
+        trieuChung: record.TrieuChung?.trim() || "",
+        chanDoan: record.ChanDoan?.trim() || "",
+        donThuoc: record.DonThuoc?.trim() || "",
+        ngayTaiKham: record.NgayTaiKham
+          ? record.NgayTaiKham.toISOString().split("T")[0]
+          : null,
+        ghiChu: record.GhiChu?.trim() || "",
+        ngayKham: record.NgayLap
+          ? record.NgayLap.toISOString().split("T")[0]
+          : null,
+        chiNhanh: record.TenChiNhanh?.trim() || "",
+        bacSi: record.BacSi?.trim() || "Chưa cập nhật",
+      }));
+
+      return {
+        success: true,
+        status: 200,
+        data: history,
+      };
+    } catch (error) {
+      console.error("Error fetching pet medical history:", error);
+      return {
+        success: false,
+        status: 500,
+        message: "Lỗi khi lấy lịch sử khám bệnh của thú cưng",
+        error: error.message,
+      };
+    }
+  }
 }
 
 module.exports = new MedicalService();
-

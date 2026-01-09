@@ -363,6 +363,65 @@ class BranchesService {
       throw error;
     }
   }
+
+  /**
+   * Lấy danh sách thuốc (loại sản phẩm = "Thuốc") tồn kho tại chi nhánh của nhân viên
+   */
+  async getMedicinesInventory(maNhanVien) {
+    try {
+      const pool = await poolPromise;
+
+      // Lấy chi nhánh của nhân viên
+      const branchResult = await pool
+        .request()
+        .input("MaNhanVien", sql.Char(5), maNhanVien).query(`
+          SELECT MaChiNhanh
+          FROM NhanVien
+          WHERE MaNhanVien = @MaNhanVien
+        `);
+
+      if (branchResult.recordset.length === 0) {
+        return {
+          success: false,
+          status: 404,
+          message: "Không tìm thấy chi nhánh của nhân viên",
+        };
+      }
+
+      const maChiNhanh = branchResult.recordset[0].MaChiNhanh;
+
+      // Lấy danh sách thuốc tồn kho
+      const result = await pool
+        .request()
+        .input("MaChiNhanh", sql.Char(4), maChiNhanh).query(`
+          	SELECT tk.MaSanPham, sp.TenSanPham, sp.DonGia, tk.SoLuongTon
+            FROM SanPham_TonKho tk
+            INNER JOIN SanPham sp ON sp.MaSanPham = tk.MaSanPham
+            WHERE tk.MaChiNhanh = @MaChiNhanh
+              AND sp.LoaiSanPham = N'Thuốc'
+            ORDER BY tk.MaSanPham;
+
+        `);
+
+      // Map dữ liệu để khớp với frontend
+      const medicines = result.recordset.map((m) => ({
+        maSanPham: m.MaSanPham,
+        tenSanPham: m.TenSanPham,
+        loaiSanPham: "Thuốc",
+        soLuong: m.SoLuongTon,
+        giaBan: m.DonGia,
+      }));
+
+      return {
+        success: true,
+        status: 200,
+        data: medicines,
+      };
+    } catch (error) {
+      console.error("Error fetching medicines inventory:", error);
+      throw error;
+    }
+  }
 }
 
 module.exports = new BranchesService();

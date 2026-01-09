@@ -1,8 +1,21 @@
-const express = require('express');
+const express = require("express");
 const router = express.Router();
-const { authenticate, authorize } = require('../../middlewares/auth');
-const { ROLES } = require('../../config/constants');
-const petsController = require('./pets.controller');
+const { authenticate, authorize } = require("../../middlewares/auth");
+const { ROLES } = require("../../config/constants");
+const petsController = require("./pets.controller");
+
+/**
+ * @route   GET /api/pets/staff/:customerId/:petId/medical-history
+ * @desc    Staff: Lấy lịch sử khám bệnh của thú cưng (cho trang tra cứu lịch sử khám bệnh)
+ * @access  Private - NHAN_VIEN
+ * @note    Phải đặt route này TRƯỚC các route /:id để tránh conflict
+ */
+router.get(
+  "/staff/:customerId/:petId/medical-history",
+  authenticate,
+  authorize(ROLES.EMPLOYEE, ROLES.ADMIN),
+  petsController.getStaffPetMedicalHistory
+);
 
 /**
  * @route   GET /api/pets
@@ -10,7 +23,7 @@ const petsController = require('./pets.controller');
  * @access  Private - KHACH_HANG
  */
 router.get(
-  '/',
+  "/",
   authenticate,
   authorize(ROLES.CUSTOMER),
   petsController.getCustomerPets
@@ -22,7 +35,7 @@ router.get(
  * @access  Private - KHACH_HANG
  */
 router.post(
-  '/',
+  "/",
   authenticate,
   authorize(ROLES.CUSTOMER),
   petsController.createPet
@@ -34,7 +47,7 @@ router.post(
  * @access  Private - KHACH_HANG
  */
 router.put(
-  '/:id',
+  "/:id",
   authenticate,
   authorize(ROLES.CUSTOMER),
   petsController.updatePet
@@ -46,7 +59,7 @@ router.put(
  * @access  Private - KHACH_HANG
  */
 router.delete(
-  '/:id',
+  "/:id",
   authenticate,
   authorize(ROLES.CUSTOMER),
   petsController.deletePet
@@ -58,7 +71,7 @@ router.delete(
  * @access  Private - KHACH_HANG
  */
 router.get(
-  '/:id/medical-history',
+  "/:id/medical-history",
   authenticate,
   authorize(ROLES.CUSTOMER),
   petsController.getPetMedicalHistory
@@ -70,7 +83,7 @@ router.get(
  * @access  Private - KHACH_HANG
  */
 router.get(
-  '/:id/vaccination-history',
+  "/:id/vaccination-history",
   authenticate,
   authorize(ROLES.CUSTOMER),
   petsController.getPetVaccinationHistory
@@ -82,11 +95,10 @@ router.get(
  * @access  Private - KHACH_HANG
  */
 router.get(
-  '/:id',
+  "/:id",
   authenticate,
   authorize(ROLES.CUSTOMER),
   petsController.getPetDetails
 );
 
 module.exports = router;
-
