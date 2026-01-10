@@ -33,7 +33,7 @@ import {
   Receipt,
   Plus,
   Printer,
-  PackageCheck,
+  ShoppingBag,
   Loader2,
   ShoppingCart,
   Stethoscope,
@@ -222,10 +222,11 @@ export default function InvoicePage() {
       }
     } catch (err) {
       console.error(err);
-      const errorMessage = err.response?.data?.message 
-        || err.response?.data?.error 
-        || err.message 
-        || "Lỗi hệ thống";
+      const errorMessage =
+        err.response?.data?.message ||
+        err.response?.data?.error ||
+        err.message ||
+        "Lỗi hệ thống";
       toast.error(errorMessage);
     } finally {
       setConfirming(false);
@@ -418,13 +419,13 @@ export default function InvoicePage() {
               </CardContent>
             </Card>
 
-            {/* Invoice Detail Dialog - premium like MedicalRecords */}
+            {/* Invoice Detail Dialog */}
             <Dialog
               open={showInvoiceDialog}
               onOpenChange={setShowInvoiceDialog}
             >
-              <DialogContent className="max-w-4xl w-full max-h-[90vh] rounded-3xl bg-white shadow-2xl border-0 p-0 overflow-hidden flex flex-col [&>button]:hidden">
-                {/* Top gradient header */}
+              <DialogContent className="max-w-3xl w-full max-h-[90vh] rounded-3xl bg-white shadow-2xl border-0 p-0 overflow-hidden flex flex-col [&>button]:hidden">
+                {/* Header */}
                 <div className="bg-gradient-to-r from-blue-500 to-sky-500 p-4 text-white relative overflow-hidden flex-shrink-0">
                   <div className="absolute right-3 top-3 opacity-[0.07]">
                     <Receipt className="h-20 w-20 transform rotate-12" />
@@ -515,7 +516,7 @@ export default function InvoicePage() {
                             size="sm"
                             variant="outline"
                             onClick={handleOpenAddProduct}
-                            className="rounded-xl"
+                            className="rounded-xl border border-blue-600 text-blue-600 hover:bg-blue-600 hover:text-white"
                           >
                             <Plus className="h-4 w-4 mr-1" /> Thêm sản phẩm
                           </Button>
@@ -658,7 +659,7 @@ export default function InvoicePage() {
                             </>
                           ) : checkIsOnlineOrder() ? (
                             <>
-                              <PackageCheck className="h-4 w-4" />
+                              <ShoppingCart className="h-4 w-4" />
                               Xác nhận đặt hàng
                             </>
                           ) : (
@@ -675,15 +676,16 @@ export default function InvoicePage() {
               </DialogContent>
             </Dialog>
 
-            {/* Add Product Dialog (premium) */}
+            {/* Add Product Dialog - Simplified */}
             <Dialog
               open={showAddProductDialog}
               onOpenChange={setShowAddProductDialog}
             >
-              <DialogContent className="max-w-xl w-full max-h-[85vh] rounded-3xl bg-white shadow-2xl border-0 p-0 overflow-hidden flex flex-col [&>button]:hidden">
-                <div className="bg-gradient-to-r from-blue-500 to-sky-500 p-4 text-white relative overflow-hidden flex-shrink-0">
-                  <div className="absolute right-3 top-3 opacity-[0.07]">
-                    <ShoppingCart className="h-20 w-20 transform rotate-12" />
+              <DialogContent className="max-w-3xl w-full max-h-[90vh] rounded-3xl bg-white shadow-2xl border-0 p-0 overflow-hidden flex flex-col [&>button]:hidden">
+                {/* Header */}
+                <div className="bg-gradient-to-r from-emerald-500 to-teal-500 px-5 py-4 text-white relative overflow-hidden flex-shrink-0">
+                  <div className="absolute right-3 top-3 opacity-[0.08] pointer-events-none">
+                    <ShoppingCart className="h-20 w-20 rotate-12" />
                   </div>
 
                   <button
@@ -698,44 +700,58 @@ export default function InvoicePage() {
                     <div className="bg-white/20 p-1.5 rounded-lg backdrop-blur-sm">
                       <Plus className="h-4 w-4 text-white" />
                     </div>
-                    Thêm sản phẩm
+                    Thêm sản phẩm vào hóa đơn
                   </DialogTitle>
 
-                  <DialogDescription className="text-blue-100 mt-1 relative z-10 font-medium opacity-90 text-sm">
-                    Chọn sản phẩm từ kho chi nhánh và nhập số lượng
+                  <DialogDescription className="text-white/90 mt-1 relative z-10 font-medium text-sm">
+                    Chọn sản phẩm từ kho và nhập số lượng
                   </DialogDescription>
                 </div>
 
+                {/* Body */}
                 <div className="flex-1 overflow-y-auto px-5 pt-4 pb-5 space-y-4">
+                  {/* Search */}
                   <div className="relative group">
                     <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                      <Search className="h-4 w-4 text-gray-500 group-focus-within:text-blue-600 transition-colors" />
+                      <Search className="h-4 w-4 text-gray-500 group-focus-within:text-emerald-600 transition-colors" />
                     </div>
                     <Input
-                      placeholder="Tìm theo tên/mã sản phẩm..."
+                      placeholder="Tìm kiếm sản phẩm theo tên hoặc mã..."
                       value={productSearchTerm}
                       onChange={(e) => setProductSearchTerm(e.target.value)}
-                      className="pl-10 h-11 rounded-2xl border-gray-200 bg-slate-50/60 focus:bg-white focus:ring-2 focus:ring-blue-100"
+                      className="pl-10 h-11 rounded-2xl border-gray-200 bg-slate-50/60 focus:bg-white focus:ring-2 focus:ring-emerald-100"
                     />
                   </div>
 
-                  <div className="rounded-2xl border border-gray-200 bg-white overflow-hidden">
-                    <div className="max-h-[260px] overflow-y-auto p-3 space-y-2">
+                  {/* Product list */}
+                  <div className="rounded-2xl border border-gray-200 bg-white overflow-hidden shadow-sm">
+                    <div className="px-4 py-3 bg-slate-50 border-b border-gray-100 flex items-center justify-between">
+                      <p className="text-sm font-bold text-gray-900">
+                        Danh sách sản phẩm
+                      </p>
+                      <Badge variant="outline" className="bg-white">
+                        {filteredProducts?.length || 0} sản phẩm
+                      </Badge>
+                    </div>
+
+                    <div className="max-h-[380px] overflow-y-auto p-3 space-y-2">
                       {loadingProducts ? (
-                        <div className="flex flex-col items-center justify-center py-10 gap-3">
-                          <Loader2 className="h-6 w-6 animate-spin text-blue-600" />
+                        <div className="flex flex-col items-center justify-center py-12 gap-3">
+                          <Loader2 className="h-6 w-6 animate-spin text-emerald-600" />
                           <p className="text-sm text-gray-600">
                             Đang tải sản phẩm...
                           </p>
                         </div>
                       ) : filteredProducts.length === 0 ? (
-                        <div className="text-center text-sm text-gray-500 py-10">
-                          Không tìm thấy sản phẩm
+                        <div className="text-center text-sm text-gray-500 py-12">
+                          <ShoppingBag className="h-10 w-10 mx-auto mb-3 text-gray-300" />
+                          <p>Không tìm thấy sản phẩm</p>
                         </div>
                       ) : (
                         filteredProducts.map((p) => {
                           const active =
                             selectedProductToAdd?.maSanPham === p.maSanPham;
+
                           return (
                             <div
                               key={p.maSanPham}
@@ -745,20 +761,40 @@ export default function InvoicePage() {
                               }}
                               className={`rounded-xl p-3 border cursor-pointer transition-all ${
                                 active
-                                  ? "bg-blue-50 border-blue-300 shadow-sm"
-                                  : "bg-white border-gray-200 hover:bg-slate-50 hover:border-gray-300"
+                                  ? "bg-emerald-50 border-emerald-300 shadow-sm"
+                                  : "bg-white border-gray-200 hover:border-emerald-300 hover:bg-emerald-50/30"
                               }`}
                             >
-                              <div className="font-bold text-gray-900">
-                                {p.tenSanPham}
-                              </div>
-                              <div className="flex justify-between text-xs text-gray-600 mt-1">
-                                <span>
-                                  Kho: <b>{p.soLuongTonKho || 0}</b>
-                                </span>
-                                <span className="font-black text-blue-700">
-                                  {p.donGia?.toLocaleString("vi-VN")} ₫
-                                </span>
+                              <div className="flex items-start justify-between gap-3">
+                                <div className="flex items-center gap-3 min-w-0 flex-1">
+                                  <div
+                                    className={`h-10 w-10 rounded-lg flex items-center justify-center flex-shrink-0 ${
+                                      active
+                                        ? "bg-white border border-emerald-200"
+                                        : "bg-slate-50"
+                                    }`}
+                                  >
+                                    <ShoppingBag className="h-5 w-5 text-emerald-600" />
+                                  </div>
+
+                                  <div className="min-w-0 flex-1">
+                                    <div className="font-bold text-gray-900 truncate">
+                                      {p.tenSanPham}
+                                    </div>
+                                    <div className="text-xs text-gray-500 mt-0.5">
+                                      <span className="font-semibold">
+                                        {p.maSanPham}
+                                      </span>{" "}
+                                      • Kho: <b>{p.soLuongTonKho || 0}</b>
+                                    </div>
+                                  </div>
+                                </div>
+
+                                <div className="text-right flex-shrink-0">
+                                  <div className="text-base font-black text-emerald-700">
+                                    {p.donGia?.toLocaleString("vi-VN")} ₫
+                                  </div>
+                                </div>
                               </div>
                             </div>
                           );
@@ -767,30 +803,53 @@ export default function InvoicePage() {
                     </div>
                   </div>
 
-                  <div className="rounded-2xl border border-gray-200 bg-slate-50/60 p-4">
-                    <div className="flex items-center justify-between gap-3">
-                      <Label className="text-xs font-bold text-slate-500 uppercase">
-                        Số lượng
-                      </Label>
-                      <Input
-                        type="number"
-                        min="1"
-                        max={selectedProductToAdd?.soLuongTonKho || 1}
-                        value={quantityToAdd}
-                        onChange={(e) => setQuantityToAdd(e.target.value)}
-                        className="w-28 h-11 rounded-2xl border-gray-200 bg-white focus:ring-2 focus:ring-blue-100"
-                        disabled={!selectedProductToAdd}
-                      />
+                  {/* Selected product info + Quantity */}
+                  {selectedProductToAdd && (
+                    <div className="rounded-2xl border border-emerald-200 bg-emerald-50/50 p-4">
+                      <div className="flex items-start justify-between gap-4 mb-3">
+                        <div className="flex-1">
+                          <p className="text-xs font-bold text-emerald-600 uppercase tracking-wider mb-1">
+                            Sản phẩm đã chọn
+                          </p>
+                          <p className="font-bold text-gray-900">
+                            {selectedProductToAdd.tenSanPham}
+                          </p>
+                          <p className="text-sm text-gray-600 mt-1">
+                            Đơn giá:{" "}
+                            <span className="font-bold text-emerald-700">
+                              {selectedProductToAdd.donGia?.toLocaleString(
+                                "vi-VN"
+                              )}{" "}
+                              ₫
+                            </span>
+                          </p>
+                        </div>
+
+                        <div className="text-right">
+                          <p className="text-xs text-gray-500">Tồn kho</p>
+                          <p className="text-2xl font-black text-gray-900">
+                            {selectedProductToAdd.soLuongTonKho || 0}
+                          </p>
+                        </div>
+                      </div>
+
+                      <div className="pt-3 border-t border-emerald-200">
+                        <Label className="text-xs font-bold text-gray-700 uppercase mb-2 block">
+                          Số lượng
+                        </Label>
+                        <Input
+                          type="number"
+                          min="1"
+                          max={selectedProductToAdd.soLuongTonKho || 1}
+                          value={quantityToAdd}
+                          onChange={(e) => setQuantityToAdd(e.target.value)}
+                          className="h-12 rounded-xl border-emerald-300 bg-white focus:ring-2 focus:ring-emerald-200 text-center text-lg font-bold"
+                        />
+                      </div>
                     </div>
+                  )}
 
-                    {selectedProductToAdd && (
-                      <p className="text-xs text-gray-500 mt-2">
-                        Tồn kho hiện tại:{" "}
-                        <b>{selectedProductToAdd.soLuongTonKho || 0}</b>
-                      </p>
-                    )}
-                  </div>
-
+                  {/* Actions */}
                   <div className="flex items-center justify-end gap-2 pt-2">
                     <Button
                       variant="outline"
@@ -800,10 +859,11 @@ export default function InvoicePage() {
                     >
                       Hủy
                     </Button>
+
                     <Button
                       onClick={handleAddProduct}
                       disabled={!selectedProductToAdd || addingProduct}
-                      className="px-6 h-11 bg-blue-600 hover:bg-blue-700 text-white font-black rounded-xl shadow-md shadow-blue-100 gap-2 transition-all active:scale-95"
+                      className="px-6 h-11 bg-emerald-600 hover:bg-emerald-700 text-white font-black rounded-xl shadow-md shadow-emerald-100 gap-2 transition-all active:scale-95"
                     >
                       {addingProduct ? (
                         <>
