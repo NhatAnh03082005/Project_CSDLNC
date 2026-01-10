@@ -74,7 +74,6 @@ export const productAPI = {
     api.get(`/products/${maSanPham}/branch/${maChiNhanh}`),
   create: (data) => api.post("/products", data),
   update: (id, data) => api.put(`/products/${id}`, data),
-  delete: (id) => api.delete(`/products/${id}`),
 };
 
 export const invoiceAPI = {
@@ -125,9 +124,8 @@ export const vaccinationAPI = {
   getById: (id) => api.get(`/vaccinations/${id}`),
   create: (data) => api.post("/vaccinations", data),
   update: (id, data) => api.put(`/vaccinations/${id}`, data),
-  delete: (id) => api.delete("/vaccinations", { data: { id } }), // Sửa lại delete đồng bộ
 
-  // Logic Customer (HEAD)
+  // Logic Customer
   getPackages: () => api.get("/vaccinations/packages"),
   subscribe: (data) => api.post("/vaccinations/packages/subscribe", data),
   getSubscriptions: () => api.get("/vaccinations/subscriptions"),

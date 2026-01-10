@@ -87,7 +87,7 @@ class PromotionsService {
 
       return { success: true };
     } catch (error) {
-      console.error("Error in createEmployee:", error);
+      console.error("Error in createPromotion:", error);
       throw error;
     }
   }

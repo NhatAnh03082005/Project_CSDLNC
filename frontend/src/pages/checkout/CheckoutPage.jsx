@@ -69,10 +69,6 @@ export default function CheckoutPage() {
     }
   }, [cartItems, orderSuccess, navigate]);
 
-  // Debug: Log khi orderSuccess thay đổi
-  useEffect(() => {
-    console.log("orderSuccess state changed:", orderSuccess);
-  }, [orderSuccess]);
 
   const subtotal = cartItems.reduce(
     (sum, item) => sum + (item.donGia || item.price || 0) * item.soLuong,
@@ -111,15 +107,8 @@ export default function CheckoutPage() {
 
       const response = await orderAPI.create(orderData);
 
-      console.log("Order creation response:", response);
-      console.log("Response data:", response.data);
-      console.log("Response success:", response.data?.success);
-
       // Kiểm tra response đơn giản như code ban đầu đã thành công
       if (response.data && response.data.success) {
-        console.log("Order created successfully, setting orderSuccess to true");
-        console.log("Response message:", response?.data?.message);
-
         // Set state và clear cart
         setOrderSuccess(true);
         clearCart();
@@ -127,14 +116,12 @@ export default function CheckoutPage() {
         // Hiển thị toast để xác nhận thành công
         toast.success("Đặt hàng thành công! Đơn hàng đang chờ nhân viên xác nhận.");
       } else {
-        console.error("Order creation failed:", response.data);
         const errorMsg =
           response?.data?.message || response?.message || "Đặt hàng thất bại!";
         toast.error(errorMsg);
       }
     } catch (error) {
       console.error("Error placing order:", error);
-      console.error("Error response:", error.response?.data);
       const errorMessage =
         error.response?.data?.message ||
         error.response?.data?.error ||

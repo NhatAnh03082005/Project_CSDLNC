@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
 import { orderAPI } from "../../api/services";
+import { toast } from "../../lib/toast";
 import { Card, CardContent, CardHeader, CardTitle } from "../../components/ui/card";
 import { Button } from "../../components/ui/button";
 import { Badge } from "../../components/ui/badge";
@@ -25,12 +26,12 @@ export default function OrderDetailPage() {
       if (response.data.success) {
         setOrder(response.data.data);
       } else {
-        alert(response.data.message || "Không tìm thấy đơn hàng");
+        toast.error(response.data.message || "Không tìm thấy đơn hàng");
         navigate("/orders");
       }
     } catch (error) {
       console.error("Lỗi tải chi tiết đơn hàng:", error);
-      alert("Không thể tải chi tiết đơn hàng");
+      toast.error(error.response?.data?.message || "Không thể tải chi tiết đơn hàng");
       navigate("/orders");
     } finally {
       setLoading(false);

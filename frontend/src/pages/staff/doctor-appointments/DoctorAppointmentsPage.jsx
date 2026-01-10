@@ -43,17 +43,18 @@ export default function DoctorAppointmentsPage() {
   const [error, setError] = useState(null);
   const today = new Date().toISOString().split("T")[0];
   const [selectedDate, setSelectedDate] = useState(today);
+  const [showAllAppointments, setShowAllAppointments] = useState(false);
   const [showDetail, setShowDetail] = useState(false);
   const [selectedApp, setSelectedApp] = useState(null);
   const [searchTerm, setSearchTerm] = useState("");
   const [branchName, setBranchName] = useState("");
   const [isProfileOpen, setIsProfileOpen] = useState(false);
 
-  // Fetch appointments on mount
+  // Fetch appointments on mount or when selectedDate/showAllAppointments changes
   useEffect(() => {
     fetchAppointments();
     fetchBranch();
-  }, [selectedDate]);
+  }, [selectedDate, showAllAppointments]);
 
   const fetchBranch = async () => {
     try {
@@ -69,8 +70,9 @@ export default function DoctorAppointmentsPage() {
     setLoading(true);
     setError(null);
     try {
-      // Get appointments for doctor on selected date
-      const response = await appointmentAPI.getDoctorAppointments(selectedDate);
+      // Get appointments for doctor on selected date or all future appointments
+      const dateParam = showAllAppointments ? null : selectedDate;
+      const response = await appointmentAPI.getDoctorAppointments(dateParam);
       const data = response.data;
       if (data.success) {
         setAppointments(data.data?.appointments || []);
@@ -162,8 +164,28 @@ export default function DoctorAppointmentsPage() {
                       <span className="bg-blue-600 w-2 h-6 rounded-full block"></span>
                       Lịch hẹn của tôi
                     </CardTitle>
-                    <CardDescription className="pl-4 mt-1 text-base text-gray-500 font-medium">
-                      Danh sách lịch hẹn được phân công cho bạn
+                    <CardDescription className="pl-4 mt-1 text-base text-gray-500 font-medium flex items-center gap-2">
+                      {showAllAppointments ? (
+                        <>
+                          <Clock className="h-4 w-4 text-blue-500" />
+                          <span>
+                            Hiển thị tất cả lịch hẹn từ hôm nay trở đi
+                            {!loading && appointments.length > 0 && (
+                              <span className="ml-1 text-blue-600 font-bold">({appointments.length} lịch hẹn)</span>
+                            )}
+                          </span>
+                        </>
+                      ) : (
+                        <>
+                          <Calendar className="h-4 w-4 text-blue-500" />
+                          <span>
+                            Danh sách lịch hẹn được phân công cho bạn
+                            {!loading && appointments.length > 0 && selectedDate && (
+                              <span className="ml-1 text-blue-600 font-bold">- Ngày {new Date(selectedDate).toLocaleDateString("vi-VN")}</span>
+                            )}
+                          </span>
+                        </>
+                      )}
                     </CardDescription>
                   </div>
                   <div className="flex flex-col sm:flex-row gap-3 w-full lg:w-auto">
@@ -174,11 +196,42 @@ export default function DoctorAppointmentsPage() {
                       </div>
                       <Input
                         type="date"
-                        className="w-full sm:w-[180px] pl-10 border-gray-300 focus:bg-white focus:ring-2 focus:ring-blue-100 focus:border-blue-400 rounded-xl transition-all h-11 placeholder:text-gray-400"
+                        className="w-full sm:w-[180px] pl-10 border-gray-300 focus:bg-white focus:ring-2 focus:ring-blue-100 focus:border-blue-400 rounded-xl transition-all h-11 placeholder:text-gray-400 disabled:bg-gray-100 disabled:cursor-not-allowed"
                         value={selectedDate}
-                        onChange={(e) => setSelectedDate(e.target.value)}
+                        onChange={(e) => {
+                          setSelectedDate(e.target.value);
+                          setShowAllAppointments(false);
+                        }}
+                        disabled={showAllAppointments}
                       />
                     </div>
+                    {/* View All Button */}
+                    <Button
+                      variant={showAllAppointments ? "default" : "outline"}
+                      className={`h-11 px-4 rounded-xl transition-all font-medium ${
+                        showAllAppointments
+                          ? "bg-blue-600 text-white hover:bg-blue-700 border-blue-600"
+                          : "border-gray-300 text-gray-700 hover:border-blue-400 hover:text-blue-600"
+                      }`}
+                      onClick={() => {
+                        setShowAllAppointments(!showAllAppointments);
+                        if (!showAllAppointments) {
+                          setSelectedDate(today);
+                        }
+                      }}
+                    >
+                      {showAllAppointments ? (
+                        <>
+                          <Calendar className="h-4 w-4 mr-2" />
+                          Xem tất cả
+                        </>
+                      ) : (
+                        <>
+                          <Clock className="h-4 w-4 mr-2" />
+                          Xem tất cả
+                        </>
+                      )}
+                    </Button>
                     {/* Search Input */}
                     <div className="relative w-full lg:w-[300px] group">
                       <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
@@ -225,7 +278,8 @@ export default function DoctorAppointmentsPage() {
                         variant="outline"
                         className="mt-6 rounded-full px-6 border-gray-200 text-gray-600 hover:text-blue-600 hover:border-blue-200"
                         onClick={() => {
-                          setSelectedDate("");
+                          setSelectedDate(today);
+                          setShowAllAppointments(false);
                           setSearchTerm("");
                         }}
                       >
@@ -353,14 +407,15 @@ export default function DoctorAppointmentsPage() {
                 </div>
               </CardContent>
             </Card>
-            {(selectedDate || searchTerm) && (
+            {(showAllAppointments || selectedDate !== today || searchTerm) && (
               <div className="px-4 pb-3 pt-3">
                 <Button
                   variant="outline"
                   size="sm"
                   className="border-red-200 text-red-600 hover:text-white hover:bg-red-600 hover:border-red-600 rounded-xl transition-all"
                   onClick={() => {
-                    setSelectedDate("");
+                    setSelectedDate(today);
+                    setShowAllAppointments(false);
                     setSearchTerm("");
                   }}
                 >

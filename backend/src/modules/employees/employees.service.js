@@ -957,8 +957,6 @@ class EmployeesService {
    * @param {object} recordData - { MaKhachHang, MaChiNhanh, MaThuCung, services: ['Khám bệnh', 'Tiêm phòng'] }
    */
   async createMultiServiceRecord(recordData) {
-    console.log("[createMultiServiceRecord] recordData:", recordData);
-
     const { MaKhachHang, MaChiNhanh, pets } = recordData;
 
     if (!MaKhachHang || !MaChiNhanh) {

@@ -38,6 +38,7 @@ import {
 import { branchAPI, appointmentAPI } from "../../api/services";
 import { Pagination } from "../../components/ui/pagination";
 import Header from "../../components/layout/header";
+import { toast } from "../../lib/toast";
 
 const serviceInfo = {
   exam: {
@@ -221,11 +222,11 @@ export default function BranchesPage() {
           setBookingStep(1);
           navigate("/appointments?success=true");
         } else {
-          alert(response.data.message || "Đặt lịch thất bại");
+          toast.error(response.data.message || "Đặt lịch thất bại");
         }
       } catch (error) {
         console.error("Lỗi khi đặt lịch:", error);
-        alert(
+        toast.error(
           error.response?.data?.message ||
             "Đặt lịch thất bại. Vui lòng thử lại!"
         );
@@ -556,7 +557,11 @@ export default function BranchesPage() {
                     <Calendar className="h-4 w-4 text-blue-600" />
                     <span className="font-bold text-sm">
                       Ngày:{" "}
-                      {new Date(appointmentDate).toLocaleDateString("vi-VN")}
+                      {appointmentDate ? (() => {
+                        const parts = appointmentDate.split("-");
+                        const date = new Date(parseInt(parts[0]), parseInt(parts[1]) - 1, parseInt(parts[2]));
+                        return date.toLocaleDateString("vi-VN");
+                      })() : ""}
                     </span>
                   </div>
                   <Button

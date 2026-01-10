@@ -169,12 +169,12 @@ class AuthService {
   async loginStaff(staffCode) {
     try {
       const pool = await poolPromise;
-      // Truy vấn thông tin nhân viên từ bảng NhanVien dựa vào MaNhanVien
+      // Truy vấn thông tin nhân viên từ bảng NhanVien dựa vào MaNhanVien, bao gồm TrangThai
       const result = await pool
         .request()
         .input("MaNhanVien", sql.VarChar(20), staffCode)
         .query(
-          "SELECT MaNhanVien, HoTen, ViTri, MaChiNhanh FROM dbo.NhanVien WHERE MaNhanVien = @MaNhanVien"
+          "SELECT MaNhanVien, HoTen, ViTri, MaChiNhanh, TrangThai FROM dbo.NhanVien WHERE MaNhanVien = @MaNhanVien"
         );
 
       const staff = result.recordset[0];
@@ -184,6 +184,15 @@ class AuthService {
           success: false,
           status: 401,
           message: "Mã nhân viên không tồn tại",
+        };
+      }
+
+      // Kiểm tra TrangThai: nếu TrangThai = 1 thì nhân viên đã nghỉ việc
+      if (staff.TrangThai === 1 || staff.TrangThai === "1") {
+        return {
+          success: false,
+          status: 403,
+          message: "Nhân viên này đã nghỉ việc, không thể đăng nhập",
         };
       }
 
@@ -274,7 +283,7 @@ class AuthService {
           .query(
             `
             SELECT TOP 1 
-              MaNhanVien, HoTen, ViTri, MaChiNhanh
+              MaNhanVien, HoTen, ViTri, MaChiNhanh, TrangThai
             FROM dbo.NhanVien
             WHERE MaNhanVien = @MaNhanVien
           `
@@ -289,6 +298,16 @@ class AuthService {
         }
 
         const staff = result.recordset[0];
+        
+        // Kiểm tra TrangThai: nếu TrangThai = 1 thì nhân viên đã nghỉ việc
+        if (staff.TrangThai === 1 || staff.TrangThai === "1") {
+          return {
+            success: false,
+            status: 403,
+            message: "Nhân viên này đã nghỉ việc",
+          };
+        }
+
         // Xác định role dựa trên ViTri
         let userRole = "staff";
         if (staff.ViTri === "Quản lý chi nhánh") {

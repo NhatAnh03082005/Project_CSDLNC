@@ -55,29 +55,44 @@ async function createAppointment(customerId, appointmentData) {
     };
   }
 
-  // Parse date
+  // Parse date - Tạo Date object ở local timezone để đảm bảo đúng ngày khi lưu vào database
+  let appointmentDateStr;
   let appointmentDate;
   if (typeof ThoiGianHen === "string") {
-    const dateParts = ThoiGianHen.split("-");
-    if (dateParts.length === 3) {
+    // Nếu có format YYYY-MM-DD, parse ở local timezone
+    if (ThoiGianHen.match(/^\d{4}-\d{2}-\d{2}$/)) {
+      appointmentDateStr = ThoiGianHen;
+      const dateParts = ThoiGianHen.split("-");
+      // Tạo Date object ở local timezone (không phải UTC) để giữ nguyên ngày
       appointmentDate = new Date(
         parseInt(dateParts[0]),
         parseInt(dateParts[1]) - 1,
-        parseInt(dateParts[2])
+        parseInt(dateParts[2]),
+        12, 0, 0, 0 // Set time là 12:00:00 để tránh lệch do timezone
       );
+    } else if (ThoiGianHen.includes("T")) {
+      appointmentDateStr = ThoiGianHen.split("T")[0];
+      appointmentDate = new Date(ThoiGianHen);
     } else {
+      appointmentDateStr = ThoiGianHen;
       appointmentDate = new Date(ThoiGianHen);
     }
   } else {
-    appointmentDate = new Date(ThoiGianHen);
+    // Nếu là Date object, convert về YYYY-MM-DD ở local timezone
+    const year = ThoiGianHen.getFullYear();
+    const month = String(ThoiGianHen.getMonth() + 1).padStart(2, "0");
+    const day = String(ThoiGianHen.getDate()).padStart(2, "0");
+    appointmentDateStr = `${year}-${month}-${day}`;
+    appointmentDate = ThoiGianHen;
   }
 
-  // Client-side validation: check if date is in the past
+  // Validation: check if date is in the past
   const today = new Date();
   today.setHours(0, 0, 0, 0);
-  appointmentDate.setHours(0, 0, 0, 0);
+  const appointmentLocalDate = new Date(appointmentDate);
+  appointmentLocalDate.setHours(0, 0, 0, 0);
 
-  if (appointmentDate < today) {
+  if (appointmentLocalDate < today) {
     return {
       success: false,
       status: 400,
@@ -89,6 +104,7 @@ async function createAppointment(customerId, appointmentData) {
     const pool = await poolPromise;
 
     // GỌI STORED PROCEDURE sp_TV2_CreateAppointment
+    // Sử dụng Date object ở UTC để tránh lệch timezone
     const result = await pool
       .request()
       .input("MaKhachHang", sql.Char(7), customerId)
@@ -1167,10 +1183,16 @@ async function getDoctorAppointments(maNhanVien, date = null) {
     let targetDateStr = null;
     if (date) targetDateStr = date;
 
+    // Nếu không có date, lấy tất cả lịch hẹn từ hiện tại trở đi
+    const today = new Date();
+    const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}-${String(today.getDate()).padStart(2, "0")}`;
+
     const result = await pool
       .request()
       .input("MaNhanVien", sql.Char(5), maNhanVien)
-      .input("NgayHen", sql.VarChar(10), targetDateStr).query(`        
+      .input("NgayHen", sql.VarChar(10), targetDateStr)
+      .input("TodayDate", sql.VarChar(10), todayStr)
+      .query(`        
           SELECT 
           lh.MaLichHen,
           lh.MaKhachHang,
@@ -1183,7 +1205,11 @@ async function getDoctorAppointments(maNhanVien, date = null) {
         FROM dbo.LichHen lh
         INNER JOIN dbo.KhachHang kh ON lh.MaKhachHang = kh.MaKhachHang
         WHERE lh.BacSiPhuTrach = @MaNhanVien
-        AND (@NgayHen IS NULL OR CAST(lh.ThoiGianHen AS DATE) = CAST(@NgayHen AS DATE))
+        AND (
+          @NgayHen IS NOT NULL AND CAST(lh.ThoiGianHen AS DATE) = CAST(@NgayHen AS DATE)
+          OR 
+          @NgayHen IS NULL AND CAST(lh.ThoiGianHen AS DATE) >= CAST(@TodayDate AS DATE)
+        )
         ORDER BY lh.ThoiGianHen ASC, lh.MaLichHen ASC
       `);
 

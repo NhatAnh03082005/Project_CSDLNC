@@ -40,6 +40,7 @@ import {
 } from "lucide-react";
 import { appointmentAPI } from "../../api/services";
 import { Pagination } from "../../components/ui/pagination";
+import { toast } from "../../lib/toast";
 
 const serviceConfig = {
   "Khám bệnh": {
@@ -128,12 +129,15 @@ export default function AppointmentsPage() {
     try {
       const response = await appointmentAPI.cancel(cancellingId);
       if (response.data.success) {
+        toast.success("Hủy lịch hẹn thành công!");
         fetchAppointments(pagination.page);
         setCancellingId(null);
+      } else {
+        toast.error(response.data.message || "Hủy lịch hẹn thất bại");
       }
     } catch (error) {
       console.error("Lỗi khi hủy lịch hẹn:", error);
-      alert(
+      toast.error(
         error.response?.data?.message ||
           "Hủy lịch hẹn thất bại. Vui lòng thử lại!"
       );
@@ -141,9 +145,19 @@ export default function AppointmentsPage() {
   };
 
   const formatDate = (dateStr) => {
+    if (!dateStr) return "";
     let date;
-    if (typeof dateStr === "string" && dateStr.includes("T")) {
-      date = new Date(dateStr.split("T")[0]);
+    // Nếu là string YYYY-MM-DD, parse đúng cách để tránh lệch timezone
+    if (typeof dateStr === "string") {
+      if (dateStr.match(/^\d{4}-\d{2}-\d{2}$/)) {
+        // Parse YYYY-MM-DD ở local timezone để tránh lệch
+        const parts = dateStr.split("-");
+        date = new Date(parseInt(parts[0]), parseInt(parts[1]) - 1, parseInt(parts[2]));
+      } else if (dateStr.includes("T")) {
+        date = new Date(dateStr);
+      } else {
+        date = new Date(dateStr);
+      }
     } else {
       date = new Date(dateStr);
     }

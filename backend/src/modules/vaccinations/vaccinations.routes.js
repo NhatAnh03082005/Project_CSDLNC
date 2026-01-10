@@ -105,42 +105,6 @@ router.get(
  */
 router.get("/packages", vaccinationsController.getVaccinationPackages);
 
-/**
- * @route   POST /api/vaccinations/packages
- * @desc    Tạo gói tiêm mới
- * @access  Private - QUAN_TRI (ADMIN)
- */
-router.post("/packages", authenticate, authorize(ROLES.ADMIN), (req, res) => {
-  res.json({ message: "Create vaccination package" });
-});
-
-/**
- * @route   PUT /api/vaccinations/packages/:id
- * @desc    Cập nhật gói tiêm
- * @access  Private - QUAN_TRI (ADMIN)
- */
-router.put(
-  "/packages/:id",
-  authenticate,
-  authorize(ROLES.ADMIN),
-  (req, res) => {
-    res.json({ message: "Update vaccination package" });
-  }
-);
-
-/**
- * @route   DELETE /api/vaccinations/packages/:id
- * @desc    Xóa gói tiêm
- * @access  Private - QUAN_TRI (ADMIN)
- */
-router.delete(
-  "/packages/:id",
-  authenticate,
-  authorize(ROLES.ADMIN),
-  (req, res) => {
-    res.json({ message: "Delete vaccination package" });
-  }
-);
 
 // =====================================================================
 // LOGIC ĐĂNG KÝ & QUẢN LÝ GÓI ĐÃ ĐĂNG KÝ (SUBSCRIPTIONS)
