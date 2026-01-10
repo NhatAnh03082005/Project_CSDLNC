@@ -178,7 +178,16 @@ class BranchesService {
         TGDongCua,
       } = branchData;
 
-      if (!TenChiNhanh || !SoNha || !TenDuong || !Phuong || !ThanhPho || !SDT) {
+      if (
+        !TenChiNhanh ||
+        !SoNha ||
+        !TenDuong ||
+        !Phuong ||
+        !ThanhPho ||
+        !SDT ||
+        !TGMoCua ||
+        !TGDongCua
+      ) {
         throw new Error("Vui lòng điền đầy đủ thông tin bắt buộc");
       }
 
@@ -190,8 +199,8 @@ class BranchesService {
         .input("Phuong", sql.NVarChar, Phuong)
         .input("ThanhPho", sql.NVarChar, ThanhPho)
         .input("SDT", sql.NVarChar, SDT)
-        .input("TGMoCua", sql.VarChar(8), TGMoCua || null)
-        .input("TGDongCua", sql.VarChar(8), TGDongCua || null).query(`
+        .input("TGMoCua", sql.VarChar(8), TGMoCua)
+        .input("TGDongCua", sql.VarChar(8), TGDongCua).query(`
           INSERT INTO ChiNhanh (TenChiNhanh, SoNha, TenDuong, Phuong, ThanhPho, SDT, TGMoCua, TGDongCua)
           VALUES (@TenChiNhanh, @SoNha, @TenDuong, @Phuong, @ThanhPho, @SDT, @TGMoCua, @TGDongCua);
           SELECT SCOPE_IDENTITY() AS MaChiNhanh;
@@ -218,6 +227,20 @@ class BranchesService {
         QuanLy,
       } = branchData;
 
+      if (
+        !TenChiNhanh ||
+        !SoNha ||
+        !TenDuong ||
+        !Phuong ||
+        !ThanhPho ||
+        !SDT ||
+        !TGMoCua ||
+        !TGDongCua ||
+        !QuanLy
+      ) {
+        throw new Error("Vui lòng điền đầy đủ thông tin bắt buộc");
+      }
+
       await pool
         .request()
         .input("MaChiNhanh", sql.NVarChar, maChiNhanh)
@@ -227,8 +250,8 @@ class BranchesService {
         .input("Phuong", sql.NVarChar, Phuong)
         .input("ThanhPho", sql.NVarChar, ThanhPho)
         .input("SDT", sql.NVarChar, SDT)
-        .input("TGMoCua", sql.VarChar(8), TGMoCua || null)
-        .input("TGDongCua", sql.VarChar(8), TGDongCua || null)
+        .input("TGMoCua", sql.VarChar(8), TGMoCua)
+        .input("TGDongCua", sql.VarChar(8), TGDongCua)
         .input("QuanLy", sql.NVarChar, QuanLy || null).query(`
           UPDATE ChiNhanh SET TenChiNhanh = @TenChiNhanh, SoNha = @SoNha, TenDuong = @TenDuong, 
           Phuong = @Phuong, ThanhPho = @ThanhPho, SDT = @SDT, TGMoCua = @TGMoCua, 

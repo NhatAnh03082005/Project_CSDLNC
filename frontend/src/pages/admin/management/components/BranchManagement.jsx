@@ -155,7 +155,9 @@ export default function BranchManagement() {
       toast.success("Cập nhật chi nhánh thành công!");
     } catch (err) {
       console.error("Error updating branch:", err);
-      toast.error(err.response?.data?.message || "Không thể cập nhật chi nhánh");
+      toast.error(
+        err.response?.data?.message || "Không thể cập nhật chi nhánh"
+      );
     }
   };
 
@@ -272,12 +274,15 @@ export default function BranchManagement() {
                       <Input
                         id="SoNha"
                         type="number"
+                        min="1"
                         placeholder="Nhập số nhà"
                         value={addFormData.SoNha}
                         onChange={(e) =>
                           setAddFormData({
                             ...addFormData,
-                            SoNha: e.target.value,
+                            SoNha: e.target.value
+                              ? parseInt(e.target.value)
+                              : "",
                           })
                         }
                         className="h-10 text-black placeholder:text-gray-600"
@@ -521,6 +526,7 @@ export default function BranchManagement() {
                     <Input
                       id="edit-SoNha"
                       type="number"
+                      min="1"
                       value={editFormData.SoNha}
                       onChange={(e) =>
                         setEditFormData({

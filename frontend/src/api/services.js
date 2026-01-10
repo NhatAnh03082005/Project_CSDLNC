@@ -39,6 +39,8 @@ export const appointmentAPI = {
       params: { MaChiNhanh: maChiNhanh, date },
     }),
   getSchedule: (params) => api.get("/appointments/schedule", { params }),
+  getDoctorAppointments: (date) =>
+    api.get("/appointments/doctor", { params: { date } }),
 };
 
 export const branchAPI = {

@@ -138,7 +138,9 @@ export default function PromotionManagement() {
       toast.success("Cập nhật khuyến mãi thành công!");
     } catch (err) {
       console.error("Error updating promotion:", err);
-      toast.error(err.response?.data?.message || "Không thể cập nhật khuyến mãi");
+      toast.error(
+        err.response?.data?.message || "Không thể cập nhật khuyến mãi"
+      );
     }
   };
 
@@ -266,6 +268,7 @@ export default function PromotionManagement() {
                       <Input
                         id="TiLeGiamGia"
                         type="number"
+                        min="0"
                         placeholder="VD: 10"
                         value={addFormData.TiLeGiamGia}
                         onChange={(e) =>

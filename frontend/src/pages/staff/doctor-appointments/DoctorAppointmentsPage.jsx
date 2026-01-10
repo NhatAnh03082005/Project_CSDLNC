@@ -41,7 +41,8 @@ export default function DoctorAppointmentsPage() {
   const [appointments, setAppointments] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [selectedDate, setSelectedDate] = useState("");
+  const today = new Date().toISOString().split("T")[0];
+  const [selectedDate, setSelectedDate] = useState(today);
   const [showDetail, setShowDetail] = useState(false);
   const [selectedApp, setSelectedApp] = useState(null);
   const [searchTerm, setSearchTerm] = useState("");
@@ -68,8 +69,8 @@ export default function DoctorAppointmentsPage() {
     setLoading(true);
     setError(null);
     try {
-      // Get appointments for doctor on selected date using appointmentAPI
-      const response = await appointmentAPI.getToday(null, selectedDate);
+      // Get appointments for doctor on selected date
+      const response = await appointmentAPI.getDoctorAppointments(selectedDate);
       const data = response.data;
       if (data.success) {
         setAppointments(data.data?.appointments || []);
@@ -193,7 +194,7 @@ export default function DoctorAppointmentsPage() {
                   </div>
                 </div>
               </CardHeader>
-              <CardContent className="p-0 bg-gray-50/50 min-h-[280px]">
+              <CardContent className="p-0 bg-gray-50/50 h-[335px] overflow-y-auto">
                 {/* Error State */}
                 {error && (
                   <div className="mx-4 mt-4 bg-red-50 border border-red-200 rounded-xl p-4 flex items-center gap-3 text-red-700">

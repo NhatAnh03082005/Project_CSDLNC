@@ -139,6 +139,18 @@ class EmployeesService {
         TenChiNhanh, // FE gửi tên CN (optional)
       } = employeeData;
 
+      if (
+        !HoTen ||
+        !GioiTinh ||
+        !NgaySinh ||
+        !NgayVaoLam ||
+        !ViTri ||
+        LuongCoBan == null ||
+        !TenChiNhanh
+      ) {
+        throw new Error("Vui lòng điền đầy đủ thông tin bắt buộc");
+      }
+
       // 2) Xác định có đổi chi nhánh không
       const currentTenCN = employee.TenChiNhanh; // lấy từ JOIN ở getEmployeeById
       const hasBranchChange =
@@ -472,7 +484,7 @@ class EmployeesService {
 
       const pets = result.recordset.map((pet) => ({
         maKhachHang: pet.MaKhachHang,
-        maThuCung: pet.MaThuCung,  // INT - số thứ tự thú cưng
+        maThuCung: pet.MaThuCung, // INT - số thứ tự thú cưng
         tenThuCung: pet.TenThuCung,
         gioiTinh: pet.GioiTinh,
         loai: pet.Loai,
@@ -791,11 +803,14 @@ class EmployeesService {
     // Normalize time format to HH:MM:SS for SQL Server
     const normalizeTime = (time) => {
       if (!time) return null;
-      const parts = time.toString().split(':');
-      const hours = parts[0] || '00';
-      const minutes = parts[1] || '00';
-      const seconds = parts[2] || '00';
-      return `${hours.padStart(2, '0')}:${minutes.padStart(2, '0')}:${seconds.padStart(2, '0')}`;
+      const parts = time.toString().split(":");
+      const hours = parts[0] || "00";
+      const minutes = parts[1] || "00";
+      const seconds = parts[2] || "00";
+      return `${hours.padStart(2, "0")}:${minutes.padStart(
+        2,
+        "0"
+      )}:${seconds.padStart(2, "0")}`;
     };
 
     GioBatDau = normalizeTime(GioBatDau);
@@ -803,35 +818,6 @@ class EmployeesService {
 
     try {
       const pool = await poolPromise;
-
-      // Kiểm tra nhân viên có phải bác sĩ không
-      const employeeCheck = await pool
-        .request()
-        .input("MaNhanVien", sql.Char(5), maNhanVien)
-        .query(
-          `
-          SELECT TOP 1 MaNhanVien, ViTri
-          FROM dbo.NhanVien
-          WHERE MaNhanVien = @MaNhanVien
-            AND TrangThai = 0
-        `
-        );
-
-      if (employeeCheck.recordset.length === 0) {
-        return {
-          success: false,
-          status: 404,
-          message: "Không tìm thấy nhân viên",
-        };
-      }
-
-      if (employeeCheck.recordset[0].ViTri !== "Bác sĩ thú y") {
-        return {
-          success: false,
-          status: 403,
-          message: "Chỉ bác sĩ thú y mới có thể đăng ký lịch làm việc",
-        };
-      }
 
       // Kiểm tra xung đột lịch (trùng ngày và giờ)
       const conflictCheck = await pool
@@ -842,14 +828,14 @@ class EmployeesService {
         .input("GioKetThuc", sql.VarChar(8), GioKetThuc)
         .query(
           `
-          SELECT TOP 1 BacSi
-          FROM dbo.LichLamViec
-          WHERE BacSi = @BacSi
-            AND NgayLam = @NgayLam
+          SELECT TOP 1 llv.BacSi
+          FROM dbo.LichLamViec llv
+          WHERE llv.BacSi = @BacSi
+            AND CAST(llv.NgayLam AS DATE) = CAST(@NgayLam AS DATE)
             AND (
-              (@GioBatDau >= GioBatDau AND @GioBatDau < GioKetThuc)
-              OR (@GioKetThuc > GioBatDau AND @GioKetThuc <= GioKetThuc)
-              OR (@GioBatDau <= GioBatDau AND @GioKetThuc >= GioKetThuc)
+              (@GioBatDau >= llv.GioBatDau AND @GioBatDau < llv.GioKetThuc)
+              OR (@GioKetThuc > llv.GioBatDau AND @GioKetThuc <= llv.GioKetThuc)
+              OR (@GioBatDau <= llv.GioBatDau AND @GioKetThuc >= llv.GioKetThuc)
             )
         `
         );
@@ -971,8 +957,8 @@ class EmployeesService {
    * @param {object} recordData - { MaKhachHang, MaChiNhanh, MaThuCung, services: ['Khám bệnh', 'Tiêm phòng'] }
    */
   async createMultiServiceRecord(recordData) {
-    console.log('[createMultiServiceRecord] recordData:', recordData);
-    
+    console.log("[createMultiServiceRecord] recordData:", recordData);
+
     const { MaKhachHang, MaChiNhanh, pets } = recordData;
 
     if (!MaKhachHang || !MaChiNhanh) {
@@ -992,7 +978,7 @@ class EmployeesService {
     }
 
     // Validate pets data
-    const validServices = ['Khám bệnh', 'Tiêm phòng'];
+    const validServices = ["Khám bệnh", "Tiêm phòng"];
     for (const pet of pets) {
       if (pet.MaThuCung === undefined || pet.MaThuCung === null) {
         return {
@@ -1001,7 +987,11 @@ class EmployeesService {
           message: "Mỗi thú cưng phải có MaThuCung",
         };
       }
-      if (!pet.services || !Array.isArray(pet.services) || pet.services.length === 0) {
+      if (
+        !pet.services ||
+        !Array.isArray(pet.services) ||
+        pet.services.length === 0
+      ) {
         return {
           success: false,
           status: 400,
@@ -1049,10 +1039,10 @@ class EmployeesService {
 
         // Kiểm tra tất cả thú cưng (chạy tuần tự để tránh xung đột transaction)
         const petMap = new Map();
-        
+
         for (const pet of pets) {
           const maThuCungInt = parseInt(pet.MaThuCung, 10);
-          
+
           const petCheck = await transaction
             .request()
             .input("MaThuCung", sql.Int, maThuCungInt)
@@ -1064,7 +1054,7 @@ class EmployeesService {
               WHERE MaThuCung = @MaThuCung AND MaKhachHang = @MaKhachHang
             `
             );
-          
+
           if (petCheck.recordset.length === 0) {
             await transaction.rollback();
             return {
@@ -1073,7 +1063,7 @@ class EmployeesService {
               message: `Không tìm thấy thú cưng ${maThuCungInt} hoặc thú cưng không thuộc khách hàng này`,
             };
           }
-          
+
           const petInfo = petCheck.recordset[0];
           petMap.set(petInfo.MaThuCung, petInfo);
         }
@@ -1101,12 +1091,12 @@ class EmployeesService {
         // Tạo CTHD và các bảng con cho tất cả dịch vụ của tất cả thú cưng
         const createdServices = [];
         let stt = 1; // STT tăng dần cho tất cả dịch vụ
-        
+
         // Duyệt qua từng thú cưng
         for (const pet of pets) {
           const maThuCungInt = parseInt(pet.MaThuCung, 10);
           const petInfo = petMap.get(maThuCungInt);
-          
+
           // Duyệt qua từng dịch vụ của thú cưng
           for (const loaiDichVu of pet.services) {
             // Tạo CTHD
@@ -1138,7 +1128,7 @@ class EmployeesService {
               );
 
             // Tạo bảng chi tiết cụ thể tùy loại dịch vụ
-            if (loaiDichVu === 'Khám bệnh') {
+            if (loaiDichVu === "Khám bệnh") {
               await transaction
                 .request()
                 .input("MaHoaDon", sql.Char(8), maHoaDon)
@@ -1149,7 +1139,7 @@ class EmployeesService {
                   VALUES (@MaHoaDon, @STT, NULL, NULL, NULL, NULL)
                 `
                 );
-            } else if (loaiDichVu === 'Tiêm phòng') {
+            } else if (loaiDichVu === "Tiêm phòng") {
               await transaction
                 .request()
                 .input("MaHoaDon", sql.Char(8), maHoaDon)
@@ -1162,13 +1152,13 @@ class EmployeesService {
                 );
             }
 
-            createdServices.push({ 
-              stt, 
-              loaiDichVu, 
+            createdServices.push({
+              stt,
+              loaiDichVu,
               maThuCung: maThuCungInt,
-              tenThuCung: petInfo?.TenThuCung 
+              tenThuCung: petInfo?.TenThuCung,
             });
-            
+
             stt++; // Tăng STT cho dịch vụ tiếp theo
           }
         }
@@ -1179,7 +1169,7 @@ class EmployeesService {
         // Tính tổng số dịch vụ
         const totalServices = createdServices.length;
         const totalPets = pets.length;
-        
+
         return {
           success: true,
           status: 201,
@@ -1188,10 +1178,10 @@ class EmployeesService {
             maHoaDon,
             totalPets,
             totalServices,
-            pets: pets.map(pet => ({
+            pets: pets.map((pet) => ({
               maThuCung: parseInt(pet.MaThuCung, 10),
               tenThuCung: petMap.get(parseInt(pet.MaThuCung, 10))?.TenThuCung,
-              services: pet.services
+              services: pet.services,
             })),
             services: createdServices,
           },
@@ -1201,7 +1191,7 @@ class EmployeesService {
           try {
             await transaction.rollback();
           } catch (rollbackError) {
-            console.error('Error rolling back transaction:', rollbackError);
+            console.error("Error rolling back transaction:", rollbackError);
           }
         }
         throw innerError;

@@ -72,6 +72,9 @@ class VaccinationsService {
     try {
       const pool = await poolPromise;
       const { TenVacXin, GiaTien } = vaccineData;
+      if (!TenVacXin || !GiaTien) {
+        throw new Error("Vui lòng điền đầy đủ thông tin bắt buộc");
+      }
 
       await pool
         .request()
@@ -414,11 +417,16 @@ class VaccinationsService {
    * @param {object} recordData - { MaKhachHang, MaChiNhanh, MaThuCung }
    */
   async createVaccinationRecord(recordData) {
-    console.log('[createVaccinationRecord] recordData:', recordData);
-    
-    const { MaKhachHang, MaChiNhanh, MaThuCung } = recordData;  // MaThuCung là INT
+    console.log("[createVaccinationRecord] recordData:", recordData);
 
-    if (!MaKhachHang || !MaChiNhanh || MaThuCung === undefined || MaThuCung === null) {
+    const { MaKhachHang, MaChiNhanh, MaThuCung } = recordData; // MaThuCung là INT
+
+    if (
+      !MaKhachHang ||
+      !MaChiNhanh ||
+      MaThuCung === undefined ||
+      MaThuCung === null
+    ) {
       return {
         success: false,
         status: 400,
@@ -476,7 +484,8 @@ class VaccinationsService {
           return {
             success: false,
             status: 404,
-            message: "Không tìm thấy thú cưng hoặc thú cưng không thuộc khách hàng này",
+            message:
+              "Không tìm thấy thú cưng hoặc thú cưng không thuộc khách hàng này",
           };
         }
 
@@ -541,8 +550,10 @@ class VaccinationsService {
         const sttResult = await transaction
           .request()
           .input("MaHoaDon", sql.Char(8), maHoaDon)
-          .query(`SELECT MAX(STT) AS STT FROM dbo.CTHD WHERE MaHoaDon = @MaHoaDon`);
-        
+          .query(
+            `SELECT MAX(STT) AS STT FROM dbo.CTHD WHERE MaHoaDon = @MaHoaDon`
+          );
+
         const stt = sttResult.recordset[0].STT;
 
         // Tạo CTHD_DVSucKhoe (BacSi = NULL ban đầu)
@@ -725,19 +736,19 @@ class VaccinationsService {
   }
 
   /**
- * Lấy danh sách hồ sơ tiêm phòng chờ cập nhật
- * (hồ sơ đã tạo nhưng chưa chọn vaccine - MaVacXin = NULL)
- * @param {string} maChiNhanh
- */
-async getPendingVaccinationRecords(maChiNhanh) {
-  try {
-    const pool = await poolPromise;
+   * Lấy danh sách hồ sơ tiêm phòng chờ cập nhật
+   * (hồ sơ đã tạo nhưng chưa chọn vaccine - MaVacXin = NULL)
+   * @param {string} maChiNhanh
+   */
+  async getPendingVaccinationRecords(maChiNhanh) {
+    try {
+      const pool = await poolPromise;
 
-    const result = await pool
-      .request()
-      .input("MaChiNhanh", sql.Char(4), maChiNhanh)
-      .query(
-        `
+      const result = await pool
+        .request()
+        .input("MaChiNhanh", sql.Char(4), maChiNhanh)
+        .query(
+          `
         SELECT DISTINCT
           tp.MaHoaDon,
           tp.STT,
@@ -759,41 +770,41 @@ async getPendingVaccinationRecords(maChiNhanh) {
           AND tp.MaVacXin IS NULL
         ORDER BY hd.NgayLap DESC
       `
-      );
+        );
 
-    const records = result.recordset.map((record) => ({
-      maHoaDon: record.MaHoaDon?.trim(),
-      stt: record.STT,
-      maKhachHang: record.MaKhachHang?.trim(),
-      maThuCung: record.MaThuCung,
-      tenThuCung: record.TenThuCung?.trim(),
-      loaiThuCung: record.LoaiThuCung?.trim(),
-      giongThuCung: record.GiongThuCung?.trim(),
-      tenKhachHang: record.TenKhachHang?.trim(),
-      sdtKhachHang: record.SDTKhachHang?.trim(),
-      ngayLap: record.NgayLap
-        ? record.NgayLap.toISOString().split("T")[0]
-        : null,
-      loaiDichVu: record.LoaiDichVu?.trim(),
-      trangThai: "Chờ cập nhật",
-    }));
+      const records = result.recordset.map((record) => ({
+        maHoaDon: record.MaHoaDon?.trim(),
+        stt: record.STT,
+        maKhachHang: record.MaKhachHang?.trim(),
+        maThuCung: record.MaThuCung,
+        tenThuCung: record.TenThuCung?.trim(),
+        loaiThuCung: record.LoaiThuCung?.trim(),
+        giongThuCung: record.GiongThuCung?.trim(),
+        tenKhachHang: record.TenKhachHang?.trim(),
+        sdtKhachHang: record.SDTKhachHang?.trim(),
+        ngayLap: record.NgayLap
+          ? record.NgayLap.toISOString().split("T")[0]
+          : null,
+        loaiDichVu: record.LoaiDichVu?.trim(),
+        trangThai: "Chờ cập nhật",
+      }));
 
-    return {
-      success: true,
-      status: 200,
-      count: records.length,
-      data: records,
-    };
-  } catch (error) {
-    console.error("Error fetching pending vaccination records:", error);
-    return {
-      success: false,
-      status: 500,
-      message: "Lỗi khi lấy danh sách hồ sơ tiêm phòng chờ cập nhật",
-      error: error.message,
-    };
+      return {
+        success: true,
+        status: 200,
+        count: records.length,
+        data: records,
+      };
+    } catch (error) {
+      console.error("Error fetching pending vaccination records:", error);
+      return {
+        success: false,
+        status: 500,
+        message: "Lỗi khi lấy danh sách hồ sơ tiêm phòng chờ cập nhật",
+        error: error.message,
+      };
+    }
   }
-}
 
   /**
    * Lấy danh sách vaccine có tồn kho > 0 tại chi nhánh

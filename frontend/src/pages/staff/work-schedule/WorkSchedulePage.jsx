@@ -57,7 +57,7 @@ export default function WorkSchedulePage() {
   const [shiftToDelete, setShiftToDelete] = useState(null);
 
   const shiftPresets = [
-    { label: "Ca Sáng", start: "08:00", end: "00:00", id: "morning" },
+    { label: "Ca Sáng", start: "08:00", end: "12:00", id: "morning" },
     { label: "Ca Chiều", start: "13:00", end: "17:00", id: "afternoon" },
     { label: "Cả Ngày", start: "08:00", end: "17:00", id: "fullday" },
   ];
@@ -332,7 +332,7 @@ export default function WorkSchedulePage() {
               {/* RIGHT (cùng height) */}
               <div className="lg:col-span-5">
                 <Card className="border-blue-200 bg-white rounded-3xl shadow-[0_20px_50px_rgba(8,112,184,0.07)] hover:shadow-[0_24px_60px_rgba(8,112,184,0.12)] transition-shadow duration-300 border-t-4 border-t-blue-600 flex flex-col h-[565px]">
-                  <CardHeader className=" flex-shrink-0">
+                  <CardHeader className="pt-1 flex-shrink-0">
                     <CardTitle className="text-2xl font-bold text-blue-600 flex items-center gap-2">
                       <Sparkles className="h-5 w-5 text-blue-500" />
                       Đăng ký lịch mới
@@ -345,7 +345,7 @@ export default function WorkSchedulePage() {
                   <CardContent className="p-6 pt-0 flex-1 min-h-0">
                     {/* ✅ nếu nội dung nhiều vẫn không vỡ layout */}
                     <div className="h-full overflow-y-auto pr-1">
-                      <div onSubmit={handleAddShift} className="space-y-4">
+                      <form onSubmit={handleAddShift} className="space-y-4">
                         <div className="space-y-2">
                           <Label className="text-xs font-bold text-slate-500 uppercase ml-1">
                             Ngày làm việc
@@ -448,7 +448,7 @@ export default function WorkSchedulePage() {
                             "Xác nhận đăng ký"
                           )}
                         </Button>
-                      </div>
+                      </form>
                     </div>
                   </CardContent>
                 </Card>

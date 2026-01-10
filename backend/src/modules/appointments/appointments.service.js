@@ -2,27 +2,29 @@ const { sql, poolPromise } = require("../../config/database");
 
 const formatDateForResponse = (dateValue) => {
   if (!dateValue) return null;
+
+  // Nếu là Date object
   if (dateValue instanceof Date) {
-    const year = dateValue.getUTCFullYear();
-    const month = String(dateValue.getUTCMonth() + 1).padStart(2, "0");
-    const day = String(dateValue.getUTCDate()).padStart(2, "0");
+    const year = dateValue.getFullYear();
+    const month = String(dateValue.getMonth() + 1).padStart(2, "0");
+    const day = String(dateValue.getDate()).padStart(2, "0");
     return `${year}-${month}-${day}`;
   }
+
+  // Nếu là string: ưu tiên cắt YYYY-MM-DD
   if (typeof dateValue === "string") {
-    if (dateValue.includes("T")) {
-      return dateValue.split("T")[0];
-    }
-    if (dateValue.match(/^\d{4}-\d{2}-\d{2}$/)) {
-      return dateValue;
-    }
-    const date = new Date(dateValue);
-    if (!isNaN(date.getTime())) {
-      const year = date.getUTCFullYear();
-      const month = String(date.getUTCMonth() + 1).padStart(2, "0");
-      const day = String(date.getUTCDate()).padStart(2, "0");
+    if (dateValue.includes("T")) return dateValue.split("T")[0];
+    if (dateValue.match(/^\d{4}-\d{2}-\d{2}$/)) return dateValue;
+
+    const d = new Date(dateValue);
+    if (!isNaN(d.getTime())) {
+      const year = d.getFullYear();
+      const month = String(d.getMonth() + 1).padStart(2, "0");
+      const day = String(d.getDate()).padStart(2, "0");
       return `${year}-${month}-${day}`;
     }
   }
+
   return dateValue;
 };
 
@@ -1162,34 +1164,27 @@ async function getDoctorAppointments(maNhanVien, date = null) {
   try {
     const pool = await poolPromise;
 
-    // Nếu không có date, lấy ngày hôm nay
-    const targetDate = date || new Date().toISOString().split("T")[0];
+    let targetDateStr = null;
+    if (date) targetDateStr = date;
 
     const result = await pool
       .request()
       .input("MaNhanVien", sql.Char(5), maNhanVien)
-      .input("NgayHen", sql.Date, targetDate).query(`
-        SELECT 
+      .input("NgayHen", sql.VarChar(10), targetDateStr).query(`        
+          SELECT 
           lh.MaLichHen,
-          lh.ThoiGianHen,
+          lh.MaKhachHang,
+          kh.HoTen AS TenKhachHang,
+          kh.SDT AS SDTKhachHang,
           lh.LoaiDichVu,
-          lh.TrangThai,
-          lh.GhiChu,
-          kh.TenKhachHang,
-          kh.SDT as SDTKhachHang,
-          cn.TenChiNhanh,
-          STUFF((
-            SELECT ', ' + tc.TenThuCung
-            FROM THUCUNG tc
-            WHERE tc.MaKhachHang = lh.MaKhachHang
-            FOR XML PATH(''), TYPE
-          ).value('.', 'NVARCHAR(MAX)'), 1, 2, '') AS TenThucung
-        FROM LICHHENDICHVU lh
-        INNER JOIN KHACHHANG kh ON lh.MaKhachHang = kh.MaKhachHang
-        INNER JOIN CHINHANH cn ON lh.MaChiNhanh = cn.MaChiNhanh
+          CONVERT(VARCHAR(10), lh.ThoiGianHen, 120) AS ThoiGianHen,
+          CONVERT(VARCHAR(10), lh.NgayLap, 120) AS NgayLap,
+          lh.TrangThai
+        FROM dbo.LichHen lh
+        INNER JOIN dbo.KhachHang kh ON lh.MaKhachHang = kh.MaKhachHang
         WHERE lh.BacSiPhuTrach = @MaNhanVien
-          AND CAST(lh.ThoiGianHen AS DATE) = @NgayHen
-        ORDER BY lh.ThoiGianHen
+        AND (@NgayHen IS NULL OR CAST(lh.ThoiGianHen AS DATE) = CAST(@NgayHen AS DATE))
+        ORDER BY lh.ThoiGianHen ASC, lh.MaLichHen ASC
       `);
 
     const appointments = result.recordset.map((apt) => ({
@@ -1213,7 +1208,9 @@ async function getDoctorAppointments(maNhanVien, date = null) {
     return {
       success: true,
       status: 200,
-      data: appointments,
+      data: {
+        appointments,
+      },
     };
   } catch (error) {
     console.error("Error fetching doctor appointments:", error);

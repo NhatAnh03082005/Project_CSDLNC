@@ -221,6 +221,7 @@ export default function VaccineManagement() {
                         <Input
                           id="GiaTien"
                           type="number"
+                          min="0"
                           placeholder="Nhập giá tiền"
                           value={addFormData.GiaTien}
                           onChange={(e) =>
@@ -352,6 +353,7 @@ export default function VaccineManagement() {
                     <Input
                       id="edit-GiaTien"
                       type="number"
+                      min="0"
                       value={editFormData.GiaTien}
                       onChange={(e) =>
                         setEditFormData({

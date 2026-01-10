@@ -67,12 +67,12 @@ export default function StaffDemoPage() {
     daHuy: 0,
   });
   const [loading, setLoading] = useState(true);
-  const [selectedDate, setSelectedDate] = useState(""); // Default to empty to show all
+  const today = new Date().toISOString().split("T")[0];
+  const [selectedDate, setSelectedDate] = useState(today); // Default to today's date
 
   // State cho các thống kê mới
   const [pendingMedicalCount, setPendingMedicalCount] = useState(0);
   const [pendingVaccinationCount, setPendingVaccinationCount] = useState(0);
-  const [completedInvoicesCount, setCompletedInvoicesCount] = useState(0);
 
   // Fetch branch info on mount
   useEffect(() => {
@@ -147,24 +147,6 @@ export default function StaffDemoPage() {
       if (vaccinationResponse.ok) {
         const vaccinationData = await vaccinationResponse.json();
         setPendingVaccinationCount(vaccinationData.data?.length || 0);
-      }
-
-      // Lấy số hóa đơn đã xác nhận (hôm nay)
-      const invoiceResponse = await fetch("/api/invoices/pending", {
-        headers: {
-          Authorization: `Bearer ${localStorage.getItem("token")}`,
-        },
-      });
-      if (invoiceResponse.ok) {
-        const invoiceData = await invoiceResponse.json();
-        // Lọc các hóa đơn đã có NhanVienLap (đã xác nhận) trong ngày hôm nay
-        const todayYMD = toLocalYMD(new Date());
-        const completedToday = (invoiceData.data || []).filter((invoice) => {
-          if (!invoice.NgayLap) return false;
-          const invoiceYMD = invoice.NgayLap.substring(0, 10);
-          return invoice.NhanVienLap && invoiceYMD === todayYMD;
-        });
-        setCompletedInvoicesCount(completedToday.length);
       }
     } catch (error) {
       console.error("Error fetching stats:", error);

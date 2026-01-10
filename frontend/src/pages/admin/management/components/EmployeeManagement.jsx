@@ -156,7 +156,9 @@ export default function EmployeeManagement() {
       toast.success("Cập nhật nhân viên thành công!");
     } catch (err) {
       console.error("Error updating employee:", err);
-      toast.error(err.response?.data?.message || "Không thể cập nhật nhân viên");
+      toast.error(
+        err.response?.data?.message || "Không thể cập nhật nhân viên"
+      );
     }
   };
 
@@ -364,12 +366,15 @@ export default function EmployeeManagement() {
                         <Input
                           id="add-LuongCoBan"
                           type="number"
+                          min="0"
                           placeholder="Nhập lương cơ bản"
                           value={addFormData.LuongCoBan}
                           onChange={(e) =>
                             setAddFormData({
                               ...addFormData,
-                              LuongCoBan: e.target.value,
+                              LuongCoBan: e.target.value
+                                ? parseInt(e.target.value)
+                                : "",
                             })
                           }
                           className="h-10 text-black placeholder:text-gray-600"
