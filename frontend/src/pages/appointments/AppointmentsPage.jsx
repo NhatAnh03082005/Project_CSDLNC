@@ -37,6 +37,7 @@ import {
   Stethoscope,
   Syringe,
   Sparkles,
+  Plus,
 } from "lucide-react";
 import { appointmentAPI } from "../../api/services";
 import { Pagination } from "../../components/ui/pagination";
