@@ -164,14 +164,14 @@ export default function DoctorAppointmentsPage() {
                       <span className="bg-blue-600 w-2 h-6 rounded-full block"></span>
                       Lịch hẹn của tôi
                     </CardTitle>
-                    <CardDescription className="pl-4 mt-1 text-base text-gray-500 font-medium flex items-center gap-2">
+                    <CardDescription className="mt-1 text-base text-gray-500 font-medium flex items-center gap-2">
                       {showAllAppointments ? (
                         <>
                           <Clock className="h-4 w-4 text-blue-500" />
                           <span>
-                            Hiển thị tất cả lịch hẹn từ hôm nay trở đi
+                            Từ hôm nay trở đi{" "}
                             {!loading && appointments.length > 0 && (
-                              <span className="ml-1 text-blue-600 font-bold">({appointments.length} lịch hẹn)</span>
+                              <span>({appointments.length} lịch hẹn)</span>
                             )}
                           </span>
                         </>
@@ -179,10 +179,17 @@ export default function DoctorAppointmentsPage() {
                         <>
                           <Calendar className="h-4 w-4 text-blue-500" />
                           <span>
-                            Danh sách lịch hẹn được phân công cho bạn
-                            {!loading && appointments.length > 0 && selectedDate && (
-                              <span className="ml-1 text-blue-600 font-bold">- Ngày {new Date(selectedDate).toLocaleDateString("vi-VN")}</span>
-                            )}
+                            Ngày{" "}
+                            {!loading &&
+                              appointments.length > 0 &&
+                              selectedDate && (
+                                <span>
+                                  {new Date(selectedDate).toLocaleDateString(
+                                    "vi-VN"
+                                  )}{" "}
+                                  ({appointments.length} lịch hẹn)
+                                </span>
+                              )}
                           </span>
                         </>
                       )}
@@ -407,23 +414,6 @@ export default function DoctorAppointmentsPage() {
                 </div>
               </CardContent>
             </Card>
-            {(showAllAppointments || selectedDate !== today || searchTerm) && (
-              <div className="px-4 pb-3 pt-3">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="border-red-200 text-red-600 hover:text-white hover:bg-red-600 hover:border-red-600 rounded-xl transition-all"
-                  onClick={() => {
-                    setSelectedDate(today);
-                    setShowAllAppointments(false);
-                    setSearchTerm("");
-                  }}
-                >
-                  <X className="h-3 w-3 mr-1" />
-                  Xóa bộ lọc
-                </Button>
-              </div>
-            )}
           </div>
 
           {/* Detail Dialog */}
