@@ -55,7 +55,8 @@ app.use(
 );
 app.use("/api/products", require("./modules/products/products.routes"));
 app.use("/api/invoices", require("./modules/invoices/invoices.routes"));
-app.use("/api/membership", require("./modules/membership/membership.routes"));
+// TODO: Uncomment when membership module is created
+// app.use("/api/membership", require("./modules/membership/membership.routes"));
 app.use("/api/promotions", require("./modules/promotions/promotions.routes"));
 app.use("/api/ratings", require("./modules/ratings/ratings.routes"));
 app.use("/api/reports", require("./modules/reports/reports.routes"));
