@@ -28,7 +28,6 @@ const NumberTooltip = ({ children, fullValue }) => {
   const handleMouseEnter = () => {
     if (triggerRef.current) {
       const rect = triggerRef.current.getBoundingClientRect();
-      console.log("Tooltip triggered:", { fullValue, rect });
       setPosition({
         top: rect.top - 3,
         left: rect.left + rect.width / 2,

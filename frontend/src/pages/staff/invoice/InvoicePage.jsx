@@ -222,7 +222,11 @@ export default function InvoicePage() {
       }
     } catch (err) {
       console.error(err);
-      toast.error("Lỗi hệ thống");
+      const errorMessage = err.response?.data?.message 
+        || err.response?.data?.error 
+        || err.message 
+        || "Lỗi hệ thống";
+      toast.error(errorMessage);
     } finally {
       setConfirming(false);
     }

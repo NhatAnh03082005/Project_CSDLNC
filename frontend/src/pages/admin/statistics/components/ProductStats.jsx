@@ -230,63 +230,63 @@ export default function ProductStats() {
 
           {/* Branch Statistics Cards */}
           <div className="grid grid-cols-1 lg:grid-cols-5 gap-4">
-            {branches.map((branch) => {
-              console.log("TenChiNhanh:", branch.TenChiNhanh);
-              return (
-                <Card className="relative border border-sky-600 shadow-md bg-white overflow-hidden rounded-xl">
-                  <CardHeader>
-                    <div className="pr-8">
-                      <h3 className="text-lg font-bold text-sky-600">
-                        {branch.TenChiNhanh[0]}
-                      </h3>
-                      <span className="inline-block px-3 py-1 text-xs font-medium bg-blue-100 text-blue-700 rounded-full">
-                        {branch.MaChiNhanh}
-                      </span>
-                    </div>
-                  </CardHeader>
+            {branches.map((branch) => (
+              <Card
+                key={branch.MaChiNhanh}
+                className="relative border border-sky-600 shadow-md bg-white overflow-hidden rounded-xl"
+              >
+                <CardHeader>
+                  <div className="pr-8">
+                    <h3 className="text-lg font-bold text-sky-600">
+                      {branch.TenChiNhanh}
+                    </h3>
+                    <span className="inline-block px-3 py-1 text-xs font-medium bg-blue-100 text-blue-700 rounded-full">
+                      {branch.MaChiNhanh}
+                    </span>
+                  </div>
+                </CardHeader>
 
-                  <CardContent className="pt-0">
-                    {/* ✅ List sạch sẽ (3 dòng) */}
-                    <div className="space-y-1 text-sm">
-                      <div className="flex items-center justify-between gap-3">
-                        <div className="flex items-center gap-2 text-gray-700">
-                          <TrendingUp className="h-6 w-6 text-emerald-600" />
-                          <span className="text-xs font-bold text-emerald-600 uppercase">
-                            Bán chạy nhất
-                          </span>
-                        </div>
-                      </div>
-
-                      <div className="min-w-0 pb-3">
-                        <div className="font-bold truncate block text-gray-600">
-                          {branch.mostUsed || "N/A"} :{" "}
-                          {Number(branch.count || 0).toLocaleString("vi-VN")} sp
-                        </div>
-                      </div>
-
-                      <div className="flex items-center justify-between gap-3">
-                        <div className="flex items-center gap-2 text-gray-700">
-                          <TrendingDown className="h-6 w-6 text-rose-500" />
-                          <span className="text-xs font-bold text-rose-500 uppercase">
-                            Bán chậm nhất
-                          </span>
-                        </div>
-                      </div>
-
-                      <div className="min-w-0 pb-2">
-                        <div className="font-bold truncate block text-gray-600">
-                          {branch.leastUsed || "N/A"} :{" "}
-                          {Number(branch.leastCount || 0).toLocaleString(
-                            "vi-VN"
-                          )}{" "}
-                          sp
-                        </div>
+                <CardContent className="pt-0">
+                  {/* ✅ List sạch sẽ (3 dòng) */}
+                  <div className="space-y-1 text-sm">
+                    <div className="flex items-center justify-between gap-3">
+                      <div className="flex items-center gap-2 text-gray-700">
+                        <TrendingUp className="h-6 w-6 text-emerald-600" />
+                        <span className="text-xs font-bold text-emerald-600 uppercase">
+                          Bán chạy nhất
+                        </span>
                       </div>
                     </div>
-                  </CardContent>
-                </Card>
-              );
-            })}
+
+                    <div className="min-w-0 pb-3">
+                      <div className="font-bold truncate block text-gray-600">
+                        {branch.mostUsed || "N/A"} :{" "}
+                        {Number(branch.count || 0).toLocaleString("vi-VN")} sp
+                      </div>
+                    </div>
+
+                    <div className="flex items-center justify-between gap-3">
+                      <div className="flex items-center gap-2 text-gray-700">
+                        <TrendingDown className="h-6 w-6 text-rose-500" />
+                        <span className="text-xs font-bold text-rose-500 uppercase">
+                          Bán chậm nhất
+                        </span>
+                      </div>
+                    </div>
+
+                    <div className="min-w-0 pb-2">
+                      <div className="font-bold truncate block text-gray-600">
+                        {branch.leastUsed || "N/A"} :{" "}
+                        {Number(branch.leastCount || 0).toLocaleString(
+                          "vi-VN"
+                        )}{" "}
+                        sp
+                      </div>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
           </div>
         </div>
       </main>

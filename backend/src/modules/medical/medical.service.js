@@ -39,8 +39,6 @@ class MedicalService {
    * @param {object} recordData - { MaKhachHang, MaChiNhanh, MaThuCung }
    */
   async createMedicalRecord(recordData) {
-    console.log("[createMedicalRecord] recordData:", recordData);
-
     const { MaKhachHang, MaChiNhanh, MaThuCung } = recordData; // MaThuCung là INT
 
     if (

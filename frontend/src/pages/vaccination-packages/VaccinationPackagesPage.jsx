@@ -32,6 +32,7 @@ import {
 } from "lucide-react";
 import { vaccinationAPI } from "../../api/services";
 import { useAuth } from "../../context/AuthContext";
+import { toast } from "../../lib/toast";
 
 // Helper function để format tên gói đẹp hơn
 const formatPackageName = (loaiGoi) => {
@@ -171,14 +172,14 @@ export default function VaccinationPackagesPage() {
   const handleRegister = async () => {
     try {
       if (!selectedPackage || selectedVaccines.length === 0) {
-        alert("Vui lòng chọn vaccine!");
+        toast.warning("Vui lòng chọn vaccine!");
         return;
       }
 
       // Kiểm tra số lượng vaccine phải ĐÚNG bằng thời hạn gói
       const requiredCount = selectedPackage.ThoiHan;
       if (selectedVaccines.length !== requiredCount) {
-        alert(
+        toast.warning(
           `Gói ${selectedPackage.displayName} yêu cầu chọn ĐÚNG ${requiredCount} vaccine (hiện tại: ${selectedVaccines.length})`
         );
         return;
@@ -197,13 +198,13 @@ export default function VaccinationPackagesPage() {
         setVaccineDialogOpen(false);
         setSelectedPackage(null);
         setSelectedVaccines([]);
-        alert("Đăng ký gói tiêm phòng thành công!");
+        toast.success("Đăng ký gói tiêm phòng thành công!");
       } else {
-        alert(response.data.message || "Đăng ký thất bại");
+        toast.error(response.data.message || "Đăng ký thất bại");
       }
     } catch (error) {
       console.error("Lỗi khi đăng ký gói:", error);
-      alert(
+      toast.error(
         error.response?.data?.message || "Đăng ký thất bại. Vui lòng thử lại!"
       );
     } finally {
@@ -219,7 +220,7 @@ export default function VaccinationPackagesPage() {
         // Kiểm tra số lượng không được vượt quá
         const maxCount = selectedPackage?.ThoiHan || 0;
         if (prev.length >= maxCount) {
-          alert(
+          toast.warning(
             `Gói này cần chọn ĐÚNG ${maxCount} vaccine. Bạn đã chọn ${prev.length} vaccine.`
           );
           return prev;

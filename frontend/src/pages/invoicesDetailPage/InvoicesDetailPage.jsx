@@ -101,7 +101,7 @@ export default function InvoiceDetailPage() {
   const handleDownload = async () => {
     // Hook sẵn: tuỳ backend có endpoint tải PDF/hoá đơn
     // Ví dụ: await customerAPI.downloadInvoice(id)
-    console.log("Download invoice:", id);
+    // TODO: Implement download invoice functionality
   };
 
   if (loading) {

@@ -200,8 +200,6 @@ class EmployeesController {
   async getBranch(req, res, next) {
     try {
       const maNhanVien = req.user?.maNhanVien;
-      console.log('[getBranch] req.user:', req.user);
-      console.log('[getBranch] maNhanVien:', maNhanVien);
       
       if (!maNhanVien) {
         return res.status(401).json({
@@ -210,7 +208,6 @@ class EmployeesController {
         });
       }
       const response = await employeesService.getEmployeeBranch(maNhanVien);
-      console.log('[getBranch] response:', response);
       return res.status(response.status || 200).json(response);
     } catch (error) {
       console.error('[getBranch] Error:', error);

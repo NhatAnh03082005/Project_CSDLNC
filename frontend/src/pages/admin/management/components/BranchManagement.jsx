@@ -102,7 +102,6 @@ export default function BranchManagement() {
         TGDongCua: inputHHMMToServerTime(addFormData.TGDongCua),
       };
 
-      console.log("Data gửi lên server:", formattedData);
       await branchAPI.create(formattedData);
       await fetchData();
       setIsAddDialogOpen(false);

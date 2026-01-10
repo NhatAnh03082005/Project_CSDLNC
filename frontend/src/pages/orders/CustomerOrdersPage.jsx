@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { orderAPI } from "../../api/services";
+import { toast } from "../../lib/toast";
 import {
   Card,
   CardContent,
@@ -41,10 +42,12 @@ export default function CustomerOrdersPage() {
       const response = await orderAPI.getAll();
       if (response.data.success) {
         setOrders(response.data.data || []);
+      } else {
+        toast.error(response.data.message || "Không thể tải danh sách đơn hàng");
       }
     } catch (error) {
       console.error("Lỗi tải đơn hàng:", error);
-      alert("Không thể tải danh sách đơn hàng");
+      toast.error(error.response?.data?.message || "Không thể tải danh sách đơn hàng");
     } finally {
       setLoading(false);
     }

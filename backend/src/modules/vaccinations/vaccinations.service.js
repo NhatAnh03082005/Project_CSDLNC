@@ -417,8 +417,6 @@ class VaccinationsService {
    * @param {object} recordData - { MaKhachHang, MaChiNhanh, MaThuCung }
    */
   async createVaccinationRecord(recordData) {
-    console.log("[createVaccinationRecord] recordData:", recordData);
-
     const { MaKhachHang, MaChiNhanh, MaThuCung } = recordData; // MaThuCung là INT
 
     if (
