@@ -443,9 +443,8 @@ class MedicalService {
             kb.STT,
             kb.TrieuChung,
             kb.ChanDoan,
-            kb.DonThuoc,
+            kb.ToaThuoc,
             kb.NgayTaiKham,
-            kb.GhiChu,
             hd.NgayLap,
             cn.TenChiNhanh,
             nv.HoTen AS BacSi
@@ -453,7 +452,7 @@ class MedicalService {
           INNER JOIN CTHD_DVSucKhoe dvsk ON kb.MaHoaDon = dvsk.MaHoaDon AND kb.STT = dvsk.STT
           INNER JOIN HoaDon hd ON kb.MaHoaDon = hd.MaHoaDon
           INNER JOIN ChiNhanh cn ON hd.MaChiNhanh = cn.MaChiNhanh
-          LEFT JOIN NhanVien nv ON kb.BacSiPhuTrach = nv.MaNhanVien
+          LEFT JOIN NhanVien nv ON dvsk.BacSi = nv.MaNhanVien
           WHERE dvsk.MaThuCung = @MaThuCung
             AND kb.TrieuChung IS NOT NULL
           ORDER BY hd.NgayLap DESC
@@ -464,11 +463,10 @@ class MedicalService {
         stt: record.STT,
         trieuChung: record.TrieuChung?.trim() || "",
         chanDoan: record.ChanDoan?.trim() || "",
-        donThuoc: record.DonThuoc?.trim() || "",
+        donThuoc: record.ToaThuoc?.trim() || "",
         ngayTaiKham: record.NgayTaiKham
           ? record.NgayTaiKham.toISOString().split("T")[0]
           : null,
-        ghiChu: record.GhiChu?.trim() || "",
         ngayKham: record.NgayLap
           ? record.NgayLap.toISOString().split("T")[0]
           : null,

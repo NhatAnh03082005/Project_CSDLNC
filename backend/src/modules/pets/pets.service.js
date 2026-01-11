@@ -417,11 +417,10 @@ async function getPetMedicalHistory(customerId, petId) {
       stt: record.STT || 0,
       trieuChung: record.TrieuChung?.trim() || "",
       chanDoan: record.ChanDoan?.trim() || "",
-      donThuoc: record.DonThuoc?.trim() || "",
+      donThuoc: record.ToaThuoc?.trim() || "",
       ngayTaiKham: record.NgayTaiKham
         ? record.NgayTaiKham.toISOString().split("T")[0]
         : null,
-      ghiChu: record.GhiChu?.trim() || "",
       ngayKham: record.NgayLap
         ? record.NgayLap.toISOString().split("T")[0]
         : null,
