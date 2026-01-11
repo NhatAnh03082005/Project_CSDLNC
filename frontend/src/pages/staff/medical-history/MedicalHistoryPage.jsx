@@ -45,9 +45,16 @@ export default function MedicalHistoryPage() {
   const [pets, setPets] = useState([]);
   const [medicalRecords, setMedicalRecords] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
   const [error, setError] = useState(null);
   const [branchName, setBranchName] = useState("");
   const [isProfileOpen, setIsProfileOpen] = useState(false);
+
+  // Pagination states
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalCustomers, setTotalCustomers] = useState(0);
+  const [hasMore, setHasMore] = useState(false);
+  const CUSTOMERS_PER_PAGE = 1000;
 
   // Search and filter states
   const [searchQuery, setSearchQuery] = useState("");
@@ -86,15 +93,18 @@ export default function MedicalHistoryPage() {
     try {
       setLoading(true);
       setError(null);
+      setCurrentPage(1);
 
       // Fetch customers
       const customersRes = await api.get("/employees/customers", {
-        params: { limit: 1000 },
+        params: { page: 1, limit: CUSTOMERS_PER_PAGE },
       });
       if (customersRes.data.success) {
-        // Backend returns: {success, status, data: {customers: [...], pagination: {...}}}
         const customersList = customersRes.data.data?.customers || [];
+        const pagination = customersRes.data.data?.pagination || {};
         setCustomers(Array.isArray(customersList) ? customersList : []);
+        setTotalCustomers(pagination.total || customersList.length);
+        setHasMore(pagination.hasNext || false);
       } else {
         console.error("Failed to fetch customers:", customersRes.data.message);
       }
@@ -104,7 +114,6 @@ export default function MedicalHistoryPage() {
         params: { limit: 100 },
       });
       if (branchesRes.data.success) {
-        // Backend returns: {success, status, data: {branches: [...]}}
         const branchesList = branchesRes.data.data?.branches || [];
         setBranches(Array.isArray(branchesList) ? branchesList : []);
       } else {
@@ -115,6 +124,29 @@ export default function MedicalHistoryPage() {
       setError(err.response?.data?.message || "Lỗi khi tải dữ liệu");
     } finally {
       setLoading(false);
+    }
+  };
+
+  // Load more customers
+  const handleLoadMore = async () => {
+    if (loadingMore || !hasMore) return;
+    try {
+      setLoadingMore(true);
+      const nextPage = currentPage + 1;
+      const response = await api.get("/employees/customers", {
+        params: { page: nextPage, limit: CUSTOMERS_PER_PAGE },
+      });
+      if (response.data.success) {
+        const newCustomers = response.data.data?.customers || [];
+        const pagination = response.data.data?.pagination || {};
+        setCustomers((prev) => [...prev, ...newCustomers]);
+        setCurrentPage(nextPage);
+        setHasMore(pagination.hasNext || false);
+      }
+    } catch (err) {
+      console.error("Error loading more customers:", err);
+    } finally {
+      setLoadingMore(false);
     }
   };
 
@@ -316,7 +348,7 @@ export default function MedicalHistoryPage() {
                           Danh sách khách hàng
                         </CardTitle>
                         <CardDescription className="pl-4 mt-1 text-base text-gray-500 font-medium">
-                          {filteredCustomers.length} khách hàng
+                          {totalCustomers} khách hàng
                         </CardDescription>
                       </div>
                       {/* Search input */}
@@ -387,6 +419,26 @@ export default function MedicalHistoryPage() {
                             </div>
                           </div>
                         ))}
+                        {/* Load More Button */}
+                        {hasMore && !searchQuery && (
+                          <div className="flex justify-center pt-4">
+                            <Button
+                              onClick={handleLoadMore}
+                              disabled={loadingMore}
+                              variant="outline"
+                              className="border-blue-400 text-blue-600 hover:bg-blue-50"
+                            >
+                              {loadingMore ? (
+                                <>
+                                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                                  Đang tải...
+                                </>
+                              ) : (
+                                "Tải thêm"
+                              )}
+                            </Button>
+                          </div>
+                        )}
                       </div>
                     ) : (
                       <div className="text-center py-12">
@@ -642,21 +694,21 @@ export default function MedicalHistoryPage() {
                   selectedBranchFilter ||
                   selectedDoctorFilter ||
                   selectedDateFilter) && (
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className="border-red-600 text-red-600 hover:text-white hover:bg-red-600"
-                    onClick={() => {
-                      setMedicalSearchQuery("");
-                      setSelectedBranchFilter("");
-                      setSelectedDoctorFilter("");
-                      setSelectedDateFilter("");
-                    }}
-                  >
-                    <X className="h-3 w-3 mr-1" />
-                    Xóa bộ lọc
-                  </Button>
-                )}
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="border-red-600 text-red-600 hover:text-white hover:bg-red-600"
+                      onClick={() => {
+                        setMedicalSearchQuery("");
+                        setSelectedBranchFilter("");
+                        setSelectedDoctorFilter("");
+                        setSelectedDateFilter("");
+                      }}
+                    >
+                      <X className="h-3 w-3 mr-1" />
+                      Xóa bộ lọc
+                    </Button>
+                  )}
               </div>
             )}
           </div>

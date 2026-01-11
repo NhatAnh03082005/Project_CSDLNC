@@ -299,7 +299,7 @@ class MedicalService {
 
       if (ToaThuoc !== undefined) {
         updateFields.push("ToaThuoc = @ToaThuoc");
-        request.input("ToaThuoc", sql.NVarChar(30), ToaThuoc);
+        request.input("ToaThuoc", sql.NVarChar(sql.MAX), ToaThuoc);
       }
 
       if (NgayTaiKham !== undefined && NgayTaiKham !== null) {

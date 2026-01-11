@@ -605,6 +605,86 @@ class EmployeesService {
   }
 
   /**
+   * Lấy danh sách thuốc có tồn kho > 0 tại chi nhánh của nhân viên
+   * @param {string} maNhanVien
+   */
+  async getMedicinesByEmployee(maNhanVien) {
+    try {
+      const pool = await poolPromise;
+
+      // Lấy chi nhánh của nhân viên
+      const branchResult = await pool
+        .request()
+        .input("MaNhanVien", sql.Char(5), maNhanVien)
+        .query(`
+          SELECT nv.MaChiNhanh, cn.TenChiNhanh
+          FROM dbo.NhanVien nv
+          INNER JOIN dbo.ChiNhanh cn ON nv.MaChiNhanh = cn.MaChiNhanh
+          WHERE nv.MaNhanVien = @MaNhanVien AND nv.TrangThai = 0
+        `);
+
+      if (branchResult.recordset.length === 0) {
+        return {
+          success: false,
+          status: 404,
+          message: "Không tìm thấy thông tin nhân viên hoặc chi nhánh",
+        };
+      }
+
+      const maChiNhanh = branchResult.recordset[0].MaChiNhanh;
+      const tenChiNhanh = branchResult.recordset[0].TenChiNhanh;
+
+      // Lấy danh sách thuốc có tồn kho > 0
+      const result = await pool
+        .request()
+        .input("MaChiNhanh", sql.Char(4), maChiNhanh)
+        .query(`
+          SELECT 
+            sp.MaSanPham,
+            sp.TenSanPham,
+            sp.LoaiSanPham,
+            sp.DonGia,
+            tk.SoLuongTon AS SoLuongTonKho
+          FROM dbo.SanPham sp
+          INNER JOIN dbo.SanPham_TonKho tk 
+            ON sp.MaSanPham = tk.MaSanPham AND tk.MaChiNhanh = @MaChiNhanh
+          WHERE tk.SoLuongTon > 0
+            AND sp.LoaiSanPham = N'Thuốc'
+          ORDER BY sp.TenSanPham
+        `);
+
+      const medicines = result.recordset.map((item) => ({
+        maSanPham: item.MaSanPham,
+        tenSanPham: item.TenSanPham,
+        loaiSanPham: item.LoaiSanPham,
+        donGia: parseFloat(item.DonGia),
+        soLuongTonKho: item.SoLuongTonKho || 0,
+      }));
+
+      return {
+        success: true,
+        status: 200,
+        data: {
+          chiNhanh: {
+            maChiNhanh: maChiNhanh.trim(),
+            tenChiNhanh,
+          },
+          medicines,
+          count: medicines.length,
+        },
+      };
+    } catch (error) {
+      console.error("Error fetching medicines:", error);
+      return {
+        success: false,
+        status: 500,
+        message: "Lỗi khi lấy danh sách thuốc",
+        error: error.message,
+      };
+    }
+  }
+
+  /**
    * Lấy thông tin nhân viên hiện tại (từ token)
    * @param {string} maNhanVien
    */

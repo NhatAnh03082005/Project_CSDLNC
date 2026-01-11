@@ -93,6 +93,18 @@ router.get(
 );
 
 /**
+ * @route   GET /api/employees/medicines
+ * @desc    Lấy danh sách thuốc có trong kho của chi nhánh nhân viên
+ * @access  Private - NHAN_VIEN, QUAN_TRI
+ */
+router.get(
+  "/medicines",
+  authenticate,
+  authorize(ROLES.EMPLOYEE, ROLES.ADMIN),
+  employeesController.getMedicines
+);
+
+/**
  * @route   GET /api/employees/work-schedule
  * @desc    Lấy lịch làm việc của nhân viên
  * @access  Private - NHAN_VIEN, QUAN_TRI
