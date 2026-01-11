@@ -200,7 +200,9 @@ export default function ProductStats() {
                   <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-5">
                     <div className="min-w-0">
                       <div className="text-5xl font-black tracking-tight">
-                        {systemTop?.mostUsed || "N/A"}
+                        {systemTop?.mostUsed?.replace(/^Phụ kiện - /, "") ||
+                          systemTop?.mostUsed ||
+                          "N/A"}
                       </div>
                       <p className="text-white mt-2 opacity-80">
                         Dựa trên dữ liệu từ {branches.length} chi nhánh
@@ -238,7 +240,7 @@ export default function ProductStats() {
                 <CardHeader>
                   <div className="pr-8">
                     <h3 className="text-lg font-bold text-sky-600">
-                      {branch.TenChiNhanh}
+                      {branch.TenChiNhanh[0]}
                     </h3>
                     <span className="inline-block px-3 py-1 text-xs font-medium bg-blue-100 text-blue-700 rounded-full">
                       {branch.MaChiNhanh}
@@ -260,8 +262,10 @@ export default function ProductStats() {
 
                     <div className="min-w-0 pb-3">
                       <div className="font-bold truncate block text-gray-600">
-                        {branch.mostUsed || "N/A"} :{" "}
-                        {Number(branch.count || 0).toLocaleString("vi-VN")} sp
+                        {branch.mostUsed?.replace(/^Phụ kiện - /, "") ||
+                          branch.mostUsed ||
+                          "N/A"}{" "}
+                        : {Number(branch.count || 0).toLocaleString("vi-VN")} sp
                       </div>
                     </div>
 
@@ -276,10 +280,11 @@ export default function ProductStats() {
 
                     <div className="min-w-0 pb-2">
                       <div className="font-bold truncate block text-gray-600">
-                        {branch.leastUsed || "N/A"} :{" "}
-                        {Number(branch.leastCount || 0).toLocaleString(
-                          "vi-VN"
-                        )}{" "}
+                        {branch.leastUsed?.replace(/^Phụ kiện - /, "") ||
+                          branch.leastUsed ||
+                          "N/A"}{" "}
+                        :{" "}
+                        {Number(branch.leastCount || 0).toLocaleString("vi-VN")}{" "}
                         sp
                       </div>
                     </div>

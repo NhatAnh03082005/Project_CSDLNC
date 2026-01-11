@@ -201,7 +201,9 @@ export default function VaccineStats() {
                   <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-5">
                     <div className="min-w-0">
                       <div className="text-5xl font-black tracking-tight">
-                        {systemTop?.mostUsed || "N/A"}
+                        {systemTop?.mostUsed?.split(" - ")[0] ||
+                          systemTop?.mostUsed ||
+                          "N/A"}
                       </div>
                       <p className="text-white mt-2 opacity-80">
                         Dựa trên dữ liệu từ {branches.length} chi nhánh
@@ -260,8 +262,11 @@ export default function VaccineStats() {
 
                     <div className="min-w-0 pb-3">
                       <div className="font-bold truncate block text-gray-600">
-                        {branch.mostUsed || "N/A"} :{" "}
-                        {Number(branch.count || 0).toLocaleString("vi-VN")} lượt
+                        {branch.mostUsed?.split(" - ")[0] ||
+                          branch.mostUsed ||
+                          "N/A"}{" "}
+                        : {Number(branch.count || 0).toLocaleString("vi-VN")}{" "}
+                        lượt
                       </div>
                     </div>
 
@@ -276,7 +281,10 @@ export default function VaccineStats() {
 
                     <div className="min-w-0 pb-2">
                       <div className="font-bold truncate block text-gray-600">
-                        {branch.leastUsed || "N/A"} :{" "}
+                        {branch.leastUsed?.split(" - ")[0] ||
+                          branch.leastUsed ||
+                          "N/A"}{" "}
+                        :{" "}
                         {Number(branch.leastCount || 0).toLocaleString("vi-VN")}{" "}
                         lượt
                       </div>

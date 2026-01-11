@@ -690,7 +690,7 @@ export default function EmployeeManagement() {
             open={isDeleteDialogOpen}
             onOpenChange={setIsDeleteDialogOpen}
           >
-            <DialogContent className="gap-0">
+            <DialogContent className="gap-0 sm:max-w-[520px]">
               <DialogHeader className="pb-3">
                 <DialogTitle className="text-2xl font-bold text-red-600">
                   Xác nhận xóa nhân viên
