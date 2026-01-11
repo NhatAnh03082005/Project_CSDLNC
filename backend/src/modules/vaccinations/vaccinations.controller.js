@@ -263,14 +263,14 @@ class VaccinationsController {
         .query(
           `SELECT TOP 1 MaChiNhanh FROM dbo.NhanVien WHERE MaNhanVien = @MaNhanVien`
         );
-      
+
       if (result.recordset.length === 0) {
         return res.status(404).json({
           success: false,
           message: "Không tìm thấy nhân viên",
         });
       }
-      
+
       const maChiNhanh = result.recordset[0].MaChiNhanh;
       const response = await vaccinationsService.getPendingVaccinationRecords(maChiNhanh);
       return res.status(response.status || 200).json(response);
@@ -300,7 +300,7 @@ class VaccinationsController {
   async getCustomerSubscriptionsForEmployee(req, res, next) {
     try {
       const { maKhachHang } = req.params;
-      
+
       if (!maKhachHang) {
         return res.status(400).json({
           success: false,
@@ -322,7 +322,7 @@ class VaccinationsController {
   async getPackageVaccines(req, res, next) {
     try {
       const { maGoiDK } = req.params;
-      
+
       if (!maGoiDK) {
         return res.status(400).json({
           success: false,
@@ -334,7 +334,7 @@ class VaccinationsController {
       const { poolPromise } = require("../../config/database");
       const sql = require("mssql");
       const pool = await poolPromise;
-      
+
       const result = await pool
         .request()
         .input("MaGoiDK", sql.Char(6), maGoiDK)
