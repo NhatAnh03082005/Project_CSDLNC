@@ -75,6 +75,7 @@ export default function EmployeeTransferHistory() {
 
     const searchLower = searchTerm.toLowerCase();
     const matchName = record.HoTen?.toLowerCase().includes(searchLower);
+    const matchId = record.MaNhanVien?.toLowerCase().includes(searchLower);
 
     // Determine status
     const trangThai = Number(record.TrangThai);
@@ -98,7 +99,7 @@ export default function EmployeeTransferHistory() {
 
     const matchStatus = statusLabels[statusKey]?.includes(searchLower);
 
-    return matchName || matchStatus;
+    return matchName || matchId || matchStatus;
   });
 
   return (
@@ -143,7 +144,7 @@ export default function EmployeeTransferHistory() {
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
                 <Input
                   type="text"
-                  placeholder="Tìm kiếm theo tên nhân viên hoặc trạng thái..."
+                  placeholder="Tìm kiếm theo tên, mã nhân viên hoặc trạng thái..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
                   className="pl-10 h-10 border-gray-300 focus:border-blue-500 focus:ring-blue-500 placeholder:text-gray-400"
