@@ -200,7 +200,7 @@ class EmployeesController {
   async getBranch(req, res, next) {
     try {
       const maNhanVien = req.user?.maNhanVien;
-      
+
       if (!maNhanVien) {
         return res.status(401).json({
           success: false,
@@ -310,6 +310,26 @@ class EmployeesController {
       };
 
       const response = await employeesService.createMultiServiceRecord(recordData);
+      return res.status(response.status || 200).json(response);
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  /**
+   * Lấy danh sách thuốc tại chi nhánh của nhân viên
+   * GET /api/employees/medicines
+   */
+  async getMedicines(req, res, next) {
+    try {
+      const maNhanVien = req.user?.maNhanVien;
+      if (!maNhanVien) {
+        return res.status(401).json({
+          success: false,
+          message: "Không tìm thấy thông tin nhân viên",
+        });
+      }
+      const response = await employeesService.getMedicinesByEmployee(maNhanVien);
       return res.status(response.status || 200).json(response);
     } catch (error) {
       next(error);

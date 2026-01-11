@@ -350,61 +350,29 @@ class EmployeesService {
   }
 
   /**
-   * Tìm kiếm khách hàng theo tên, SĐT, CCCD
+   * Tìm kiếm khách hàng theo tên, SĐT, CCCD (sử dụng SP)
    * @param {object} searchParams - { name?, phone?, cccd? }
    */
   async searchCustomers(searchParams = {}) {
     const { name, phone, cccd } = searchParams;
 
+    // Nếu không có điều kiện nào
+    if (!name && !phone && !cccd) {
+      return {
+        success: false,
+        status: 400,
+        message: "Vui lòng nhập ít nhất một thông tin để tìm kiếm",
+      };
+    }
+
     try {
       const pool = await poolPromise;
-      const request = pool.request();
-
-      // Xây dựng WHERE clause động
-      const conditions = [];
-      if (name) {
-        conditions.push("kh.HoTen LIKE @Name");
-        request.input("Name", sql.NVarChar(255), `%${name.trim()}%`);
-      }
-      if (phone) {
-        conditions.push("kh.SDT LIKE @Phone");
-        request.input("Phone", sql.NVarChar(20), `%${phone.trim()}%`);
-      }
-      if (cccd) {
-        conditions.push("kh.CCCD LIKE @CCCD");
-        request.input("CCCD", sql.NVarChar(20), `%${cccd.trim()}%`);
-      }
-
-      const whereClause =
-        conditions.length > 0 ? `WHERE ${conditions.join(" AND ")}` : "";
-
-      // Nếu không có điều kiện nào, trả về danh sách rỗng hoặc lỗi
-      if (conditions.length === 0) {
-        return {
-          success: false,
-          status: 400,
-          message: "Vui lòng nhập ít nhất một thông tin để tìm kiếm",
-        };
-      }
-
-      const query = `
-        SELECT 
-          kh.MaKhachHang,
-          kh.HoTen,
-          kh.GioiTinh,
-          kh.SDT,
-          kh.CCCD,
-          kh.Email,
-          kh.NgaySinh,
-          kh.DiemLoyalty,
-          kh.CapHoiVien,
-          (SELECT COUNT(*) FROM dbo.ThuCung tc WHERE tc.MaKhachHang = kh.MaKhachHang) AS SoLuongThuCung
-        FROM dbo.KhachHang kh
-        ${whereClause}
-        ORDER BY kh.MaKhachHang ASC
-      `;
-
-      const result = await request.query(query);
+      const result = await pool
+        .request()
+        .input("Name", sql.NVarChar(255), name ? name.trim() : null)
+        .input("Phone", sql.NVarChar(20), phone ? phone.trim() : null)
+        .input("CCCD", sql.NVarChar(20), cccd ? cccd.trim() : null)
+        .execute("sp_NV8_SearchCustomers");
 
       const customers = result.recordset.map((customer) => ({
         maKhachHang: customer.MaKhachHang,
@@ -439,22 +407,22 @@ class EmployeesService {
   }
 
   /**
-   * Lấy danh sách thú cưng của khách hàng
+   * Lấy danh sách thú cưng của khách hàng (sử dụng SP)
    * @param {string} maKhachHang
    */
   async getCustomerPets(maKhachHang) {
     try {
       const pool = await poolPromise;
-
-      // Kiểm tra khách hàng tồn tại
-      const customerCheck = await pool
+      const result = await pool
         .request()
         .input("MaKhachHang", sql.Char(7), maKhachHang)
-        .query(
-          `SELECT TOP 1 MaKhachHang, HoTen FROM dbo.KhachHang WHERE MaKhachHang = @MaKhachHang`
-        );
+        .execute("sp_NV9_GetCustomerPets");
 
-      if (customerCheck.recordset.length === 0) {
+      // SP trả về 2 recordsets: [0] customer info, [1] pets list
+      const customerInfo = result.recordsets[0]?.[0];
+      const petsData = result.recordsets[1] || [];
+
+      if (!customerInfo?.MaKhachHang) {
         return {
           success: false,
           status: 404,
@@ -462,29 +430,9 @@ class EmployeesService {
         };
       }
 
-      const result = await pool
-        .request()
-        .input("MaKhachHang", sql.Char(7), maKhachHang)
-        .query(
-          `
-          SELECT 
-            tc.MaKhachHang,
-            tc.MaThuCung,
-            tc.TenThuCung,
-            tc.GioiTinh,
-            tc.Loai,
-            tc.Giong,
-            tc.NgaySinh,
-            tc.TinhTrangSucKhoe
-          FROM dbo.ThuCung tc
-          WHERE tc.MaKhachHang = @MaKhachHang
-          ORDER BY tc.MaThuCung ASC
-        `
-        );
-
-      const pets = result.recordset.map((pet) => ({
+      const pets = petsData.map((pet) => ({
         maKhachHang: pet.MaKhachHang,
-        maThuCung: pet.MaThuCung, // INT - số thứ tự thú cưng
+        maThuCung: pet.MaThuCung,
         tenThuCung: pet.TenThuCung,
         gioiTinh: pet.GioiTinh,
         loai: pet.Loai,
@@ -500,8 +448,8 @@ class EmployeesService {
         status: 200,
         data: {
           customer: {
-            maKhachHang: customerCheck.recordset[0].MaKhachHang,
-            hoTen: customerCheck.recordset[0].HoTen,
+            maKhachHang: customerInfo.MaKhachHang,
+            hoTen: customerInfo.HoTen,
           },
           pets,
           count: pets.length,
@@ -599,6 +547,86 @@ class EmployeesService {
         success: false,
         status: 500,
         message: "Lỗi khi lấy danh sách sản phẩm",
+        error: error.message,
+      };
+    }
+  }
+
+  /**
+   * Lấy danh sách thuốc có tồn kho > 0 tại chi nhánh của nhân viên
+   * @param {string} maNhanVien
+   */
+  async getMedicinesByEmployee(maNhanVien) {
+    try {
+      const pool = await poolPromise;
+
+      // Lấy chi nhánh của nhân viên
+      const branchResult = await pool
+        .request()
+        .input("MaNhanVien", sql.Char(5), maNhanVien)
+        .query(`
+          SELECT nv.MaChiNhanh, cn.TenChiNhanh
+          FROM dbo.NhanVien nv
+          INNER JOIN dbo.ChiNhanh cn ON nv.MaChiNhanh = cn.MaChiNhanh
+          WHERE nv.MaNhanVien = @MaNhanVien AND nv.TrangThai = 0
+        `);
+
+      if (branchResult.recordset.length === 0) {
+        return {
+          success: false,
+          status: 404,
+          message: "Không tìm thấy thông tin nhân viên hoặc chi nhánh",
+        };
+      }
+
+      const maChiNhanh = branchResult.recordset[0].MaChiNhanh;
+      const tenChiNhanh = branchResult.recordset[0].TenChiNhanh;
+
+      // Lấy danh sách thuốc có tồn kho > 0
+      const result = await pool
+        .request()
+        .input("MaChiNhanh", sql.Char(4), maChiNhanh)
+        .query(`
+          SELECT 
+            sp.MaSanPham,
+            sp.TenSanPham,
+            sp.LoaiSanPham,
+            sp.DonGia,
+            tk.SoLuongTon AS SoLuongTonKho
+          FROM dbo.SanPham sp
+          INNER JOIN dbo.SanPham_TonKho tk 
+            ON sp.MaSanPham = tk.MaSanPham AND tk.MaChiNhanh = @MaChiNhanh
+          WHERE tk.SoLuongTon > 0
+            AND sp.LoaiSanPham = N'Thuốc'
+          ORDER BY sp.TenSanPham
+        `);
+
+      const medicines = result.recordset.map((item) => ({
+        maSanPham: item.MaSanPham,
+        tenSanPham: item.TenSanPham,
+        loaiSanPham: item.LoaiSanPham,
+        donGia: parseFloat(item.DonGia),
+        soLuongTonKho: item.SoLuongTonKho || 0,
+      }));
+
+      return {
+        success: true,
+        status: 200,
+        data: {
+          chiNhanh: {
+            maChiNhanh: maChiNhanh.trim(),
+            tenChiNhanh,
+          },
+          medicines,
+          count: medicines.length,
+        },
+      };
+    } catch (error) {
+      console.error("Error fetching medicines:", error);
+      return {
+        success: false,
+        status: 500,
+        message: "Lỗi khi lấy danh sách thuốc",
         error: error.message,
       };
     }
@@ -735,28 +763,16 @@ class EmployeesService {
   }
 
   /**
-   * Lấy lịch làm việc của nhân viên
+   * Lấy lịch làm việc của nhân viên (sử dụng SP)
    * @param {string} maNhanVien
    */
   async getWorkSchedule(maNhanVien) {
     try {
       const pool = await poolPromise;
-
       const result = await pool
         .request()
         .input("MaNhanVien", sql.Char(5), maNhanVien)
-        .query(
-          `
-          SELECT 
-            llv.BacSi AS MaNhanVien,
-            llv.NgayLam,
-            llv.GioBatDau,
-            llv.GioKetThuc
-          FROM dbo.LichLamViec llv
-          WHERE llv.BacSi = @MaNhanVien
-          ORDER BY llv.NgayLam DESC, llv.GioBatDau ASC
-        `
-        );
+        .execute("sp_NV7_GetWorkSchedule");
 
       const schedules = result.recordset.map((schedule) => ({
         maNhanVien: schedule.MaNhanVien,
@@ -785,7 +801,7 @@ class EmployeesService {
   }
 
   /**
-   * Đăng ký lịch làm việc mới
+   * Đăng ký lịch làm việc mới (sử dụng SP)
    * @param {string} maNhanVien
    * @param {object} scheduleData - { NgayLam, GioBatDau, GioKetThuc }
    */
@@ -807,10 +823,7 @@ class EmployeesService {
       const hours = parts[0] || "00";
       const minutes = parts[1] || "00";
       const seconds = parts[2] || "00";
-      return `${hours.padStart(2, "0")}:${minutes.padStart(
-        2,
-        "0"
-      )}:${seconds.padStart(2, "0")}`;
+      return `${hours.padStart(2, "0")}:${minutes.padStart(2, "0")}:${seconds.padStart(2, "0")}`;
     };
 
     GioBatDau = normalizeTime(GioBatDau);
@@ -818,68 +831,38 @@ class EmployeesService {
 
     try {
       const pool = await poolPromise;
-
-      // Kiểm tra xung đột lịch (trùng ngày và giờ)
-      const conflictCheck = await pool
+      const result = await pool
         .request()
-        .input("BacSi", sql.Char(5), maNhanVien)
+        .input("MaNhanVien", sql.Char(5), maNhanVien)
         .input("NgayLam", sql.Date, NgayLam)
         .input("GioBatDau", sql.VarChar(8), GioBatDau)
         .input("GioKetThuc", sql.VarChar(8), GioKetThuc)
-        .query(
-          `
-          SELECT TOP 1 llv.BacSi
-          FROM dbo.LichLamViec llv
-          WHERE llv.BacSi = @BacSi
-            AND CAST(llv.NgayLam AS DATE) = CAST(@NgayLam AS DATE)
-            AND (
-              (@GioBatDau >= llv.GioBatDau AND @GioBatDau < llv.GioKetThuc)
-              OR (@GioKetThuc > llv.GioBatDau AND @GioKetThuc <= llv.GioKetThuc)
-              OR (@GioBatDau <= llv.GioBatDau AND @GioKetThuc >= llv.GioKetThuc)
-            )
-        `
-        );
+        .output("ErrorMessage", sql.NVarChar(500))
+        .output("StatusCode", sql.Int)
+        .execute("sp_NV6_CreateWorkSchedule");
 
-      if (conflictCheck.recordset.length > 0) {
-        return {
-          success: false,
-          status: 400,
-          message: "Lịch làm việc bị trùng với lịch đã đăng ký",
-        };
+
+      const statusCode = result.output?.StatusCode ?? 500;
+      const errorMessage = result.output?.ErrorMessage ?? "Lỗi không xác định";
+
+      if (statusCode === 201) {
+        return { success: true, status: 201, message: errorMessage };
+      } else {
+        return { success: false, status: statusCode || 400, message: errorMessage };
       }
-
-      // Thêm lịch làm việc mới
-      await pool
-        .request()
-        .input("BacSi", sql.Char(5), maNhanVien)
-        .input("NgayLam", sql.Date, NgayLam)
-        .input("GioBatDau", sql.VarChar(8), GioBatDau)
-        .input("GioKetThuc", sql.VarChar(8), GioKetThuc)
-        .query(
-          `
-          INSERT INTO dbo.LichLamViec (BacSi, NgayLam, GioBatDau, GioKetThuc)
-          VALUES (@BacSi, @NgayLam, @GioBatDau, @GioKetThuc)
-        `
-        );
-
-      return {
-        success: true,
-        status: 201,
-        message: "Đăng ký lịch làm việc thành công",
-      };
     } catch (error) {
       console.error("Error creating work schedule:", error);
       return {
         success: false,
         status: 500,
-        message: "Lỗi khi đăng ký lịch làm việc",
+        message: "Lỗi khi đăng ký lịch làm việc: " + error.message,
         error: error.message,
       };
     }
   }
 
   /**
-   * Xóa lịch làm việc
+   * Xóa lịch làm việc (sử dụng SP)
    * @param {string} maNhanVien
    * @param {object} scheduleKey - { ngayLam, gioBatDau }
    */
@@ -896,51 +879,23 @@ class EmployeesService {
 
     try {
       const pool = await poolPromise;
-
-      // Kiểm tra lịch làm việc có thuộc về nhân viên này không
-      const scheduleCheck = await pool
+      const result = await pool
         .request()
-        .input("BacSi", sql.Char(5), maNhanVien)
+        .input("MaNhanVien", sql.Char(5), maNhanVien)
         .input("NgayLam", sql.Date, ngayLam)
         .input("GioBatDau", sql.Time, gioBatDau)
-        .query(
-          `
-          SELECT TOP 1 BacSi
-          FROM dbo.LichLamViec
-          WHERE BacSi = @BacSi
-            AND NgayLam = @NgayLam
-            AND GioBatDau = @GioBatDau
-        `
-        );
+        .output("ErrorMessage", sql.NVarChar(500))
+        .output("StatusCode", sql.Int)
+        .execute("sp_NV16_DeleteWorkSchedule");
 
-      if (scheduleCheck.recordset.length === 0) {
-        return {
-          success: false,
-          status: 404,
-          message: "Không tìm thấy lịch làm việc hoặc không có quyền xóa",
-        };
+      const statusCode = result.output.StatusCode;
+      const errorMessage = result.output.ErrorMessage;
+
+      if (statusCode === 200) {
+        return { success: true, status: 200, message: errorMessage };
+      } else {
+        return { success: false, status: statusCode, message: errorMessage };
       }
-
-      // Xóa lịch làm việc
-      await pool
-        .request()
-        .input("BacSi", sql.Char(5), maNhanVien)
-        .input("NgayLam", sql.Date, ngayLam)
-        .input("GioBatDau", sql.Time, gioBatDau)
-        .query(
-          `
-          DELETE FROM dbo.LichLamViec
-          WHERE BacSi = @BacSi
-            AND NgayLam = @NgayLam
-            AND GioBatDau = @GioBatDau
-        `
-        );
-
-      return {
-        success: true,
-        status: 200,
-        message: "Xóa lịch làm việc thành công",
-      };
     } catch (error) {
       console.error("Error deleting work schedule:", error);
       return {

@@ -49,6 +49,7 @@ export default function CreateRecordPage() {
   const [pets, setPets] = useState([]);
   const [loading, setLoading] = useState(false);
   const [petsLoading, setPetsLoading] = useState(false);
+  const [loadingMore, setLoadingMore] = useState(false);
   const [error, setError] = useState(null);
   const [isSearchMode, setIsSearchMode] = useState(false);
   const [pagination, setPagination] = useState({
@@ -76,9 +77,13 @@ export default function CreateRecordPage() {
     }
   };
 
-  const loadAllCustomers = async (page = 1) => {
+  const loadAllCustomers = async (page = 1, append = false) => {
     try {
-      setLoading(true);
+      if (append) {
+        setLoadingMore(true);
+      } else {
+        setLoading(true);
+      }
       setError(null);
       setIsSearchMode(false);
 
@@ -87,7 +92,11 @@ export default function CreateRecordPage() {
       });
 
       if (response.data.success) {
-        setCustomers(response.data.data.customers || []);
+        if (append) {
+          setCustomers((prev) => [...prev, ...(response.data.data.customers || [])]);
+        } else {
+          setCustomers(response.data.data.customers || []);
+        }
         setPagination({
           page: response.data.data.pagination.page,
           totalPages: response.data.data.pagination.totalPages,
@@ -95,16 +104,23 @@ export default function CreateRecordPage() {
         });
       } else {
         setError(response.data.message || "Không thể tải danh sách khách hàng");
-        setCustomers([]);
+        if (!append) setCustomers([]);
       }
     } catch (err) {
       console.error("Error loading customers:", err);
       setError(
         err.response?.data?.message || "Lỗi khi tải danh sách khách hàng"
       );
-      setCustomers([]);
+      if (!append) setCustomers([]);
     } finally {
       setLoading(false);
+      setLoadingMore(false);
+    }
+  };
+
+  const handleLoadMore = () => {
+    if (pagination.page < pagination.totalPages && !loadingMore) {
+      loadAllCustomers(pagination.page + 1, true);
     }
   };
 
@@ -274,8 +290,7 @@ export default function CreateRecordPage() {
 
       if (response.data.success) {
         toast.success(
-          `Tạo hồ sơ thành công! KH: ${selectedCustomer.hoTen}. Mã HĐ: ${
-            response.data.data?.maHoaDon || "N/A"
+          `Tạo hồ sơ thành công! KH: ${selectedCustomer.hoTen}. Mã HĐ: ${response.data.data?.maHoaDon || "N/A"
           }`
         );
 
@@ -338,21 +353,19 @@ export default function CreateRecordPage() {
               {/* Step pills */}
               <div className="mt-4 flex items-center gap-2">
                 <span
-                  className={`inline-flex items-center gap-2 rounded-full px-4 py-2 text-xs font-bold border ${
-                    step === "customer-list"
-                      ? "bg-blue-50 text-blue-700 border-blue-200"
-                      : "bg-white text-gray-500 border-gray-200"
-                  }`}
+                  className={`inline-flex items-center gap-2 rounded-full px-4 py-2 text-xs font-bold border ${step === "customer-list"
+                    ? "bg-blue-50 text-blue-700 border-blue-200"
+                    : "bg-white text-gray-500 border-gray-200"
+                    }`}
                 >
                   <span className="h-2 w-2 rounded-full bg-blue-600" />
                   1. Khách hàng
                 </span>
                 <span
-                  className={`inline-flex items-center gap-2 rounded-full px-4 py-2 text-xs font-bold border ${
-                    step === "pet-list"
-                      ? "bg-blue-50 text-blue-700 border-blue-200"
-                      : "bg-white text-gray-500 border-gray-200"
-                  }`}
+                  className={`inline-flex items-center gap-2 rounded-full px-4 py-2 text-xs font-bold border ${step === "pet-list"
+                    ? "bg-blue-50 text-blue-700 border-blue-200"
+                    : "bg-white text-gray-500 border-gray-200"
+                    }`}
                 >
                   <span className="h-2 w-2 rounded-full bg-blue-600" />
                   2. Thú cưng & dịch vụ
@@ -495,6 +508,30 @@ export default function CreateRecordPage() {
                             </div>
                           </div>
                         ))}
+
+                        {/* Load More Button */}
+                        {!isSearchMode && pagination.page < pagination.totalPages && (
+                          <div className="pt-4 pb-2 flex justify-center">
+                            <Button
+                              onClick={handleLoadMore}
+                              disabled={loadingMore}
+                              variant="outline"
+                              className="w-full max-w-xs rounded-xl border-blue-200 text-blue-600 hover:bg-blue-600 hover:text-white hover:border-blue-600 transition-all font-semibold"
+                            >
+                              {loadingMore ? (
+                                <>
+                                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                                  Đang tải...
+                                </>
+                              ) : (
+                                <>
+                                  <Plus className="h-4 w-4 mr-2" />
+                                  Tải thêm
+                                </>
+                              )}
+                            </Button>
+                          </div>
+                        )}
                       </div>
                     ) : (
                       <div className="text-center py-12">
@@ -701,41 +738,37 @@ export default function CreateRecordPage() {
                                     !isAlreadySelected &&
                                     handleSelectPet(pet.maThuCung)
                                   }
-                                  className={`rounded-lg p-4 border shadow-sm transition-all duration-300 relative overflow-hidden group ${
-                                    isCurrentlySelected
-                                      ? "bg-blue-50 border-blue-400 shadow-xl shadow-blue-500/10"
-                                      : isAlreadySelected
+                                  className={`rounded-lg p-4 border shadow-sm transition-all duration-300 relative overflow-hidden group ${isCurrentlySelected
+                                    ? "bg-blue-50 border-blue-400 shadow-xl shadow-blue-500/10"
+                                    : isAlreadySelected
                                       ? "bg-emerald-50/40 border-emerald-200 opacity-70"
                                       : "bg-white border-gray-200 hover:border-blue-400 hover:bg-gradient-to-r hover:from-blue-50/50 hover:to-transparent hover:shadow-xl hover:shadow-blue-500/10 hover:-translate-y-0.5 cursor-pointer"
-                                  }`}
+                                    }`}
                                 >
                                   <div
-                                    className={`absolute left-0 top-0 bottom-0 w-1 bg-blue-500 rounded-l-xl transition-opacity duration-300 ${
-                                      isCurrentlySelected
-                                        ? "opacity-100"
-                                        : "opacity-0 group-hover:opacity-100"
-                                    }`}
+                                    className={`absolute left-0 top-0 bottom-0 w-1 bg-blue-500 rounded-l-xl transition-opacity duration-300 ${isCurrentlySelected
+                                      ? "opacity-100"
+                                      : "opacity-0 group-hover:opacity-100"
+                                      }`}
                                   />
 
                                   <div className="flex items-center gap-4">
                                     <div
-                                      className={`h-12 w-12 rounded-xl flex items-center justify-center flex-shrink-0 ${
-                                        isAlreadySelected
-                                          ? "bg-emerald-600"
-                                          : isCurrentlySelected
+                                      className={`h-12 w-12 rounded-xl flex items-center justify-center flex-shrink-0 ${isAlreadySelected
+                                        ? "bg-emerald-600"
+                                        : isCurrentlySelected
                                           ? "bg-blue-600"
                                           : "bg-gray-100"
-                                      }`}
+                                        }`}
                                     >
                                       {isAlreadySelected ? (
                                         <Check className="h-6 w-6 text-white" />
                                       ) : (
                                         <PawPrint
-                                          className={`h-6 w-6 ${
-                                            isCurrentlySelected
-                                              ? "text-white"
-                                              : "text-gray-500"
-                                          }`}
+                                          className={`h-6 w-6 ${isCurrentlySelected
+                                            ? "text-white"
+                                            : "text-gray-500"
+                                            }`}
                                         />
                                       )}
                                     </div>
@@ -750,8 +783,8 @@ export default function CreateRecordPage() {
                                         {pet.gioiTinh || "N/A"}
                                         {pet.ngaySinh
                                           ? ` • Sinh: ${new Date(
-                                              pet.ngaySinh
-                                            ).toLocaleDateString("vi-VN")}`
+                                            pet.ngaySinh
+                                          ).toLocaleDateString("vi-VN")}`
                                           : ""}
                                       </p>
                                       {pet.tinhTrangSucKhoe && (
@@ -797,19 +830,17 @@ export default function CreateRecordPage() {
                           {/* Khám bệnh */}
                           <div
                             onClick={() => toggleService("Khám bệnh")}
-                            className={`rounded-2xl border p-4 cursor-pointer transition-all ${
-                              selectedServices.includes("Khám bệnh")
-                                ? "bg-blue-50 border-blue-300 shadow-sm"
-                                : "bg-white border-gray-200 hover:border-gray-300"
-                            }`}
+                            className={`rounded-2xl border p-4 cursor-pointer transition-all ${selectedServices.includes("Khám bệnh")
+                              ? "bg-blue-50 border-blue-300 shadow-sm"
+                              : "bg-white border-gray-200 hover:border-gray-300"
+                              }`}
                           >
                             <div className="flex items-center gap-3">
                               <div
-                                className={`h-5 w-5 rounded-full border-2 flex items-center justify-center ${
-                                  selectedServices.includes("Khám bệnh")
-                                    ? "border-blue-600"
-                                    : "border-gray-300"
-                                }`}
+                                className={`h-5 w-5 rounded-full border-2 flex items-center justify-center ${selectedServices.includes("Khám bệnh")
+                                  ? "border-blue-600"
+                                  : "border-gray-300"
+                                  }`}
                               >
                                 {selectedServices.includes("Khám bệnh") && (
                                   <div className="h-2.5 w-2.5 rounded-full bg-blue-600" />
@@ -830,19 +861,17 @@ export default function CreateRecordPage() {
                           {/* Tiêm phòng */}
                           <div
                             onClick={() => toggleService("Tiêm phòng")}
-                            className={`rounded-2xl border p-4 cursor-pointer transition-all ${
-                              selectedServices.includes("Tiêm phòng")
-                                ? "bg-blue-50 border-blue-300 shadow-sm"
-                                : "bg-white border-gray-200 hover:border-gray-300"
-                            }`}
+                            className={`rounded-2xl border p-4 cursor-pointer transition-all ${selectedServices.includes("Tiêm phòng")
+                              ? "bg-blue-50 border-blue-300 shadow-sm"
+                              : "bg-white border-gray-200 hover:border-gray-300"
+                              }`}
                           >
                             <div className="flex items-center gap-3">
                               <div
-                                className={`h-5 w-5 rounded-full border-2 flex items-center justify-center ${
-                                  selectedServices.includes("Tiêm phòng")
-                                    ? "border-blue-600"
-                                    : "border-gray-300"
-                                }`}
+                                className={`h-5 w-5 rounded-full border-2 flex items-center justify-center ${selectedServices.includes("Tiêm phòng")
+                                  ? "border-blue-600"
+                                  : "border-gray-300"
+                                  }`}
                               >
                                 {selectedServices.includes("Tiêm phòng") && (
                                   <div className="h-2.5 w-2.5 rounded-full bg-blue-600" />

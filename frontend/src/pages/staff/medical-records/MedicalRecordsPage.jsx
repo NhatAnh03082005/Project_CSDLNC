@@ -34,6 +34,9 @@ import {
   Search,
   X,
   FileText,
+  Plus,
+  Pill,
+  Trash2,
 } from "lucide-react";
 
 export default function MedicalRecordsPage() {
@@ -50,10 +53,16 @@ export default function MedicalRecordsPage() {
 
   const [searchTerm, setSearchTerm] = useState("");
 
+  // Medicine states
+  const [medicines, setMedicines] = useState([]);
+  const [loadingMedicines, setLoadingMedicines] = useState(false);
+  const [showMedicineModal, setShowMedicineModal] = useState(false);
+  const [selectedMedicines, setSelectedMedicines] = useState([]);
+  const [medicineSearch, setMedicineSearch] = useState("");
+
   const [formData, setFormData] = useState({
     symptoms: "",
     diagnosis: "",
-    prescription: "",
     followUpDate: "",
   });
 
@@ -92,15 +101,58 @@ export default function MedicalRecordsPage() {
     }
   };
 
+  // Fetch medicines from employee's branch
+  const fetchMedicines = async () => {
+    setLoadingMedicines(true);
+    try {
+      const response = await api.get("/employees/medicines");
+      if (response.data.success) {
+        setMedicines(response.data.data?.medicines || []);
+      }
+    } catch (err) {
+      console.error("Error fetching medicines:", err);
+    } finally {
+      setLoadingMedicines(false);
+    }
+  };
+
   const handleSelectRecord = (record) => {
     setSelectedRecord(record);
     setFormData({
       symptoms: "",
       diagnosis: "",
-      prescription: "",
       followUpDate: "",
     });
+    setSelectedMedicines([]);
     setShowForm(true);
+    fetchMedicines();
+  };
+
+  const handleAddMedicine = (medicine) => {
+    // Check if already added
+    if (selectedMedicines.find(m => m.maSanPham === medicine.maSanPham)) {
+      toast.warning("Thuốc đã được thêm vào toa");
+      return;
+    }
+    setSelectedMedicines([
+      ...selectedMedicines,
+      {
+        ...medicine,
+        soLuong: 1,
+      }
+    ]);
+    setShowMedicineModal(false);
+    setMedicineSearch("");
+  };
+
+  const handleRemoveMedicine = (maSanPham) => {
+    setSelectedMedicines(selectedMedicines.filter(m => m.maSanPham !== maSanPham));
+  };
+
+  const handleUpdateMedicine = (maSanPham, field, value) => {
+    setSelectedMedicines(selectedMedicines.map(m =>
+      m.maSanPham === maSanPham ? { ...m, [field]: value } : m
+    ));
   };
 
   const handleSubmit = async (e) => {
@@ -109,11 +161,14 @@ export default function MedicalRecordsPage() {
     if (
       !formData.symptoms.trim() ||
       !formData.diagnosis.trim() ||
-      !formData.prescription.trim()
+      selectedMedicines.length === 0
     ) {
-      toast.warning("Vui lòng điền đầy đủ thông tin bắt buộc");
+      toast.warning("Vui lòng điền đầy đủ thông tin bắt buộc và chọn ít nhất 1 thuốc");
       return;
     }
+
+    // Build prescription as comma-separated medicine names
+    const prescriptionText = selectedMedicines.map(m => m.tenSanPham).join(", ");
 
     setSubmitting(true);
     try {
@@ -122,7 +177,7 @@ export default function MedicalRecordsPage() {
         {
           TrieuChung: formData.symptoms,
           ChanDoan: formData.diagnosis,
-          ToaThuoc: formData.prescription,
+          ToaThuoc: prescriptionText,
           NgayTaiKham: formData.followUpDate || null,
         }
       );
@@ -131,6 +186,7 @@ export default function MedicalRecordsPage() {
         toast.success("Cập nhật hồ sơ khám bệnh thành công!");
         setShowForm(false);
         setSelectedRecord(null);
+        setSelectedMedicines([]);
         fetchPendingRecords();
       } else {
         toast.error(response.data.message || "Không thể cập nhật hồ sơ");
@@ -427,22 +483,71 @@ export default function MedicalRecordsPage() {
                     </div>
 
                     <div className="space-y-2">
-                      <Label className="text-xs font-bold text-slate-500 uppercase ml-1">
-                        Toa thuốc <span className="text-red-500">*</span>
-                      </Label>
-                      <Textarea
-                        placeholder="Tên thuốc, liều lượng, cách dùng..."
-                        value={formData.prescription}
-                        onChange={(e) =>
-                          setFormData({
-                            ...formData,
-                            prescription: e.target.value,
-                          })
-                        }
-                        rows={4}
-                        required
-                        className="rounded-2xl border-slate-200 bg-slate-50/60 focus:bg-white focus:ring-2 focus:ring-blue-100 transition-all"
-                      />
+                      <div className="flex items-center justify-between">
+                        <Label className="text-xs font-bold text-slate-500 uppercase ml-1">
+                          Toa thuốc <span className="text-red-500">*</span>
+                        </Label>
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          onClick={() => setShowMedicineModal(true)}
+                          className="h-8 gap-1 text-blue-600 border-blue-300 hover:bg-blue-50"
+                        >
+                          <Plus className="h-4 w-4" />
+                          Thêm thuốc
+                        </Button>
+                      </div>
+
+                      {/* Selected medicines list */}
+                      {selectedMedicines.length === 0 ? (
+                        <div className="rounded-2xl border-2 border-dashed border-slate-200 bg-slate-50/60 p-6 text-center">
+                          <Pill className="h-8 w-8 mx-auto text-slate-300 mb-2" />
+                          <p className="text-sm text-slate-500">Chưa có thuốc nào được thêm</p>
+                          <p className="text-xs text-slate-400 mt-1">Nhấn "Thêm thuốc" để chọn</p>
+                        </div>
+                      ) : (
+                        <div className="space-y-3">
+                          {selectedMedicines.map((medicine, idx) => (
+                            <div
+                              key={medicine.maSanPham}
+                              className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm"
+                            >
+                              <div className="flex items-start justify-between mb-3">
+                                <div className="flex items-center gap-2">
+                                  <div className="h-8 w-8 rounded-lg bg-emerald-100 flex items-center justify-center">
+                                    <Pill className="h-4 w-4 text-emerald-600" />
+                                  </div>
+                                  <div>
+                                    <p className="font-semibold text-gray-900">{medicine.tenSanPham}</p>
+                                    <p className="text-xs text-gray-500">{medicine.maSanPham} • {medicine.donGia?.toLocaleString()}đ</p>
+                                  </div>
+                                </div>
+                                <button
+                                  type="button"
+                                  onClick={() => handleRemoveMedicine(medicine.maSanPham)}
+                                  className="p-1 rounded hover:bg-red-50 text-gray-400 hover:text-red-500 transition-colors"
+                                >
+                                  <Trash2 className="h-4 w-4" />
+                                </button>
+                              </div>
+                              <div className="flex items-center gap-3">
+                                <div>
+                                  <Label className="text-xs text-slate-500">Số lượng</Label>
+                                  <Input
+                                    type="number"
+                                    min="1"
+                                    max={medicine.soLuongTonKho}
+                                    value={medicine.soLuong}
+                                    onChange={(e) => handleUpdateMedicine(medicine.maSanPham, 'soLuong', parseInt(e.target.value) || 1)}
+                                    className="h-9 mt-1 rounded-lg w-24"
+                                  />
+                                </div>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      )}
                     </div>
 
                     <div className="space-y-2">
@@ -494,6 +599,101 @@ export default function MedicalRecordsPage() {
                       </Button>
                     </div>
                   </form>
+                </div>
+              </DialogContent>
+            </Dialog>
+
+            {/* Medicine Selection Modal */}
+            <Dialog open={showMedicineModal} onOpenChange={setShowMedicineModal}>
+              <DialogContent className="max-w-xl w-full max-h-[80vh] rounded-2xl bg-white shadow-2xl border-0 p-0 overflow-hidden flex flex-col [&>button]:hidden">
+                {/* Header */}
+                <div className="bg-gradient-to-r from-emerald-500 to-teal-500 p-4 text-white relative overflow-hidden flex-shrink-0">
+                  <button
+                    onClick={() => setShowMedicineModal(false)}
+                    className="absolute right-3 top-3 h-8 w-8 rounded-full flex items-center justify-center text-white/90 hover:bg-white/15 hover:text-white transition z-20"
+                  >
+                    <X className="h-5 w-5" />
+                  </button>
+
+                  <DialogTitle className="text-lg font-bold flex items-center gap-2 relative z-10">
+                    <div className="bg-white/20 p-1.5 rounded-lg backdrop-blur-sm">
+                      <Pill className="h-4 w-4 text-white" />
+                    </div>
+                    Chọn thuốc
+                  </DialogTitle>
+
+                  <DialogDescription className="text-emerald-100 mt-1 relative z-10 font-medium opacity-90 text-sm">
+                    Danh sách thuốc có trong kho chi nhánh
+                  </DialogDescription>
+                </div>
+
+                {/* Search */}
+                <div className="p-4 border-b">
+                  <div className="relative">
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+                    <Input
+                      placeholder="Tìm kiếm thuốc..."
+                      value={medicineSearch}
+                      onChange={(e) => setMedicineSearch(e.target.value)}
+                      className="pl-10 h-10 rounded-xl"
+                    />
+                  </div>
+                </div>
+
+                {/* Medicine List */}
+                <div className="flex-1 overflow-y-auto p-4">
+                  {loadingMedicines ? (
+                    <div className="flex items-center justify-center py-12">
+                      <Loader2 className="h-6 w-6 animate-spin text-emerald-500" />
+                    </div>
+                  ) : medicines.filter(m =>
+                    m.tenSanPham.toLowerCase().includes(medicineSearch.toLowerCase())
+                  ).length === 0 ? (
+                    <div className="text-center py-12 text-gray-500">
+                      <Pill className="h-12 w-12 mx-auto mb-3 text-gray-300" />
+                      <p className="font-medium">Không tìm thấy thuốc</p>
+                    </div>
+                  ) : (
+                    <div className="space-y-2">
+                      {medicines
+                        .filter(m => m.tenSanPham.toLowerCase().includes(medicineSearch.toLowerCase()))
+                        .map((medicine) => {
+                          const isSelected = selectedMedicines.find(m => m.maSanPham === medicine.maSanPham);
+                          return (
+                            <div
+                              key={medicine.maSanPham}
+                              onClick={() => !isSelected && handleAddMedicine(medicine)}
+                              className={`rounded-xl border p-3 cursor-pointer transition-all ${isSelected
+                                ? 'border-emerald-300 bg-emerald-50 opacity-60'
+                                : 'border-gray-200 hover:border-emerald-400 hover:bg-emerald-50/50'
+                                }`}
+                            >
+                              <div className="flex items-center justify-between">
+                                <div className="flex items-center gap-3">
+                                  <div className="h-10 w-10 rounded-lg bg-emerald-100 flex items-center justify-center">
+                                    <Pill className="h-5 w-5 text-emerald-600" />
+                                  </div>
+                                  <div>
+                                    <p className="font-semibold text-gray-900">{medicine.tenSanPham}</p>
+                                    <p className="text-xs text-gray-500">
+                                      {medicine.maSanPham} • Tồn: {medicine.soLuongTonKho}
+                                    </p>
+                                  </div>
+                                </div>
+                                <div className="text-right">
+                                  <p className="font-bold text-emerald-600">
+                                    {medicine.donGia?.toLocaleString()}đ
+                                  </p>
+                                  {isSelected && (
+                                    <span className="text-xs text-emerald-600">Đã chọn</span>
+                                  )}
+                                </div>
+                              </div>
+                            </div>
+                          );
+                        })}
+                    </div>
+                  )}
                 </div>
               </DialogContent>
             </Dialog>
