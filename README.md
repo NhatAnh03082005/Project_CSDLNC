@@ -245,15 +245,15 @@ Project_CSDLNC/
 └── README.md                     # This file
 ```
 
-
 ## Team Members
 
-| Student ID | Full Name             |
-|  23120189  | Hoàng Quốc Việt       |
-|  23120193  | Trần Kim Yến          |
-|  23120209  | Lê Hoàng Nhật Anh     |
-|  23120237  | Lê Lâm Trí Đức        |
-|  23120242  | Nguyễn Văn Bình Dương |
+| Student ID | Full Name |
+|------------|-----------|
+| 23120189 | Hoàng Quốc Việt |
+| 23120193 | Trần Kim Yến |
+| 23120209 | Lê Hoàng Nhật Anh |
+| 23120237 | Lê Lâm Trí Đức |
+| 23120242 | Nguyễn Văn Bình Dương |
 
 ---
 
